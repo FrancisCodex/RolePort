@@ -1,3 +1,4 @@
+import { isLocalMode } from "@/lib/env";
 import { getCurrentUser } from "@/lib/session";
 import { SignOutButton } from "./sign-out-button";
 
@@ -24,10 +25,10 @@ export async function UserChip() {
     <div className="flex items-center gap-3 rounded-2xl p-2">
       <Avatar name={user.name} image={user.image} />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold">{user.name}</p>
-        <p className="truncate text-xs text-muted">{user.email}</p>
+        <p className="truncate text-sm font-semibold">{user.name || "You"}</p>
+        <p className="truncate text-xs text-muted">{isLocalMode ? "Local mode · no sign-in" : user.email}</p>
       </div>
-      <SignOutButton />
+      {!isLocalMode && <SignOutButton />}
     </div>
   );
 }

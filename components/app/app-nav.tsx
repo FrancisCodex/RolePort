@@ -5,13 +5,24 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { navItems } from "./nav-items";
 
-function useIsActive() {
+type IsActive = (href: string) => boolean;
+const none: IsActive = () => false;
+
+function useIsActive(): IsActive {
   const pathname = usePathname();
-  return (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  return (href) => pathname === href || pathname.startsWith(`${href}/`);
 }
 
 export function SidebarNav() {
-  const isActive = useIsActive();
+  return <SidebarLinks isActive={useIsActive()} />;
+}
+
+/** Same links without an active state: the Suspense fallback while the pathname is resolved. */
+export function SidebarNavFallback() {
+  return <SidebarLinks isActive={none} />;
+}
+
+function SidebarLinks({ isActive }: { isActive: IsActive }) {
   return (
     <nav className="flex flex-col gap-1">
       {navItems.map(({ href, label, icon: Icon }) => {
@@ -38,7 +49,14 @@ export function SidebarNav() {
 }
 
 export function TabBar() {
-  const isActive = useIsActive();
+  return <TabBarLinks isActive={useIsActive()} />;
+}
+
+export function TabBarFallback() {
+  return <TabBarLinks isActive={none} />;
+}
+
+function TabBarLinks({ isActive }: { isActive: IsActive }) {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
       <div className="mx-auto flex max-w-md items-stretch justify-around px-2">

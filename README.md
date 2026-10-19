@@ -1,36 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HireMe
 
-## Getting Started
+Find jobs across the Philippines, see how well each one fits you, and track every application, in one calm app.
+Inspired by [ai-job-search](https://github.com/MadsLorentzen/ai-job-search) (MIT). See [docs/PLAN.md](docs/PLAN.md) for the roadmap.
 
-First, run the development server:
+## Run it on your machine
 
 ```bash
+npm install
+cp .env.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000 and click **Get started**. With `HIREME_LOCAL_MODE=true` (the default in `.env.example`) there is no sign-in: everything belongs to one built-in user.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Data is stored in an embedded database at `.data/pglite`, created and migrated automatically. Delete that folder to start over.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## What works without any keys
 
-## Learn More
+- **Profile**: import a PDF or .txt CV (skills are detected automatically), then fill in roles, location, salary, experience and goals.
+- **Job search**: live listings from [freehire](https://freehire.me) (about 28k Philippine jobs, filterable by city) and remote roles from [Jobicy](https://jobicy.com).
+- **Quick match**: every job gets a score based on how your skills overlap with its requirements.
+- **Pipeline**: save jobs and move them through Saved → Applied → Interview → Offer.
 
-To learn more about Next.js, take a look at the following resources:
+## Optional keys (add to `.env.local`, then restart)
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Key | Unlocks |
+| --- | --- |
+| `ANTHROPIC_API_KEY` | AI fills in your whole profile from your CV. Next: full fit evaluation, tailored CV and cover letter. |
+| `RAPIDAPI_KEY` | [JSearch](https://rapidapi.com/letscrunch/api/jsearch): Google for Jobs listings (JobStreet, Indeed, LinkedIn, Kalibrr). |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Using a Postgres server instead
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Set `DATABASE_URL` in `.env.local` (local Postgres, Supabase or Neon), then run `npm run db:migrate`.
+To turn on accounts, set `HIREME_LOCAL_MODE=false` and fill in `BETTER_AUTH_SECRET` (`npx @better-auth/cli secret`).

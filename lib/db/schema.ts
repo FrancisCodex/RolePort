@@ -159,6 +159,9 @@ export const profile = pgTable("profile", {
   /** Monthly expectation in PHP, the norm for PH postings. */
   salaryMinMonthly: integer("salary_min_monthly"),
   salaryMaxMonthly: integer("salary_max_monthly"),
+  /** Plain text of the last imported CV, kept so drafts can quote the candidate accurately. */
+  cvText: text("cv_text"),
+  cvFileName: text("cv_file_name"),
   /** Writing-style notes used when drafting cover letters. */
   writingStyle: text("writing_style"),
   onboardingStep: integer("onboarding_step").default(0).notNull(),

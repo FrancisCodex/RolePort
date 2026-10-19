@@ -1,8 +1,12 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // PGlite ships WebAssembly + data files that must load from node_modules at runtime.
+  serverExternalPackages: ["@electric-sql/pglite"],
   /* config options here */
   experimental: {
+    // CV uploads go through a server action.
+    serverActions: { bodySizeLimit: "6mb" },
     agentFeedback: true,
   },
   cacheComponents: true,
