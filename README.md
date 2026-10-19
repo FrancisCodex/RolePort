@@ -1,36 +1,55 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# HireMe
 
-## Getting Started
+A free, open-source job search app you run yourself. Find jobs across the Philippines, see how well each one fits you, and track every application, with your CV and data staying on your own machine.
 
-First, run the development server:
+Bring your own AI: Claude, OpenAI, OpenRouter, Groq, or a free local model through [Ollama](https://ollama.com).
+Inspired by [ai-job-search](https://github.com/MadsLorentzen/ai-job-search). See [docs/PLAN.md](docs/PLAN.md) for the roadmap.
+
+## Quick start
 
 ```bash
+npm install
+cp .env.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open http://localhost:3000 and click **Get started**. There's no sign-in, and data is saved in `.data/` (delete that folder to start over).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Or with Docker:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+docker compose up -d
+```
 
-## Learn More
+## What you get
 
-To learn more about Next.js, take a look at the following resources:
+| Feature | Needs |
+| --- | --- |
+| Job search: about 28k Philippine jobs from [freehire](https://freehire.me), remote roles from [Jobicy](https://jobicy.com) | Nothing |
+| Quick match score from your skills on every job | Nothing |
+| Pipeline: save jobs, track Saved → Applied → Interview → Offer | Nothing |
+| CV import with automatic skill detection | Nothing |
+| AI fills in your whole profile from your CV | An AI provider |
+| JobStreet, Indeed, LinkedIn and Kalibrr listings via [JSearch](https://rapidapi.com/letscrunch/api/jsearch) | A RapidAPI key (free tier) |
+| Coming next: AI fit evaluation, tailored CV and cover letter, interview coach | An AI provider |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Choosing an AI provider
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Open **Settings** in the app, pick a provider, and click **Test connection**.
 
-## Deploy on Vercel
+- **Ollama (free, private):** install Ollama, run `ollama pull gemma4:12b`, then choose Ollama in Settings. Use a 12B+ model for reliable results. Setting *Thinking* to *Off* makes answers much faster.
+- **Claude, OpenAI, OpenRouter, Groq:** paste your own API key. You pay the provider directly. HireMe charges nothing.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Keys are encrypted before they're saved and never sent back to the browser.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Hosting for others
+
+Set `DATABASE_URL` (Postgres, Supabase or Neon) and run `npm run db:migrate`. Set `HIREME_LOCAL_MODE=false`, `BETTER_AUTH_SECRET` and a stable `HIREME_SECRET` to turn on accounts. See [.env.example](.env.example).
+
+## Contributing
+
+Job sources for other countries, provider improvements and UI polish are all welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+[MIT](LICENSE). Portions adapted from ai-job-search; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

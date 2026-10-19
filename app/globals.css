@@ -143,3 +143,45 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Third-party job descriptions (sanitized in lib/jobs/html.ts). */
+.job-description {
+  color: var(--fg);
+  font-size: 15px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.job-description > * + * {
+  margin-top: 0.85em;
+}
+.job-description h3,
+.job-description h4 {
+  margin-top: 1.4em;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.05em;
+}
+.job-description ul,
+.job-description ol {
+  padding-left: 1.3em;
+}
+.job-description ul {
+  list-style: disc;
+}
+.job-description ol {
+  list-style: decimal;
+}
+.job-description li + li {
+  margin-top: 0.35em;
+}
+.job-description li > p {
+  margin: 0;
+}
+.job-description a {
+  color: var(--brand);
+  text-decoration: underline;
+}
+.job-description strong,
+.job-description b {
+  font-weight: 600;
+}

@@ -159,6 +159,9 @@ export const profile = pgTable("profile", {
   /** Monthly expectation in PHP, the norm for PH postings. */
   salaryMinMonthly: integer("salary_min_monthly"),
   salaryMaxMonthly: integer("salary_max_monthly"),
+  /** Plain text of the last imported CV, kept so drafts can quote the candidate accurately. */
+  cvText: text("cv_text"),
+  cvFileName: text("cv_file_name"),
   /** Writing-style notes used when drafting cover letters. */
   writingStyle: text("writing_style"),
   onboardingStep: integer("onboarding_step").default(0).notNull(),
@@ -300,6 +303,29 @@ export const document = pgTable(
   },
   (t) => [index("document_user_idx").on(t.userId)],
 );
+
+/* -------------------------------------------------------------------------- */
+/* Settings — bring-your-own keys and AI provider                             */
+/* -------------------------------------------------------------------------- */
+
+export const aiProvider = pgEnum("ai_provider", ["anthropic", "openai_compatible"]);
+
+/** Per-user settings. Secrets are encrypted with lib/secrets.ts and never sent to the browser. */
+export const userSettings = pgTable("user_settings", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  aiProvider: aiProvider("ai_provider"),
+  /** UI preset the provider settings came from (ollama, openai, openrouter, groq, custom). */
+  aiPreset: text("ai_preset"),
+  aiBaseUrl: text("ai_base_url"),
+  aiModel: text("ai_model"),
+  aiApiKeyEnc: text("ai_api_key_enc"),
+  /** OpenAI-compatible reasoning_effort to send, or null to leave it to the provider. */
+  aiReasoningEffort: text("ai_reasoning_effort"),
+  rapidApiKeyEnc: text("rapid_api_key_enc"),
+  ...timestamps,
+});
 
 /* -------------------------------------------------------------------------- */
 /* Relations                                                                  */

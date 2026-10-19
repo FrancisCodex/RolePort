@@ -1,6 +1,7 @@
 import { Suspense } from "react";
-import { SidebarNav, TabBar } from "@/components/app/app-nav";
+import { SidebarNav, SidebarNavFallback, TabBar, TabBarFallback } from "@/components/app/app-nav";
 import { UserChip, UserChipSkeleton } from "@/components/app/user-chip";
+import { SettingsLink } from "@/components/app/settings-link";
 import { Logo } from "@/components/brand/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -13,7 +14,9 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
           <ThemeToggle />
         </div>
         <div className="mt-8 flex-1">
-          <SidebarNav />
+          <Suspense fallback={<SidebarNavFallback />}>
+            <SidebarNav />
+          </Suspense>
         </div>
         <Suspense fallback={<UserChipSkeleton />}>
           <UserChip />
@@ -23,12 +26,17 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-bg/80 px-4 backdrop-blur-xl lg:hidden">
           <Logo href="/home" className="text-lg" />
-          <ThemeToggle />
+          <div className="flex items-center">
+            <SettingsLink />
+            <ThemeToggle />
+          </div>
         </header>
         <main className="mx-auto w-full max-w-5xl flex-1 px-4 pt-6 pb-28 sm:px-8 lg:pt-10 lg:pb-12">{children}</main>
       </div>
 
-      <TabBar />
+      <Suspense fallback={<TabBarFallback />}>
+        <TabBar />
+      </Suspense>
     </div>
   );
 }

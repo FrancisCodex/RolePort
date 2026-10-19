@@ -9,6 +9,12 @@ const AUTH_PAGES = ["/sign-in", "/sign-up"];
  */
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
+
+  // Local mode has no accounts: skip sign-in entirely.
+  if (process.env.HIREME_LOCAL_MODE === "true") {
+    return AUTH_PAGES.includes(pathname) ? NextResponse.redirect(new URL("/home", request.url)) : NextResponse.next();
+  }
+
   const hasSession = Boolean(getSessionCookie(request));
 
   if (AUTH_PAGES.includes(pathname)) {
@@ -25,5 +31,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/home/:path*", "/jobs/:path*", "/pipeline/:path*", "/coach/:path*", "/profile/:path*", "/sign-in", "/sign-up"],
+  matcher: ["/home/:path*", "/jobs/:path*", "/pipeline/:path*", "/coach/:path*", "/profile/:path*", "/settings/:path*", "/sign-in", "/sign-up"],
 };
