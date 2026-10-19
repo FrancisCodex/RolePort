@@ -8,6 +8,11 @@ import type { JobSearchParams, NormalizedJob, SourceContext, SourceStatus } from
 /** Order matters: when two sources carry the same posting, the earlier one wins. */
 export const JOB_SOURCES = [jsearchSource, freehireSource, jobicySource];
 
+/** The credit line a source's terms require, for job pages. */
+export function sourceCredit(id: string): { name: string; url: string } | null {
+  return JOB_SOURCES.find((s) => s.id === id)?.attribution ?? null;
+}
+
 export type KeyedJob = NormalizedJob & { jobKey: string };
 
 export async function searchAllSources(

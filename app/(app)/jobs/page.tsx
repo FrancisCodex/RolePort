@@ -7,14 +7,13 @@ import { EmptyState } from "@/components/app/empty-state";
 import { PageHeader } from "@/components/app/page-header";
 import { AnalyzePanel, AnalyzeProvider } from "@/components/jobs/analyze-jobs";
 import { JobCard } from "@/components/jobs/job-card";
-import { JobDetailOutlet } from "@/components/jobs/job-detail-outlet";
-import { JobDetailView } from "@/components/jobs/job-detail";
-import { JobPanel } from "@/components/jobs/job-panel";
+import { JobBrowser } from "@/components/jobs/job-browser";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/fields";
 import { isAiConfigured } from "@/lib/ai/config";
 import { searchJobs } from "@/lib/jobs/data";
 import { MAX_PER_RUN } from "@/lib/jobs/fit";
+import { sourceCredit } from "@/lib/jobs/search";
 import type { JobSearchParams, WorkSetup } from "@/lib/jobs/types";
 import { PH_LOCATIONS } from "@/lib/ph-locations";
 import { getMyProfile } from "@/lib/profile/data";
@@ -144,6 +143,12 @@ async function JobSearch({ searchParams }: { searchParams: PageProps<"/jobs">["s
 
 async function Results({ params, sort }: { params: JobSearchParams; sort: "match" | "date" }) {
   const [{ jobs, statuses, hasSkills }, aiEnabled] = await Promise.all([searchJobs(params, sort), isAiConfigured()]);
+  const sources = Object.fromEntries(
+    [...new Set(jobs.map((j) => j.source))].flatMap((id) => {
+      const credit = sourceCredit(id);
+      return credit ? [[id, credit] as const] : [];
+    }),
+  );
   // "Top N" analyzes the best-ranked results that don't have an AI score yet.
   const topIds = jobs
     .filter((j) => !j.fit)
@@ -195,21 +200,12 @@ async function Results({ params, sort }: { params: JobSearchParams; sort: "match
         {jobs.length === 0 ? (
           <EmptyState icon={SearchX} title="No jobs found" body="Try a broader title, another location, or a longer date range." />
         ) : (
-          // Split view on wide screens: the list, and the open job (the first result until one is picked).
-          <div data-wide className="xl:grid xl:grid-cols-[minmax(0,23rem)_minmax(0,1fr)] xl:items-start xl:gap-5">
-            <div className="flex flex-col gap-3">
-              {jobs.map((job, i) => (
-                <JobCard key={job.id} job={job} defaultActive={i === 0} />
-              ))}
-            </div>
-            <JobDetailOutlet
-              fallback={
-                <JobPanel jobId={jobs[0].id} closable={false} desktopOnly>
-                  <JobDetailView job={jobs[0]} aiEnabled={aiEnabled} variant="panel" />
-                </JobPanel>
-              }
-            />
-          </div>
+          // Split view: the results, and the selected job beside them (a drawer on small screens).
+          <JobBrowser jobs={jobs} aiEnabled={aiEnabled} sources={sources}>
+            {jobs.map((job) => (
+              <JobCard key={job.id} job={job} />
+            ))}
+          </JobBrowser>
         )}
       </div>
     </AnalyzeProvider>

@@ -2,10 +2,11 @@
 
 import { Check, ChevronRight, Clock, ListChecks, Loader2, Sparkles, Square, X } from "lucide-react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { createContext, use, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { evaluateJob } from "@/app/(app)/jobs/actions";
 import { AiScore } from "@/components/jobs/ai-score";
+import { useJobBrowser } from "@/components/jobs/job-browser";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { MatchRing } from "@/components/ui/match-ring";
@@ -277,22 +278,30 @@ function ResultRow({ id, title, state }: { id: string; title: string; state: Liv
 /* -------------------------------------------------------------------------- */
 
 /**
- * Wraps a job card: highlights the job open in the details panel, and in "choose jobs"
- * mode a tap selects the job instead of opening it.
+ * Wraps a job card: a click shows the job in the details panel beside the list (Ctrl/Cmd or
+ * middle click still opens the full page in a new tab), and in "choose jobs" mode a click
+ * selects the job for analysis instead.
  */
-export function SelectableJob({ id, defaultActive, children }: { id: string; defaultActive: boolean; children: ReactNode }) {
+export function SelectableJob({ id, children }: { id: string; children: ReactNode }) {
   const { phase, selected, toggle } = use(AnalyzeContext);
-  const pathname = usePathname();
-  const active = pathname === `/jobs/${id}` || (pathname === "/jobs" && defaultActive);
+  const browser = useJobBrowser();
+  const active = browser?.selectedId === id;
   const selecting = phase === "selecting";
   const isSelected = selected.includes(id);
   const full = !isSelected && selected.length >= MAX_PER_RUN;
 
   function onClickCapture(e: MouseEvent) {
-    if (!selecting) return;
+    if (selecting) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (!full) toggle(id);
+      return;
+    }
+    // Leave the card's own buttons (save) and new-tab clicks alone.
+    const newTab = e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey;
+    if (!browser || newTab || (e.target as Element).closest("button")) return;
     e.preventDefault();
-    e.stopPropagation();
-    if (!full) toggle(id);
+    browser.select(id);
   }
 
   return (

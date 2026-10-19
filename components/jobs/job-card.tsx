@@ -20,8 +20,7 @@ export function CompanyLogo({ src, company, size = "size-12" }: { src: string | 
   );
 }
 
-/** `defaultActive`: shown in the details panel until another job is opened (the first result). */
-export function JobCard({ job, defaultActive = false }: { job: JobListItem; defaultActive?: boolean }) {
+export function JobCard({ job }: { job: JobListItem }) {
   const salary = formatSalary(job.salaryMin, job.salaryMax, job.salaryCurrency, job.salaryPeriod);
   const posted = timeAgo(job.postedAt);
   const fit = job.fit;
@@ -30,10 +29,9 @@ export function JobCard({ job, defaultActive = false }: { job: JobListItem; defa
   const closesIn = fit ? daysUntil(fit.deadline) : null;
 
   return (
-    <SelectableJob id={job.id} defaultActive={defaultActive}>
+    <SelectableJob id={job.id}>
       <Link
         href={`/jobs/${job.id}`}
-        scroll={false}
         className="group flex gap-4 rounded-3xl border border-border bg-surface p-4 shadow-[var(--shadow-soft)] transition-[transform,box-shadow] duration-200 ease-[var(--ease-spring)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)] sm:p-5"
       >
         <CompanyLogo src={job.companyLogo} company={job.company} />

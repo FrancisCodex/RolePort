@@ -9,26 +9,29 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MatchRing } from "@/components/ui/match-ring";
 import type { JobListItem } from "@/lib/jobs/data";
 import { EMPLOYMENT_LABEL, formatSalary, timeAgo, WORK_SETUP_LABEL } from "@/lib/jobs/format";
-import { JOB_SOURCES } from "@/lib/jobs/search";
 import { cn } from "@/lib/utils";
 
 /**
  * Everything about one job: the full page lays it out in two columns, the panel
  * beside the results stacks it in one, with the fit evaluation near the top.
  */
+export type SourceCredit = { name: string; url: string };
+
 export function JobDetailView({
   job,
   aiEnabled,
   variant = "page",
+  source,
 }: {
   job: JobListItem;
   aiEnabled: boolean;
   variant?: "page" | "panel";
+  /** Credit line for the job source. Passed in (not looked up) so this also renders in the browser. */
+  source: SourceCredit | null;
 }) {
   const panel = variant === "panel";
   const salary = formatSalary(job.salaryMin, job.salaryMax, job.salaryCurrency, job.salaryPeriod);
   const posted = timeAgo(job.postedAt);
-  const source = JOB_SOURCES.find((s) => s.id === job.source);
   const required = job.extras.requirements.filter((r) => r.priority === "required");
   const preferred = job.extras.requirements.filter((r) => r.priority === "preferred");
 
@@ -121,8 +124,8 @@ export function JobDetailView({
         {source && (
           <p className="text-center text-xs text-subtle">
             Listing via{" "}
-            <a href={source.attribution.url} target="_blank" rel="noopener noreferrer" className="font-medium underline">
-              {source.attribution.name}
+            <a href={source.url} target="_blank" rel="noopener noreferrer" className="font-medium underline">
+              {source.name}
             </a>
           </p>
         )}
