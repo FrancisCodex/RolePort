@@ -5,12 +5,16 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { EmptyState } from "@/components/app/empty-state";
 import { PageHeader } from "@/components/app/page-header";
-import { EvaluateTopButton } from "@/components/jobs/evaluate-top-button";
+import { AnalyzePanel, AnalyzeProvider } from "@/components/jobs/analyze-jobs";
 import { JobCard } from "@/components/jobs/job-card";
+import { JobDetailOutlet } from "@/components/jobs/job-detail-outlet";
+import { JobDetailView } from "@/components/jobs/job-detail";
+import { JobPanel } from "@/components/jobs/job-panel";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/fields";
 import { isAiConfigured } from "@/lib/ai/config";
 import { searchJobs } from "@/lib/jobs/data";
+import { MAX_PER_RUN } from "@/lib/jobs/fit";
 import type { JobSearchParams, WorkSetup } from "@/lib/jobs/types";
 import { PH_LOCATIONS } from "@/lib/ph-locations";
 import { getMyProfile } from "@/lib/profile/data";
@@ -19,9 +23,6 @@ import { cn } from "@/lib/utils";
 export const metadata: Metadata = { title: "Jobs" };
 
 const SETUPS: WorkSetup[] = ["onsite", "hybrid", "remote"];
-
-/** "Evaluate top N" cap: evaluations run one at a time, and local models need ~5-60s each. */
-const BATCH_LIMIT = 10;
 
 function one(value: string | string[] | undefined) {
   return (Array.isArray(value) ? value[0] : value)?.trim() || undefined;
@@ -143,60 +144,75 @@ async function JobSearch({ searchParams }: { searchParams: PageProps<"/jobs">["s
 
 async function Results({ params, sort }: { params: JobSearchParams; sort: "match" | "date" }) {
   const [{ jobs, statuses, hasSkills }, aiEnabled] = await Promise.all([searchJobs(params, sort), isAiConfigured()]);
-  const toEvaluate = jobs
+  // "Top N" analyzes the best-ranked results that don't have an AI score yet.
+  const topIds = jobs
     .filter((j) => !j.fit)
-    .slice(0, BATCH_LIMIT)
-    .map((j) => ({ id: j.id, title: j.title }));
+    .slice(0, MAX_PER_RUN)
+    .map((j) => j.id);
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-2 text-xs">
-        <span className="font-semibold text-fg">
-          {jobs.length} job{jobs.length === 1 ? "" : "s"}
-        </span>
-        <span className="text-subtle">from</span>
-        {statuses.map((s) => (
-          <span
-            key={s.id}
-            title={s.note}
-            className={cn(
-              "rounded-full px-2.5 py-1 font-medium",
-              s.failed ? "bg-danger-soft text-danger" : s.note ? "bg-surface-2 text-subtle" : "bg-surface-2 text-muted",
-            )}
-          >
-            {s.label} {s.note ? (s.failed ? "· unavailable" : "· off") : `· ${s.count}`}
+    <AnalyzeProvider>
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="font-semibold text-fg">
+            {jobs.length} job{jobs.length === 1 ? "" : "s"}
           </span>
-        ))}
-      </div>
-
-      {!hasSkills && (
-        <Link
-          href="/profile"
-          className="flex items-center gap-3 rounded-2xl bg-brand-soft px-4 py-3 text-sm font-medium text-brand-ink hover:opacity-90"
-        >
-          <Sparkles className="size-4 shrink-0" />
-          Add your skills to your profile to see a match score on every job.
-        </Link>
-      )}
-
-      {aiEnabled && toEvaluate.length > 0 && <EvaluateTopButton jobs={toEvaluate} />}
-
-      {statuses.length > 0 && statuses.every((s) => s.failed || s.note) && (
-        <p className="flex items-center gap-2 rounded-2xl bg-danger-soft px-4 py-3 text-sm font-medium text-danger">
-          <AlertCircle className="size-4" /> No job source could be reached. Check your connection and try again.
-        </p>
-      )}
-
-      {jobs.length === 0 ? (
-        <EmptyState icon={SearchX} title="No jobs found" body="Try a broader title, another location, or a longer date range." />
-      ) : (
-        <div className="flex flex-col gap-3">
-          {jobs.map((job) => (
-            <JobCard key={job.id} job={job} />
+          <span className="text-subtle">from</span>
+          {statuses.map((s) => (
+            <span
+              key={s.id}
+              title={s.note}
+              className={cn(
+                "rounded-full px-2.5 py-1 font-medium",
+                s.failed ? "bg-danger-soft text-danger" : s.note ? "bg-surface-2 text-subtle" : "bg-surface-2 text-muted",
+              )}
+            >
+              {s.label} {s.note ? (s.failed ? "· unavailable" : "· off") : `· ${s.count}`}
+            </span>
           ))}
         </div>
-      )}
-    </div>
+
+        {!hasSkills && (
+          <Link
+            href="/profile"
+            className="flex items-center gap-3 rounded-2xl bg-brand-soft px-4 py-3 text-sm font-medium text-brand-ink hover:opacity-90"
+          >
+            <Sparkles className="size-4 shrink-0" />
+            Add your skills to your profile to see a match score on every job.
+          </Link>
+        )}
+
+        {jobs.length > 0 && (
+          <AnalyzePanel jobs={jobs.map((j) => ({ id: j.id, title: j.title }))} topIds={topIds} aiEnabled={aiEnabled} />
+        )}
+
+        {statuses.length > 0 && statuses.every((s) => s.failed || s.note) && (
+          <p className="flex items-center gap-2 rounded-2xl bg-danger-soft px-4 py-3 text-sm font-medium text-danger">
+            <AlertCircle className="size-4" /> No job source could be reached. Check your connection and try again.
+          </p>
+        )}
+
+        {jobs.length === 0 ? (
+          <EmptyState icon={SearchX} title="No jobs found" body="Try a broader title, another location, or a longer date range." />
+        ) : (
+          // Split view on wide screens: the list, and the open job (the first result until one is picked).
+          <div data-wide className="xl:grid xl:grid-cols-[minmax(0,23rem)_minmax(0,1fr)] xl:items-start xl:gap-5">
+            <div className="flex flex-col gap-3">
+              {jobs.map((job, i) => (
+                <JobCard key={job.id} job={job} defaultActive={i === 0} />
+              ))}
+            </div>
+            <JobDetailOutlet
+              fallback={
+                <JobPanel jobId={jobs[0].id} closable={false} desktopOnly>
+                  <JobDetailView job={jobs[0]} aiEnabled={aiEnabled} variant="panel" />
+                </JobPanel>
+              }
+            />
+          </div>
+        )}
+      </div>
+    </AnalyzeProvider>
   );
 }
 

@@ -31,7 +31,8 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
             <ThemeToggle />
           </div>
         </header>
-        <main className="mx-auto w-full max-w-5xl flex-1 px-4 pt-6 pb-28 sm:px-8 lg:pt-10 lg:pb-12">{children}</main>
+        {/* Pages that need room (the jobs split view) mark themselves with data-wide. */}
+        <main className="mx-auto w-full max-w-5xl flex-1 has-[[data-wide]]:max-w-7xl px-4 pt-6 pb-28 sm:px-8 lg:pt-10 lg:pb-12">{children}</main>
       </div>
 
       <Suspense fallback={<TabBarFallback />}>

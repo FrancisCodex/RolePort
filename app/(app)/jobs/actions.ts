@@ -5,6 +5,7 @@ import { refresh } from "next/cache";
 import { AiUnavailableError } from "@/lib/ai/client";
 import { getDb, schema } from "@/lib/db";
 import { runFitEvaluation } from "@/lib/jobs/evaluation";
+import { vetoReason } from "@/lib/jobs/fit";
 import { getCurrentUser } from "@/lib/session";
 
 type Status = (typeof schema.applicationStatus.enumValues)[number];
@@ -58,18 +59,18 @@ export async function setApplicationStatus(applicationId: string, status: Status
   refresh();
 }
 
-export type EvaluateResult = { ok: true; score: number | null } | { ok: false; error: string; needsSetup?: boolean };
+export type EvaluateResult = { ok: true; score: number | null; veto: string | null } | { ok: false; error: string; needsSetup?: boolean };
 
 /**
  * Run the AI fit evaluation for one job and save it. Local models can take a minute.
- * The batch "Evaluate top N" passes refreshPage=false and refreshes once at the end,
+ * The batch analyzer on the jobs list passes refreshPage=false and refreshes once at the end,
  * so the job search isn't re-run after every job.
  */
 export async function evaluateJob(jobId: string, refreshPage = true): Promise<EvaluateResult> {
   try {
     const match = await runFitEvaluation(jobId);
     if (refreshPage) refresh();
-    return { ok: true, score: match.overallScore };
+    return { ok: true, score: match.overallScore, veto: vetoReason(match) };
   } catch (error) {
     if (error instanceof AiUnavailableError) return { ok: false, error: error.message, needsSetup: true };
     console.error("[evaluate] failed", error);

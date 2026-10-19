@@ -7,6 +7,9 @@ export type GateVerdict = "pass" | "flag" | "fail" | "unverified";
 
 export type FitScores = { skills: number; experience: number; culture: number; career: number };
 
+/** Jobs per AI analysis run on the jobs list: they run one at a time, and local models take ~30-60s each. */
+export const MAX_PER_RUN = 10;
+
 /** Location is pass/fail, not weighted. */
 export const FIT_WEIGHTS: FitScores = { skills: 0.3, experience: 0.25, culture: 0.15, career: 0.3 };
 

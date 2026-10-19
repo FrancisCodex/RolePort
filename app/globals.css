@@ -185,3 +185,27 @@
 .job-description b {
   font-weight: 600;
 }
+
+/* A fresh score popping into place on a job card. */
+@keyframes pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* A job sliding into the details panel beside the results. */
+@keyframes pane-in {
+  0% {
+    transform: translateY(6px);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
