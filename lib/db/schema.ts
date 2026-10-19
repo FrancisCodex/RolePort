@@ -1,0 +1,353 @@
+import { relations, sql } from "drizzle-orm";
+import {
+  boolean,
+  date,
+  index,
+  integer,
+  jsonb,
+  pgEnum,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+} from "drizzle-orm/pg-core";
+
+const id = () =>
+  text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID());
+
+const timestamps = {
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .$onUpdate(() => new Date())
+    .notNull(),
+};
+
+/* -------------------------------------------------------------------------- */
+/* Auth (Better Auth core tables — field names must match its schema)         */
+/* -------------------------------------------------------------------------- */
+
+export const user = pgTable("user", {
+  id: text("id").primaryKey(),
+  name: text("name").notNull(),
+  email: text("email").notNull().unique(),
+  emailVerified: boolean("email_verified").default(false).notNull(),
+  image: text("image"),
+  ...timestamps,
+});
+
+export const session = pgTable(
+  "session",
+  {
+    id: text("id").primaryKey(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    token: text("token").notNull().unique(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    ...timestamps,
+  },
+  (t) => [index("session_user_id_idx").on(t.userId)],
+);
+
+export const account = pgTable(
+  "account",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    accessToken: text("access_token"),
+    refreshToken: text("refresh_token"),
+    idToken: text("id_token"),
+    accessTokenExpiresAt: timestamp("access_token_expires_at", { withTimezone: true }),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at", { withTimezone: true }),
+    scope: text("scope"),
+    password: text("password"),
+    ...timestamps,
+  },
+  (t) => [index("account_user_id_idx").on(t.userId)],
+);
+
+export const verification = pgTable(
+  "verification",
+  {
+    id: text("id").primaryKey(),
+    identifier: text("identifier").notNull(),
+    value: text("value").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    ...timestamps,
+  },
+  (t) => [index("verification_identifier_idx").on(t.identifier)],
+);
+
+/* -------------------------------------------------------------------------- */
+/* Enums                                                                      */
+/* -------------------------------------------------------------------------- */
+
+export const workSetup = pgEnum("work_setup", ["onsite", "hybrid", "remote"]);
+
+export const employmentType = pgEnum("employment_type", [
+  "full_time",
+  "part_time",
+  "contract",
+  "freelance",
+  "internship",
+]);
+
+export const salaryPeriod = pgEnum("salary_period", ["hour", "day", "month", "year"]);
+
+/** Gate verdicts from the evaluation framework: FAIL vetoes the job, FLAG needs the user's judgement. */
+export const gateVerdict = pgEnum("gate_verdict", ["pass", "flag", "fail", "unverified"]);
+
+export const applicationStatus = pgEnum("application_status", [
+  "saved",
+  "applied",
+  "screening",
+  "interview",
+  "offer",
+  "hired",
+  "rejected",
+  "withdrawn",
+  "offer_declined",
+  "ghosted",
+]);
+
+export const documentKind = pgEnum("document_kind", ["uploaded_cv", "cv", "cover_letter", "follow_up"]);
+
+/* -------------------------------------------------------------------------- */
+/* Profile — the structured version of the reference repo's profile files     */
+/* -------------------------------------------------------------------------- */
+
+export type Skill = { name: string; level: "primary" | "secondary" | "learning"; years?: number };
+export type Experience = {
+  company: string;
+  role: string;
+  start: string;
+  end?: string;
+  location?: string;
+  highlights: string[];
+};
+export type Education = { school: string; degree: string; field?: string; year?: string };
+export type Language = { name: string; level: string };
+
+export const profile = pgTable("profile", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  headline: text("headline"),
+  summary: text("summary"),
+  /** e.g. "Quezon City", "Cebu City" */
+  city: text("city"),
+  /** e.g. "NCR", "Central Visayas" */
+  region: text("region"),
+  yearsExperience: integer("years_experience"),
+  desiredRoles: text("desired_roles").array().default(sql`'{}'::text[]`).notNull(),
+  workSetups: workSetup("work_setups").array().default(sql`'{}'::work_setup[]`).notNull(),
+  skills: jsonb("skills").$type<Skill[]>().default([]).notNull(),
+  experience: jsonb("experience").$type<Experience[]>().default([]).notNull(),
+  education: jsonb("education").$type<Education[]>().default([]).notNull(),
+  languages: jsonb("languages").$type<Language[]>().default([]).notNull(),
+  careerGoals: text("career_goals").array().default(sql`'{}'::text[]`).notNull(),
+  dealBreakers: text("deal_breakers").array().default(sql`'{}'::text[]`).notNull(),
+  /** Monthly expectation in PHP, the norm for PH postings. */
+  salaryMinMonthly: integer("salary_min_monthly"),
+  salaryMaxMonthly: integer("salary_max_monthly"),
+  /** Writing-style notes used when drafting cover letters. */
+  writingStyle: text("writing_style"),
+  onboardingStep: integer("onboarding_step").default(0).notNull(),
+  onboardedAt: timestamp("onboarded_at", { withTimezone: true }),
+  currentStreak: integer("current_streak").default(0).notNull(),
+  longestStreak: integer("longest_streak").default(0).notNull(),
+  lastActiveOn: date("last_active_on"),
+  ...timestamps,
+});
+
+/* -------------------------------------------------------------------------- */
+/* Jobs                                                                       */
+/* -------------------------------------------------------------------------- */
+
+export const job = pgTable(
+  "job",
+  {
+    id: id(),
+    /** Dedup key across sources (normalized company + title + location). */
+    jobKey: text("job_key").notNull().unique(),
+    source: text("source").notNull(),
+    sourceId: text("source_id"),
+    url: text("url").notNull(),
+    title: text("title").notNull(),
+    company: text("company").notNull(),
+    companyLogo: text("company_logo"),
+    location: text("location"),
+    city: text("city"),
+    region: text("region"),
+    workSetup: workSetup("work_setup"),
+    employmentType: employmentType("employment_type"),
+    salaryMin: integer("salary_min"),
+    salaryMax: integer("salary_max"),
+    salaryCurrency: text("salary_currency").default("PHP").notNull(),
+    salaryPeriod: salaryPeriod("salary_period"),
+    description: text("description"),
+    skills: text("skills").array().default(sql`'{}'::text[]`).notNull(),
+    postedAt: timestamp("posted_at", { withTimezone: true }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    raw: jsonb("raw"),
+    fetchedAt: timestamp("fetched_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex("job_source_source_id_idx").on(t.source, t.sourceId),
+    index("job_posted_at_idx").on(t.postedAt),
+  ],
+);
+
+/** Per-user fit evaluation (port of 04-job-evaluation.md: gates, then five dimensions). */
+export const jobMatch = pgTable(
+  "job_match",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    jobId: text("job_id")
+      .notNull()
+      .references(() => job.id, { onDelete: "cascade" }),
+    eligibilityGate: gateVerdict("eligibility_gate").notNull(),
+    languageGate: gateVerdict("language_gate").notNull(),
+    locationGate: gateVerdict("location_gate").notNull(),
+    gateNote: text("gate_note"),
+    skillsScore: integer("skills_score"),
+    experienceScore: integer("experience_score"),
+    cultureScore: integer("culture_score"),
+    careerScore: integer("career_score"),
+    overallScore: integer("overall_score"),
+    strengths: jsonb("strengths").$type<string[]>().default([]).notNull(),
+    gaps: jsonb("gaps").$type<string[]>().default([]).notNull(),
+    summary: text("summary"),
+    model: text("model"),
+    scoredAt: timestamp("scored_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    uniqueIndex("job_match_user_job_idx").on(t.userId, t.jobId),
+    index("job_match_user_score_idx").on(t.userId, t.overallScore),
+  ],
+);
+
+/* -------------------------------------------------------------------------- */
+/* Pipeline (replaces job_search_tracker.csv + outcome.md)                    */
+/* -------------------------------------------------------------------------- */
+
+export const application = pgTable(
+  "application",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    jobId: text("job_id").references(() => job.id, { onDelete: "set null" }),
+    company: text("company").notNull(),
+    role: text("role").notNull(),
+    status: applicationStatus("status").default("saved").notNull(),
+    channel: text("channel"),
+    appliedAt: timestamp("applied_at", { withTimezone: true }),
+    lastContactAt: timestamp("last_contact_at", { withTimezone: true }),
+    nextFollowUpAt: timestamp("next_follow_up_at", { withTimezone: true }),
+    followUpCount: integer("follow_up_count").default(0).notNull(),
+    notes: text("notes"),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("application_user_job_idx").on(t.userId, t.jobId),
+    index("application_user_status_idx").on(t.userId, t.status),
+  ],
+);
+
+export const applicationEvent = pgTable(
+  "application_event",
+  {
+    id: id(),
+    applicationId: text("application_id")
+      .notNull()
+      .references(() => application.id, { onDelete: "cascade" }),
+    status: applicationStatus("status").notNull(),
+    note: text("note"),
+    occurredAt: timestamp("occurred_at", { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [index("application_event_application_idx").on(t.applicationId)],
+);
+
+export const document = pgTable(
+  "document",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    applicationId: text("application_id").references(() => application.id, { onDelete: "cascade" }),
+    kind: documentKind("kind").notNull(),
+    title: text("title").notNull(),
+    /** Structured content the PDF is rendered from. */
+    content: jsonb("content"),
+    fileUrl: text("file_url"),
+    version: integer("version").default(1).notNull(),
+    ...timestamps,
+  },
+  (t) => [index("document_user_idx").on(t.userId)],
+);
+
+/* -------------------------------------------------------------------------- */
+/* Relations                                                                  */
+/* -------------------------------------------------------------------------- */
+
+export const userRelations = relations(user, ({ one, many }) => ({
+  profile: one(profile),
+  sessions: many(session),
+  accounts: many(account),
+  matches: many(jobMatch),
+  applications: many(application),
+  documents: many(document),
+}));
+
+export const jobRelations = relations(job, ({ many }) => ({
+  matches: many(jobMatch),
+  applications: many(application),
+}));
+
+export const jobMatchRelations = relations(jobMatch, ({ one }) => ({
+  user: one(user, { fields: [jobMatch.userId], references: [user.id] }),
+  job: one(job, { fields: [jobMatch.jobId], references: [job.id] }),
+}));
+
+export const applicationRelations = relations(application, ({ one, many }) => ({
+  user: one(user, { fields: [application.userId], references: [user.id] }),
+  job: one(job, { fields: [application.jobId], references: [job.id] }),
+  events: many(applicationEvent),
+  documents: many(document),
+}));
+
+export const applicationEventRelations = relations(applicationEvent, ({ one }) => ({
+  application: one(application, { fields: [applicationEvent.applicationId], references: [application.id] }),
+}));
+
+export const documentRelations = relations(document, ({ one }) => ({
+  user: one(user, { fields: [document.userId], references: [user.id] }),
+  application: one(application, { fields: [document.applicationId], references: [application.id] }),
+}));
+
+export const sessionRelations = relations(session, ({ one }) => ({
+  user: one(user, { fields: [session.userId], references: [user.id] }),
+}));
+
+export const accountRelations = relations(account, ({ one }) => ({
+  user: one(user, { fields: [account.userId], references: [user.id] }),
+}));
+
+export const profileRelations = relations(profile, ({ one }) => ({
+  user: one(user, { fields: [profile.userId], references: [user.id] }),
+}));
