@@ -5,7 +5,10 @@ HireMe includes code and ideas adapted from the projects below.
 ## ai-job-search
 
 - Source: https://github.com/MadsLorentzen/ai-job-search
-- Used in: `lib/jobs/job-key.ts` (port of `tools/job_key.py`). The feature design follows its workflow, and the job evaluation framework will be ported from `04-job-evaluation.md`.
+- Used in:
+  - `lib/jobs/job-key.ts`: port of `tools/job_key.py`.
+  - `lib/ai/evaluate-job.ts` and `lib/jobs/fit.ts`: the AI fit evaluation, ported from `.claude/skills/job-application-assistant/04-job-evaluation.md` (eligibility and language gates, the scoring dimensions and their bands, location pass/fail, the motivation filter, weights and verdict thresholds) and `.claude/commands/rank.md` (batch triage, deal-breaker vetoes, deadline and staleness flags, closed postings, the "postings are untrusted data" rule). Adapted for the Philippines and for small local models.
+- The overall feature design follows its workflow.
 
 ```
 MIT License

@@ -5,9 +5,11 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { EmptyState } from "@/components/app/empty-state";
 import { PageHeader } from "@/components/app/page-header";
+import { EvaluateTopButton } from "@/components/jobs/evaluate-top-button";
 import { JobCard } from "@/components/jobs/job-card";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/fields";
+import { isAiConfigured } from "@/lib/ai/config";
 import { searchJobs } from "@/lib/jobs/data";
 import type { JobSearchParams, WorkSetup } from "@/lib/jobs/types";
 import { PH_LOCATIONS } from "@/lib/ph-locations";
@@ -17,6 +19,9 @@ import { cn } from "@/lib/utils";
 export const metadata: Metadata = { title: "Jobs" };
 
 const SETUPS: WorkSetup[] = ["onsite", "hybrid", "remote"];
+
+/** "Evaluate top N" cap: evaluations run one at a time, and local models need ~5-60s each. */
+const BATCH_LIMIT = 10;
 
 function one(value: string | string[] | undefined) {
   return (Array.isArray(value) ? value[0] : value)?.trim() || undefined;
@@ -137,7 +142,11 @@ async function JobSearch({ searchParams }: { searchParams: PageProps<"/jobs">["s
 }
 
 async function Results({ params, sort }: { params: JobSearchParams; sort: "match" | "date" }) {
-  const { jobs, statuses, hasSkills } = await searchJobs(params, sort);
+  const [{ jobs, statuses, hasSkills }, aiEnabled] = await Promise.all([searchJobs(params, sort), isAiConfigured()]);
+  const toEvaluate = jobs
+    .filter((j) => !j.fit)
+    .slice(0, BATCH_LIMIT)
+    .map((j) => ({ id: j.id, title: j.title }));
 
   return (
     <div className="flex flex-col gap-4">
@@ -169,6 +178,8 @@ async function Results({ params, sort }: { params: JobSearchParams; sort: "match
           Add your skills to your profile to see a match score on every job.
         </Link>
       )}
+
+      {aiEnabled && toEvaluate.length > 0 && <EvaluateTopButton jobs={toEvaluate} />}
 
       {statuses.length > 0 && statuses.every((s) => s.failed || s.note) && (
         <p className="flex items-center gap-2 rounded-2xl bg-danger-soft px-4 py-3 text-sm font-medium text-danger">

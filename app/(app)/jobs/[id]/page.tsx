@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { FitEvaluation } from "@/components/jobs/fit-evaluation";
 import { CompanyLogo } from "@/components/jobs/job-card";
 import { SaveButton } from "@/components/jobs/save-button";
 import { Badge } from "@/components/ui/badge";
@@ -82,6 +83,8 @@ async function JobDetail({ params }: { params: PageProps<"/jobs/[id]">["params"]
           </CardContent>
         </Card>
 
+        <FitEvaluation jobId={job.id} fit={job.fit} aiEnabled={aiEnabled} postedAt={job.postedAt} />
+
         {job.extras.summary && (
           <Card>
             <CardContent>
@@ -149,13 +152,13 @@ async function JobDetail({ params }: { params: PageProps<"/jobs/[id]">["params"]
             <div className="flex items-start gap-2 rounded-2xl bg-surface-2 px-4 py-3 text-xs text-muted">
               <Sparkles className="mt-0.5 size-3.5 shrink-0 text-brand" />
               {aiEnabled ? (
-                "Full AI fit evaluation and a tailored CV are coming in the next update."
+                "A free estimate from skill overlap. The AI fit evaluation also weighs gates, experience and career fit. A tailored CV is coming next."
               ) : (
                 <span>
                   <Link href="/settings" className="font-semibold text-brand hover:underline">
                     Choose an AI provider
                   </Link>{" "}
-                  (Claude, OpenAI or a free local model) to get a full fit evaluation and a tailored CV &amp; cover letter.
+                  (Claude, OpenAI or a free local model) to get a full fit evaluation.
                 </span>
               )}
             </div>

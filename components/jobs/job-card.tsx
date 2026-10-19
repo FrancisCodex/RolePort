@@ -1,8 +1,9 @@
-import { Briefcase, MapPin } from "lucide-react";
+import { Briefcase, Flame, MapPin, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { MatchRing } from "@/components/ui/match-ring";
 import type { JobListItem } from "@/lib/jobs/data";
+import { daysUntil, vetoReason } from "@/lib/jobs/fit";
 import { formatSalary, timeAgo, WORK_SETUP_LABEL } from "@/lib/jobs/format";
 import { SaveButton } from "./save-button";
 
@@ -20,6 +21,10 @@ export function CompanyLogo({ src, company, size = "size-12" }: { src: string | 
 export function JobCard({ job }: { job: JobListItem }) {
   const salary = formatSalary(job.salaryMin, job.salaryMax, job.salaryCurrency, job.salaryPeriod);
   const posted = timeAgo(job.postedAt);
+  const fit = job.fit;
+  const veto = fit ? vetoReason(fit) : null;
+  const flagged = fit && !veto && [fit.eligibilityGate, fit.languageGate, fit.locationGate].some((g) => g === "flag" || g === "unverified");
+  const closesIn = fit ? daysUntil(fit.deadline) : null;
 
   return (
     <Link
@@ -41,10 +46,32 @@ export function JobCard({ job }: { job: JobListItem }) {
           {salary && <Badge tone="success">{salary}</Badge>}
           {posted && <span>{posted}</span>}
           {job.extras.possiblyStale && <Badge tone="warning">May be old</Badge>}
+          {veto && (
+            <Badge tone="danger" title={veto}>
+              Excluded
+            </Badge>
+          )}
+          {flagged && <Badge tone="warning">Needs a check</Badge>}
+          {closesIn !== null && closesIn >= 0 && closesIn <= 7 && (
+            <Badge tone="warning">
+              <Flame /> Closes in {closesIn}d
+            </Badge>
+          )}
         </div>
       </div>
       <div className="flex shrink-0 flex-col items-center justify-between gap-2">
-        {job.match ? <MatchRing score={job.match.score} size={48} /> : <span className="size-12" />}
+        {fit ? (
+          <span className="relative" title={veto ?? "AI fit evaluation"}>
+            <MatchRing score={fit.overallScore ?? 0} size={48} muted={Boolean(veto)} />
+            <span className="absolute -right-1.5 -bottom-1 flex items-center gap-0.5 rounded-full bg-brand px-1.5 py-px text-[10px] font-bold text-brand-fg ring-2 ring-surface">
+              <Sparkles className="size-2.5" /> AI
+            </span>
+          </span>
+        ) : job.match ? (
+          <MatchRing score={job.match.score} size={48} />
+        ) : (
+          <span className="size-12" />
+        )}
         <SaveButton jobId={job.id} saved={job.saved} />
       </div>
     </Link>
