@@ -1,0 +1,18 @@
+import type { Metadata } from "next";
+import { Suspense } from "react";
+import { isGoogleEnabled } from "@/lib/auth";
+import { AuthForm } from "../auth-form";
+
+export const metadata: Metadata = { title: "Create your account" };
+
+export default function SignUpPage() {
+  return (
+    <>
+      <h1 className="font-display text-3xl font-bold tracking-tight">Let&apos;s get you hired</h1>
+      <p className="mt-2 mb-8 text-muted">Free to start. Set up your profile in about 3 minutes.</p>
+      <Suspense>
+        <AuthForm mode="sign-up" googleEnabled={isGoogleEnabled} />
+      </Suspense>
+    </>
+  );
+}
