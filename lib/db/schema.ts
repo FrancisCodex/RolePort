@@ -224,6 +224,11 @@ export const jobMatch = pgTable(
     eligibilityGate: gateVerdict("eligibility_gate").notNull(),
     languageGate: gateVerdict("language_gate").notNull(),
     locationGate: gateVerdict("location_gate").notNull(),
+    /** Each gate's reason, quoting the posting when it isn't a clean pass. */
+    eligibilityNote: text("eligibility_note"),
+    languageNote: text("language_note"),
+    locationNote: text("location_note"),
+    /** A profile deal-breaker the posting hits, quoted. Vetoes the job like a failed gate. */
     gateNote: text("gate_note"),
     skillsScore: integer("skills_score"),
     experienceScore: integer("experience_score"),
@@ -233,6 +238,12 @@ export const jobMatch = pgTable(
     strengths: jsonb("strengths").$type<string[]>().default([]).notNull(),
     gaps: jsonb("gaps").$type<string[]>().default([]).notNull(),
     summary: text("summary"),
+    /** 1-2 sentences: apply, apply with caveats, or skip. */
+    recommendation: text("recommendation"),
+    /** Application deadline stated in the posting. */
+    deadline: date("deadline"),
+    /** The posting says it is closed or no longer accepting applications. */
+    postingClosed: boolean("posting_closed").default(false).notNull(),
     model: text("model"),
     scoredAt: timestamp("scored_at", { withTimezone: true }).defaultNow().notNull(),
   },

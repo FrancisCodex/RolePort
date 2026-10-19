@@ -15,6 +15,13 @@
       "when": 1792398027756,
       "tag": "0001_user_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792399954180,
+      "tag": "0002_job_match_details",
+      "breakpoints": true
     }
   ]
 }

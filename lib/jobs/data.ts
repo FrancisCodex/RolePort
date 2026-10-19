@@ -4,6 +4,8 @@ import { getRapidApiKey } from "@/lib/ai/config";
 import { getDb, schema } from "@/lib/db";
 import { getMyProfile } from "@/lib/profile/data";
 import { getCurrentUser } from "@/lib/session";
+import { getMyFitMatches, type FitMatch } from "./evaluation";
+import { vetoReason } from "./fit";
 import { toPlainText } from "./html";
 import { quickMatch, type QuickMatch } from "./quick-match";
 import { searchAllSources, type KeyedJob } from "./search";
@@ -16,7 +18,14 @@ export type JobExtras = {
 };
 
 export type JobRow = typeof schema.job.$inferSelect;
-export type JobListItem = JobRow & { extras: JobExtras; match: QuickMatch | null; saved: boolean };
+/** `fit` is the saved AI evaluation, when the user has run one; `match` is the free skill-overlap estimate. */
+export type JobListItem = JobRow & { extras: JobExtras; match: QuickMatch | null; fit: FitMatch | null; saved: boolean };
+
+/** Sort key for "Best match": the AI score when there is one (vetoed jobs sink), else the quick match. */
+export function matchSortScore(job: JobListItem): number {
+  if (job.fit) return vetoReason(job.fit) ? -0.5 : (job.fit.overallScore ?? 0);
+  return job.match?.score ?? -1;
+}
 
 const toInsert = (j: KeyedJob) => ({
   jobKey: j.jobKey,
@@ -101,15 +110,22 @@ export async function searchJobs(
     savedJobIds(user.id),
   ]);
   const rows = await storeJobs(jobs);
+  const fits = await getMyFitMatches(rows.map((r) => r.id));
 
   const items: JobListItem[] = rows.map((row) => {
     const extras = extrasOf(row);
     const text = [toPlainText(row.description), extras.requirements.map((r) => r.text).join(" ")].join(" ");
-    return { ...row, extras, saved: saved.has(row.id), match: quickMatch({ title: row.title, skills: row.skills, text }, profile) };
+    return {
+      ...row,
+      extras,
+      saved: saved.has(row.id),
+      match: quickMatch({ title: row.title, skills: row.skills, text }, profile),
+      fit: fits.get(row.id) ?? null,
+    };
   });
 
   if (sort === "match") {
-    items.sort((a, b) => (b.match?.score ?? -1) - (a.match?.score ?? -1));
+    items.sort((a, b) => matchSortScore(b) - matchSortScore(a));
   } else {
     items.sort((a, b) => (b.postedAt?.getTime() ?? 0) - (a.postedAt?.getTime() ?? 0));
   }
@@ -121,10 +137,16 @@ export async function getJob(id: string): Promise<JobListItem | null> {
   const db = await getDb();
   const [row] = await db.select().from(schema.job).where(eq(schema.job.id, id));
   if (!row) return null;
-  const [{ profile }, saved] = await Promise.all([getMyProfile(), savedJobIds(user.id)]);
+  const [{ profile }, saved, fits] = await Promise.all([getMyProfile(), savedJobIds(user.id), getMyFitMatches([row.id])]);
   const extras = extrasOf(row);
   const text = [toPlainText(row.description), extras.requirements.map((r) => r.text).join(" ")].join(" ");
-  return { ...row, extras, saved: saved.has(row.id), match: quickMatch({ title: row.title, skills: row.skills, text }, profile) };
+  return {
+    ...row,
+    extras,
+    saved: saved.has(row.id),
+    match: quickMatch({ title: row.title, skills: row.skills, text }, profile),
+    fit: fits.get(row.id) ?? null,
+  };
 }
 
 export type PipelineItem = typeof schema.application.$inferSelect & { job: JobRow | null };

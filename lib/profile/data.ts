@@ -52,3 +52,11 @@ export async function getMySkillNames(): Promise<string[]> {
   const { profile } = await getMyProfile();
   return profile.skills.map((s) => s.name);
 }
+
+/** Plain text of the last imported CV, for AI features that need more than the structured profile. */
+export async function getMyCvText(): Promise<string | null> {
+  const user = await getCurrentUser();
+  const db = await getDb();
+  const [row] = await db.select({ cvText: schema.profile.cvText }).from(schema.profile).where(eq(schema.profile.userId, user.id));
+  return row?.cvText ?? null;
+}

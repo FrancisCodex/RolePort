@@ -30,14 +30,15 @@ docker compose up -d
 | Pipeline: save jobs, track Saved → Applied → Interview → Offer | Nothing |
 | CV import with automatic skill detection | Nothing |
 | AI fills in your whole profile from your CV | An AI provider |
+| AI fit evaluation: eligibility, language and location gates, four scored dimensions, strengths, gaps and a recommendation. Evaluate one job or the top 10 results | An AI provider |
 | JobStreet, Indeed, LinkedIn and Kalibrr listings via [JSearch](https://rapidapi.com/letscrunch/api/jsearch) | A RapidAPI key (free tier) |
-| Coming next: AI fit evaluation, tailored CV and cover letter, interview coach | An AI provider |
+| Coming next: tailored CV and cover letter, follow-ups, interview coach | An AI provider |
 
 ## Choosing an AI provider
 
 Open **Settings** in the app, pick a provider, and click **Test connection**.
 
-- **Ollama (free, private):** install Ollama, run `ollama pull gemma4:12b`, then choose Ollama in Settings. Use a 12B+ model for reliable results. Setting *Thinking* to *Off* makes answers much faster.
+- **Ollama (free, private):** install Ollama, run `ollama pull gemma4:12b`, then choose Ollama in Settings. Use a 12B+ model for reliable results. Setting *Thinking* to *Off* makes answers much faster. A fit evaluation takes about 30-60 seconds on a 12B model with a mid-range GPU, and a few seconds on Claude or OpenAI.
 - **Claude, OpenAI, OpenRouter, Groq:** paste your own API key. You pay the provider directly. HireMe charges nothing.
 
 Keys are encrypted before they're saved and never sent back to the browser.

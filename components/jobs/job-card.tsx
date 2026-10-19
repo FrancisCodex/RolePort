@@ -1,9 +1,12 @@
-import { Briefcase, MapPin } from "lucide-react";
+import { Briefcase, Flame, MapPin } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { MatchRing } from "@/components/ui/match-ring";
 import type { JobListItem } from "@/lib/jobs/data";
+import { daysUntil, vetoReason } from "@/lib/jobs/fit";
 import { formatSalary, timeAgo, WORK_SETUP_LABEL } from "@/lib/jobs/format";
+import { AiScore } from "./ai-score";
+import { ScoreSlot, SelectableJob } from "./analyze-jobs";
 import { SaveButton } from "./save-button";
 
 export function CompanyLogo({ src, company, size = "size-12" }: { src: string | null; company: string; size?: string }) {
@@ -17,36 +20,63 @@ export function CompanyLogo({ src, company, size = "size-12" }: { src: string | 
   );
 }
 
-export function JobCard({ job }: { job: JobListItem }) {
+/** `defaultActive`: shown in the details panel until another job is opened (the first result). */
+export function JobCard({ job, defaultActive = false }: { job: JobListItem; defaultActive?: boolean }) {
   const salary = formatSalary(job.salaryMin, job.salaryMax, job.salaryCurrency, job.salaryPeriod);
   const posted = timeAgo(job.postedAt);
+  const fit = job.fit;
+  const veto = fit ? vetoReason(fit) : null;
+  const flagged = fit && !veto && [fit.eligibilityGate, fit.languageGate, fit.locationGate].some((g) => g === "flag" || g === "unverified");
+  const closesIn = fit ? daysUntil(fit.deadline) : null;
 
   return (
-    <Link
-      href={`/jobs/${job.id}`}
-      className="group flex gap-4 rounded-3xl border border-border bg-surface p-4 shadow-[var(--shadow-soft)] transition-[transform,box-shadow] duration-200 ease-[var(--ease-spring)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)] sm:p-5"
-    >
-      <CompanyLogo src={job.companyLogo} company={job.company} />
-      <div className="min-w-0 flex-1">
-        <h3 className="font-semibold leading-snug group-hover:text-brand">{job.title}</h3>
-        <p className="truncate text-sm text-muted">{job.company}</p>
-        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-subtle">
-          {job.location && (
-            <span className="flex min-w-0 items-center gap-1">
-              <MapPin className="size-3.5 shrink-0" />
-              <span className="truncate">{job.location}</span>
-            </span>
-          )}
-          {job.workSetup && <Badge tone="brand">{WORK_SETUP_LABEL[job.workSetup]}</Badge>}
-          {salary && <Badge tone="success">{salary}</Badge>}
-          {posted && <span>{posted}</span>}
-          {job.extras.possiblyStale && <Badge tone="warning">May be old</Badge>}
+    <SelectableJob id={job.id} defaultActive={defaultActive}>
+      <Link
+        href={`/jobs/${job.id}`}
+        scroll={false}
+        className="group flex gap-4 rounded-3xl border border-border bg-surface p-4 shadow-[var(--shadow-soft)] transition-[transform,box-shadow] duration-200 ease-[var(--ease-spring)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)] sm:p-5"
+      >
+        <CompanyLogo src={job.companyLogo} company={job.company} />
+        <div className="min-w-0 flex-1">
+          <h3 className="font-semibold leading-snug group-hover:text-brand">{job.title}</h3>
+          <p className="truncate text-sm text-muted">{job.company}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-subtle">
+            {job.location && (
+              <span className="flex min-w-0 items-center gap-1">
+                <MapPin className="size-3.5 shrink-0" />
+                <span className="truncate">{job.location}</span>
+              </span>
+            )}
+            {job.workSetup && <Badge tone="brand">{WORK_SETUP_LABEL[job.workSetup]}</Badge>}
+            {salary && <Badge tone="success">{salary}</Badge>}
+            {posted && <span>{posted}</span>}
+            {job.extras.possiblyStale && <Badge tone="warning">May be old</Badge>}
+            {veto && (
+              <Badge tone="danger" title={veto}>
+                Excluded
+              </Badge>
+            )}
+            {flagged && <Badge tone="warning">Needs a check</Badge>}
+            {closesIn !== null && closesIn >= 0 && closesIn <= 7 && (
+              <Badge tone="warning">
+                <Flame /> Closes in {closesIn}d
+              </Badge>
+            )}
+          </div>
         </div>
-      </div>
-      <div className="flex shrink-0 flex-col items-center justify-between gap-2">
-        {job.match ? <MatchRing score={job.match.score} size={48} /> : <span className="size-12" />}
-        <SaveButton jobId={job.id} saved={job.saved} />
-      </div>
-    </Link>
+        <div className="flex shrink-0 flex-col items-center justify-between gap-2">
+          <ScoreSlot id={job.id}>
+            {fit ? (
+              <AiScore score={fit.overallScore ?? 0} veto={veto} />
+            ) : job.match ? (
+              <MatchRing score={job.match.score} size={48} />
+            ) : (
+              <span className="size-12" />
+            )}
+          </ScoreSlot>
+          <SaveButton jobId={job.id} saved={job.saved} />
+        </div>
+      </Link>
+    </SelectableJob>
   );
 }
