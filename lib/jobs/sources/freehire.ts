@@ -104,7 +104,7 @@ export const freehireSource: JobSource = {
   id: "freehire",
   label: "freehire",
   attribution: { name: "freehire.me", url: "https://freehire.me" },
-  enabled: true,
+  enabled: () => true,
   covers: () => true,
   async search(params) {
     const jobs = await fetchFreehire(buildQuery(params).toString());

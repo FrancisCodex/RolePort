@@ -1,9 +1,11 @@
 # HireMe
 
-Find jobs across the Philippines, see how well each one fits you, and track every application, in one calm app.
-Inspired by [ai-job-search](https://github.com/MadsLorentzen/ai-job-search) (MIT). See [docs/PLAN.md](docs/PLAN.md) for the roadmap.
+A free, open-source job search app you run yourself. Find jobs across the Philippines, see how well each one fits you, and track every application, with your CV and data staying on your own machine.
 
-## Run it on your machine
+Bring your own AI: Claude, OpenAI, OpenRouter, Groq, or a free local model through [Ollama](https://ollama.com).
+Inspired by [ai-job-search](https://github.com/MadsLorentzen/ai-job-search). See [docs/PLAN.md](docs/PLAN.md) for the roadmap.
+
+## Quick start
 
 ```bash
 npm install
@@ -11,25 +13,43 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Open http://localhost:3000 and click **Get started**. With `HIREME_LOCAL_MODE=true` (the default in `.env.example`) there is no sign-in: everything belongs to one built-in user.
+Open http://localhost:3000 and click **Get started**. There's no sign-in, and data is saved in `.data/` (delete that folder to start over).
 
-Data is stored in an embedded database at `.data/pglite`, created and migrated automatically. Delete that folder to start over.
+Or with Docker:
 
-## What works without any keys
+```bash
+docker compose up -d
+```
 
-- **Profile**: import a PDF or .txt CV (skills are detected automatically), then fill in roles, location, salary, experience and goals.
-- **Job search**: live listings from [freehire](https://freehire.me) (about 28k Philippine jobs, filterable by city) and remote roles from [Jobicy](https://jobicy.com).
-- **Quick match**: every job gets a score based on how your skills overlap with its requirements.
-- **Pipeline**: save jobs and move them through Saved → Applied → Interview → Offer.
+## What you get
 
-## Optional keys (add to `.env.local`, then restart)
-
-| Key | Unlocks |
+| Feature | Needs |
 | --- | --- |
-| `ANTHROPIC_API_KEY` | AI fills in your whole profile from your CV. Next: full fit evaluation, tailored CV and cover letter. |
-| `RAPIDAPI_KEY` | [JSearch](https://rapidapi.com/letscrunch/api/jsearch): Google for Jobs listings (JobStreet, Indeed, LinkedIn, Kalibrr). |
+| Job search: about 28k Philippine jobs from [freehire](https://freehire.me), remote roles from [Jobicy](https://jobicy.com) | Nothing |
+| Quick match score from your skills on every job | Nothing |
+| Pipeline: save jobs, track Saved → Applied → Interview → Offer | Nothing |
+| CV import with automatic skill detection | Nothing |
+| AI fills in your whole profile from your CV | An AI provider |
+| JobStreet, Indeed, LinkedIn and Kalibrr listings via [JSearch](https://rapidapi.com/letscrunch/api/jsearch) | A RapidAPI key (free tier) |
+| Coming next: AI fit evaluation, tailored CV and cover letter, interview coach | An AI provider |
 
-## Using a Postgres server instead
+## Choosing an AI provider
 
-Set `DATABASE_URL` in `.env.local` (local Postgres, Supabase or Neon), then run `npm run db:migrate`.
-To turn on accounts, set `HIREME_LOCAL_MODE=false` and fill in `BETTER_AUTH_SECRET` (`npx @better-auth/cli secret`).
+Open **Settings** in the app, pick a provider, and click **Test connection**.
+
+- **Ollama (free, private):** install Ollama, run `ollama pull gemma4:12b`, then choose Ollama in Settings. Use a 12B+ model for reliable results. Setting *Thinking* to *Off* makes answers much faster.
+- **Claude, OpenAI, OpenRouter, Groq:** paste your own API key. You pay the provider directly. HireMe charges nothing.
+
+Keys are encrypted before they're saved and never sent back to the browser.
+
+## Hosting for others
+
+Set `DATABASE_URL` (Postgres, Supabase or Neon) and run `npm run db:migrate`. Set `HIREME_LOCAL_MODE=false`, `BETTER_AUTH_SECRET` and a stable `HIREME_SECRET` to turn on accounts. See [.env.example](.env.example).
+
+## Contributing
+
+Job sources for other countries, provider improvements and UI polish are all welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## License
+
+[MIT](LICENSE). Portions adapted from ai-job-search; see [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).

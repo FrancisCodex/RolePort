@@ -79,7 +79,7 @@ export const jobicySource: JobSource = {
   id: "jobicy",
   label: "Jobicy",
   attribution: { name: "Jobicy", url: "https://jobicy.com" },
-  enabled: true,
+  enabled: () => true,
   // Jobicy only lists remote roles.
   covers: (params) =>
     (params.locationId === undefined || params.locationId === "remote") &&

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { navItems } from "./nav-items";
+import { navItems, settingsItem } from "./nav-items";
 
 type IsActive = (href: string) => boolean;
 const none: IsActive = () => false;
@@ -25,7 +25,7 @@ export function SidebarNavFallback() {
 function SidebarLinks({ isActive }: { isActive: IsActive }) {
   return (
     <nav className="flex flex-col gap-1">
-      {navItems.map(({ href, label, icon: Icon }) => {
+      {[...navItems, settingsItem].map(({ href, label, icon: Icon }) => {
         const active = isActive(href);
         return (
           <Link

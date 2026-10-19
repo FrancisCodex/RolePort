@@ -75,7 +75,7 @@ export function ProfileEditor({
         tone: "info",
         text: result.data.usedAi
           ? "Your profile was filled in from your CV. Review it, then save."
-          : `Found ${found} skill${found === 1 ? "" : "s"} in your CV. Fill in the rest below, then save.`,
+          : `${result.data.aiError ? `AI couldn't read your CV (${result.data.aiError}). ` : ""}Found ${found} skill${found === 1 ? "" : "s"} in your CV. Fill in the rest below, then save.`,
       });
     });
   }
@@ -138,7 +138,7 @@ export function ProfileEditor({
                   <Sparkles className="size-3.5" /> AI fills in your whole profile.
                 </span>
               ) : (
-                "We'll detect your skills. Add an Anthropic API key to fill in everything."
+                "We'll detect your skills. Choose an AI provider in Settings to fill in everything."
               )}
             </p>
           </div>

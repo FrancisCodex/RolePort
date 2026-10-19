@@ -3,10 +3,9 @@
 import { eq } from "drizzle-orm";
 import { refresh } from "next/cache";
 import { extractText, getDocumentProxy } from "unpdf";
-import { AiUnavailableError } from "@/lib/ai/client";
 import { extractProfileFromCv } from "@/lib/ai/extract-profile";
 import { getDb, schema } from "@/lib/db";
-import { isAiEnabled } from "@/lib/env";
+import { isAiConfigured } from "@/lib/ai/config";
 import { detectSkills } from "@/lib/profile/detect-skills";
 import { profileSchema, type ProfileInput } from "@/lib/profile/schema";
 import { getCurrentUser } from "@/lib/session";
@@ -45,6 +44,8 @@ export type CvImport = {
   /** AI-extracted fields, or only detected skills when AI is off. Not saved until the user saves the form. */
   draft: Partial<ProfileInput>;
   usedAi: boolean;
+  /** Why AI extraction failed, when it was expected to run. */
+  aiError?: string;
 };
 
 export async function importCv(formData: FormData): Promise<Result<CvImport>> {
@@ -79,16 +80,18 @@ export async function importCv(formData: FormData): Promise<Result<CvImport>> {
     .values({ userId: user.id, cvText: text, cvFileName: file.name })
     .onConflictDoUpdate({ target: schema.profile.userId, set: { cvText: text, cvFileName: file.name } });
 
-  if (isAiEnabled) {
+  let aiError: string | undefined;
+  if (await isAiConfigured()) {
     try {
       const draft = await extractProfileFromCv(text);
       return { ok: true, data: { fileName: file.name, draft, usedAi: true } };
     } catch (error) {
-      if (!(error instanceof AiUnavailableError)) console.error("CV extraction failed", error);
+      console.error("CV extraction failed", error);
+      aiError = error instanceof Error ? error.message : "AI extraction failed.";
       // Fall through to the free path so the import still helps.
     }
   }
 
   const skills = detectSkills(text).map((name) => ({ name, level: "secondary" as const }));
-  return { ok: true, data: { fileName: file.name, draft: { skills }, usedAi: false } };
+  return { ok: true, data: { fileName: file.name, draft: { skills }, usedAi: false, aiError } };
 }

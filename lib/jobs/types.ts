@@ -45,14 +45,17 @@ export type SourceStatus = {
   failed?: boolean;
 };
 
+/** Per-request keys for sources that need one. */
+export type SourceContext = { rapidApiKey: string | null };
+
 export interface JobSource {
   id: string;
   label: string;
   /** Credit line and link required by the source's terms. */
   attribution: { name: string; url: string };
-  enabled: boolean;
+  enabled(ctx: SourceContext): boolean;
   disabledNote?: string;
   /** Whether this source has anything for the given search (e.g. remote-only feeds). */
   covers(params: JobSearchParams): boolean;
-  search(params: JobSearchParams): Promise<NormalizedJob[]>;
+  search(params: JobSearchParams, ctx: SourceContext): Promise<NormalizedJob[]>;
 }

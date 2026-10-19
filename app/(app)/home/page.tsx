@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { isAiEnabled } from "@/lib/env";
+import { isAiConfigured } from "@/lib/ai/config";
 import { countMyApplications } from "@/lib/jobs/data";
 import { getMyProfile } from "@/lib/profile/data";
 import { cn } from "@/lib/utils";
@@ -20,7 +20,11 @@ export default function HomePage() {
 }
 
 async function Dashboard() {
-  const [{ profile, hasCv, isComplete }, saved] = await Promise.all([getMyProfile(), countMyApplications()]);
+  const [{ profile, hasCv, isComplete }, saved, aiEnabled] = await Promise.all([
+    getMyProfile(),
+    countMyApplications(),
+    isAiConfigured(),
+  ]);
   const firstName = profile.name.split(" ")[0] || "there";
   const firstRole = profile.desiredRoles[0];
 
@@ -120,7 +124,7 @@ async function Dashboard() {
               <div>
                 <p className="font-display text-lg font-semibold">Start from your CV</p>
                 <p className="text-sm text-white/80">
-                  {isAiEnabled
+                  {aiEnabled
                     ? "Upload it and AI fills in your whole profile."
                     : "Upload it and we'll pick out your skills for you."}
                 </p>

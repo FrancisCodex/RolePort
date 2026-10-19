@@ -1,5 +1,3 @@
-import { cacheLife } from "next/cache";
-import { isJSearchEnabled } from "@/lib/env";
 import { findLocation } from "@/lib/ph-locations";
 import { cleanDescription } from "../html";
 import type { EmploymentType, JobSource, NormalizedJob, SalaryPeriod } from "../types";
@@ -43,22 +41,30 @@ function datePosted(days?: number) {
   return "month";
 }
 
-async function fetchJSearch(query: string, remoteOnly: boolean, posted: string): Promise<JSearchJob[]> {
-  "use cache";
-  cacheLife("hours");
+// The API key must not become part of a "use cache" key, so cache results in memory instead.
+const CACHE_TTL_MS = 60 * 60_000;
+const memo = new Map<string, { at: number; jobs: JSearchJob[] }>();
+
+async function fetchJSearch(apiKey: string, query: string, remoteOnly: boolean, posted: string): Promise<JSearchJob[]> {
+  const cacheKey = JSON.stringify([query, remoteOnly, posted]);
+  const hit = memo.get(cacheKey);
+  if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.jobs;
 
   const q = new URLSearchParams({ query, page: "1", num_pages: "1", country: "ph", date_posted: posted });
   if (remoteOnly) q.set("work_from_home", "true");
   const res = await fetch(`https://jsearch.p.rapidapi.com/search?${q}`, {
     headers: {
-      "x-rapidapi-key": process.env.RAPIDAPI_KEY ?? "",
+      "x-rapidapi-key": apiKey,
       "x-rapidapi-host": "jsearch.p.rapidapi.com",
     },
     signal: AbortSignal.timeout(20_000),
   });
   if (!res.ok) throw new Error(`JSearch responded ${res.status}`);
   const body = (await res.json()) as { data?: JSearchJob[] };
-  return body.data ?? [];
+  const jobs = body.data ?? [];
+  memo.set(cacheKey, { at: Date.now(), jobs });
+  if (memo.size > 200) memo.delete(memo.keys().next().value!);
+  return jobs;
 }
 
 function normalize(job: JSearchJob): NormalizedJob {
@@ -97,14 +103,14 @@ export const jsearchSource: JobSource = {
   id: "jsearch",
   label: "JSearch",
   attribution: { name: "Google for Jobs via JSearch", url: "https://rapidapi.com/letscrunch/api/jsearch" },
-  enabled: isJSearchEnabled,
-  disabledNote: "Add RAPIDAPI_KEY to include JobStreet, Indeed, LinkedIn and Kalibrr listings",
+  enabled: (ctx) => Boolean(ctx.rapidApiKey),
+  disabledNote: "Add a RapidAPI key in Settings to include JobStreet, Indeed, LinkedIn and Kalibrr listings",
   covers: () => true,
-  async search(params) {
+  async search(params, ctx) {
     const location = findLocation(params.locationId);
     const where = location ? ` in ${location.label}, Philippines` : params.locationId === "remote" ? "" : " in Philippines";
     const remoteOnly = params.locationId === "remote" || params.workSetup === "remote";
-    const jobs = await fetchJSearch(`${params.query}${where}`, remoteOnly, datePosted(params.postedWithinDays));
+    const jobs = await fetchJSearch(ctx.rapidApiKey!, `${params.query}${where}`, remoteOnly, datePosted(params.postedWithinDays));
     return jobs.map(normalize);
   },
 };

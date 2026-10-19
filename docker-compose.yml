@@ -1,0 +1,19 @@
+services:
+  hireme:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      HIREME_LOCAL_MODE: "true"
+      # Optional — you can also set these in the app under Settings.
+      # ANTHROPIC_API_KEY: ""
+      # RAPIDAPI_KEY: ""
+    volumes:
+      - hireme-data:/app/.data
+    # Lets the app reach Ollama on your computer at http://host.docker.internal:11434/v1
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+volumes:
+  hireme-data:

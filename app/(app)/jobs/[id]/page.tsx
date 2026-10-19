@@ -12,7 +12,7 @@ import { MatchRing } from "@/components/ui/match-ring";
 import { getJob } from "@/lib/jobs/data";
 import { EMPLOYMENT_LABEL, formatSalary, timeAgo, WORK_SETUP_LABEL } from "@/lib/jobs/format";
 import { JOB_SOURCES } from "@/lib/jobs/search";
-import { isAiEnabled } from "@/lib/env";
+import { isAiConfigured } from "@/lib/ai/config";
 
 export const metadata: Metadata = { title: "Job" };
 
@@ -31,7 +31,7 @@ export default function JobPage(props: PageProps<"/jobs/[id]">) {
 
 async function JobDetail({ params }: { params: PageProps<"/jobs/[id]">["params"] }) {
   const { id } = await params;
-  const job = await getJob(id);
+  const [job, aiEnabled] = await Promise.all([getJob(id), isAiConfigured()]);
   if (!job) notFound();
 
   const salary = formatSalary(job.salaryMin, job.salaryMax, job.salaryCurrency, job.salaryPeriod);
@@ -148,9 +148,16 @@ async function JobDetail({ params }: { params: PageProps<"/jobs/[id]">["params"]
             {job.match && job.match.missing.length > 0 && <SkillList title="They also want" skills={job.match.missing} />}
             <div className="flex items-start gap-2 rounded-2xl bg-surface-2 px-4 py-3 text-xs text-muted">
               <Sparkles className="mt-0.5 size-3.5 shrink-0 text-brand" />
-              {isAiEnabled
-                ? "Full AI fit evaluation and a tailored CV are coming in the next update."
-                : "Add an Anthropic API key to get a full fit evaluation and a tailored CV & cover letter."}
+              {aiEnabled ? (
+                "Full AI fit evaluation and a tailored CV are coming in the next update."
+              ) : (
+                <span>
+                  <Link href="/settings" className="font-semibold text-brand hover:underline">
+                    Choose an AI provider
+                  </Link>{" "}
+                  (Claude, OpenAI or a free local model) to get a full fit evaluation and a tailored CV &amp; cover letter.
+                </span>
+              )}
             </div>
           </CardContent>
         </Card>
