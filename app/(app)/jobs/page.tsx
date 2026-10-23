@@ -15,8 +15,9 @@ import { isAiConfigured } from "@/lib/ai/config";
 import { findCountry, orderedCountries } from "@/lib/geo/countries";
 import { searchJobs } from "@/lib/jobs/data";
 import { MAX_PER_RUN } from "@/lib/jobs/fit";
-import { sourceCredit } from "@/lib/jobs/search";
+import { sourceCredit } from "@/lib/jobs/sources/credits";
 import type { JobSearchParams, WorkSetup } from "@/lib/jobs/types";
+import { isLite } from "@/lib/mode";
 import { PH_LOCATIONS } from "@/lib/ph-locations";
 import { getMyProfile } from "@/lib/profile/data";
 import { cn } from "@/lib/utils";
@@ -51,9 +52,19 @@ export default function JobsPage(props: PageProps<"/jobs">) {
   return (
     <>
       <PageHeader title="Jobs" description="Roles at home or abroad, ranked by how well they fit you." />
-      <Suspense fallback={<ResultsSkeleton withForm />}>
-        <JobSearch searchParams={props.searchParams} />
-      </Suspense>
+      {isLite ? (
+        // Searching from the browser arrives with phase 3 (docs/LITE-IMPLEMENTATION.md).
+        <EmptyState
+          icon={Search}
+          title="Job search is coming to HireMe Lite"
+          body="Searching from your browser isn't ready yet. Your profile and pipeline already work, and everything stays on this device."
+          phase="Coming soon"
+        />
+      ) : (
+        <Suspense fallback={<ResultsSkeleton withForm />}>
+          <JobSearch searchParams={props.searchParams} />
+        </Suspense>
+      )}
     </>
   );
 }

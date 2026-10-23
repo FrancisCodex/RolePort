@@ -1,6 +1,22 @@
 # HireMe Lite: implementation plan
 
-Status: plan. Companion to [LITE.md](LITE.md), which says *what* and *why*. This file says *how*, file by file, in the order to build it.
+Companion to [LITE.md](LITE.md), which says *what* and *why*. This file says *how*, file by file, in the order to build it.
+
+## Progress
+
+Branch: `feat/liveweb-update`. Update this table as phases land.
+
+| Phase | Status | Notes |
+| --- | --- | --- |
+| [1. Spike](#phase-1-spike-pglite-in-a-worker-profile-page) | ✅ Done (`c23b821`) | Lite build mode, browser database (OPFS, IndexedDB fallback), starter database, Profile in lite. Results in §1.5. |
+| [2. Data layer](#phase-2-data-layer-all-pages-both-modes) | ✅ Done (not committed yet) | Every page loads in both modes; Jobs search and AI are placeholders in lite until phases 3 and 4. See the Phase 2 checklist. |
+| [3. Search](#phase-3-search-proxy-route--browser-merge) | ⏳ Not started | |
+| [4. AI in the browser](#phase-4-ai-in-the-browser) | ⏳ Not started | |
+| [5. Backups and storage](#phase-5-backups-and-storage) | ⏳ Not started | |
+| [6. JobSpy connect](#phase-6-jobspy-on-the-users-machine) | ⏳ Not started | |
+| [7. Launch polish](#phase-7-launch-polish) | ⏳ Not started | |
+
+Open items carried from earlier phases: Safari and Firefox testing (§1.5 finding 3); Brotli and long-lived caching for the PGlite files and the starter database (phase 7).
 
 Ground rules for every phase:
 
@@ -138,6 +154,38 @@ Exit: Profile loads and saves in lite, survives a reload, works in two tabs; sel
 ---
 
 ## Phase 2: Data layer (all pages, both modes)
+
+### Status
+
+| Item | State | Where |
+| --- | --- | --- |
+| 2.1 Server database guard | ✅ | `lib/db/index.ts` (landed in phase 1) |
+| 2.2 Profile queries | ✅ | `lib/profile/queries.ts`, `cv-file.ts` (phase 1) |
+| 2.2 Job and fit queries | ✅ | `lib/jobs/queries.ts`: `storeJobs`, `readJob`, `toListItem`, `readFitMatches`, `writeFitMatch` |
+| 2.2 Pipeline | ✅ | `lib/jobs/applications.ts`: `toggleSaved`, `setStatus`, `readApplications`, `countApplications` |
+| 2.2 Settings | ✅ | `lib/settings/queries.ts`; pure AI config, form input and checks in `lib/ai/settings.ts` |
+| 2.2 Source credits | ✅ | `lib/jobs/sources/credits.ts`, shared by the sources and pages |
+| 2.3 Invalidation bus | ✅ | `lib/client/bus.ts`, with cross-tab `BroadcastChannel` |
+| 2.3 Lite loader | ✅ | `components/app/lite-data.tsx` (first-visit, loading, error, reload on invalidation) |
+| 2.3 Mutations module | ✅ | `lib/client/mutations.ts` covers every write; no component imports an `actions.ts` |
+| 2.4 Home, Profile, Pipeline, Job, Settings | ✅ | View + server loader + `lite-*.tsx` loader each |
+| 2.4 Jobs (search) | ⏭ Phase 3 | Lite shows a "coming soon" state |
+| 2.5 No auth in lite | ✅ | `proxy.ts` redirect, `(auth)/layout.tsx` 404, `/api/auth` 404 |
+
+Verified (2026-10-23):
+
+- **Shared queries:** a Node script ran them against a fresh in-memory PGlite with the real migrations. It covered profile, `storeJobs` (insert, order, refresh on conflict), `readJob` with quick match, save/unsave, status moves and events, pipeline cards, fit upsert, settings and lite key encoding. 7 of 7 checks passed.
+- **Lite (production build, Chromium):** first visit shows the setup message, then Home. A profile save shows on Home. AI and RapidAPI settings save, and a save in one tab updates Settings in another tab. Test connection explains AI isn't available yet. Pipeline is empty, Jobs shows its placeholder, and an unknown job shows "Job not found". `/sign-in` redirects to `/home`, and `/api/auth/*` returns 404. All lite pages are static (○); the job page prerenders its shell.
+- **Self-hosted:** Home, Pipeline, Settings and a Jobs search render with existing data. Writes were not exercised on the running install, only through the shared-query script.
+- **Bundles:** no page's initial JS includes PGlite or `sanitize-html`. The lite data chunk loads on demand and includes `sanitize-html` (60 KB gzipped) for the quick-match text.
+
+Known gaps, by design until later phases:
+
+- Lite AI is off. `testAiConnection` and `fetchModels` return "not available yet", and choosing the Ollama preset in lite shows that message because the form loads models on pick (phase 4).
+- `components/jobs/analyze-jobs.tsx` calls `router.refresh()` after a batch. Lite needs `invalidate("job_match")` there (phase 4, with evaluation).
+- Lite hides the JobSpy switch (phase 6).
+
+Testing note: in the browser pane, a hidden pane can keep server-streamed Suspense content hidden (React reveals it on an animation frame). Read the `S:` placeholders or bring the tab to the front.
 
 ### 2.1 Guard the server database
 

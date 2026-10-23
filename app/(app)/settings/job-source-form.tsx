@@ -4,7 +4,7 @@ import { Check, ExternalLink, Loader2 } from "lucide-react";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
-import { saveJobSpyEnabled, saveRapidApiKey } from "./actions";
+import { saveJobSpyEnabled, saveRapidApiKey } from "@/lib/client/mutations";
 
 export function JobSourceForm({ rapidApiKeyHint }: { rapidApiKeyHint: string | null }) {
   const [key, setKey] = useState("");

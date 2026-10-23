@@ -1,0 +1,175 @@
+import { and, eq, inArray, sql } from "drizzle-orm";
+import type { FitEvaluation } from "@/lib/ai/evaluate-job";
+import * as schema from "@/lib/db/schema";
+import type { AnyDb } from "@/lib/db/types";
+import type { ProfileInput } from "@/lib/profile/schema";
+import { overallFitScore, vetoReason } from "./fit";
+import { toPlainText } from "./html";
+import { quickMatch, type QuickMatch } from "./quick-match";
+import type { NormalizedJob } from "./types";
+
+/*
+ * Job and fit-evaluation storage, shared by the server (lib/jobs/data.ts, evaluation.ts)
+ * and the lite edition's browser database. No auth here: callers pass the user.
+ */
+
+export type JobExtras = {
+  summary: string | null;
+  requirements: { text: string; priority: "required" | "preferred" }[];
+  possiblyStale: boolean;
+};
+
+export type JobRow = typeof schema.job.$inferSelect;
+export type FitMatch = typeof schema.jobMatch.$inferSelect;
+/** `fit` is the saved AI evaluation, when the user has run one; `match` is the free skill-overlap estimate. */
+export type JobListItem = JobRow & { extras: JobExtras; match: QuickMatch | null; fit: FitMatch | null; saved: boolean };
+/** A search result with its dedupe key (lib/jobs/job-key.ts). */
+export type KeyedJob = NormalizedJob & { jobKey: string };
+
+/** Sort key for "Best match": the AI score when there is one (vetoed jobs sink), else the quick match. */
+export function matchSortScore(job: JobListItem): number {
+  if (job.fit) return vetoReason(job.fit) ? -0.5 : (job.fit.overallScore ?? 0);
+  return job.match?.score ?? -1;
+}
+
+const toInsert = (j: KeyedJob) => ({
+  jobKey: j.jobKey,
+  source: j.source,
+  sourceId: j.sourceId,
+  url: j.url,
+  title: j.title,
+  company: j.company,
+  companyLogo: j.companyLogo,
+  location: j.location,
+  city: j.city,
+  workSetup: j.workSetup,
+  employmentType: j.employmentType,
+  salaryMin: j.salaryMin,
+  salaryMax: j.salaryMax,
+  salaryCurrency: j.salaryCurrency,
+  salaryPeriod: j.salaryPeriod,
+  description: j.description,
+  skills: j.skills,
+  postedAt: j.postedAt ? new Date(j.postedAt) : null,
+  raw: { summary: j.summary, requirements: j.requirements, possiblyStale: j.possiblyStale } satisfies JobExtras,
+  fetchedAt: new Date(),
+});
+
+/** Keep a local copy of every result so job pages, saves and the pipeline have a stable id. */
+export async function storeJobs(db: AnyDb, jobs: KeyedJob[]): Promise<JobRow[]> {
+  if (jobs.length === 0) return [];
+  const excluded = (col: string) => sql.raw(`excluded.${col}`);
+  // Refresh the mutable fields of a posting we've stored before.
+  const updateSet = {
+    url: excluded("url"),
+    title: excluded("title"),
+    location: excluded("location"),
+    workSetup: excluded("work_setup"),
+    salaryMin: excluded("salary_min"),
+    salaryMax: excluded("salary_max"),
+    description: excluded("description"),
+    skills: excluded("skills"),
+    postedAt: excluded("posted_at"),
+    raw: excluded("raw"),
+    fetchedAt: excluded("fetched_at"),
+  };
+
+  for (const job of jobs) {
+    try {
+      await db.insert(schema.job).values(toInsert(job)).onConflictDoUpdate({ target: schema.job.jobKey, set: updateSet });
+    } catch (error) {
+      // Same source id under a different key (e.g. the title was edited): keep the existing row.
+      console.warn(`[jobs] skipped storing ${job.source}:${job.sourceId}`, error);
+    }
+  }
+
+  const rows = await db.select().from(schema.job).where(inArray(schema.job.jobKey, jobs.map((j) => j.jobKey)));
+  const order = new Map(jobs.map((j, i) => [j.jobKey, i]));
+  return rows.sort((a, b) => (order.get(a.jobKey) ?? 0) - (order.get(b.jobKey) ?? 0));
+}
+
+export async function readSavedJobIds(db: AnyDb, userId: string): Promise<Set<string>> {
+  const rows = await db
+    .select({ jobId: schema.application.jobId })
+    .from(schema.application)
+    .where(eq(schema.application.userId, userId));
+  return new Set(rows.map((r) => r.jobId).filter((id): id is string => Boolean(id)));
+}
+
+/** The user's saved evaluations for these jobs, keyed by job id. */
+export async function readFitMatches(db: AnyDb, userId: string, jobIds: string[]): Promise<Map<string, FitMatch>> {
+  if (jobIds.length === 0) return new Map();
+  const rows = await db
+    .select()
+    .from(schema.jobMatch)
+    .where(and(eq(schema.jobMatch.userId, userId), inArray(schema.jobMatch.jobId, jobIds)));
+  return new Map(rows.map((r) => [r.jobId, r]));
+}
+
+export function extrasOf(row: JobRow): JobExtras {
+  const raw = (row.raw ?? {}) as Partial<JobExtras>;
+  return { summary: raw.summary ?? null, requirements: raw.requirements ?? [], possiblyStale: Boolean(raw.possiblyStale) };
+}
+
+/** A stored job with what the list and detail views show next to it. */
+export function toListItem(row: JobRow, profile: ProfileInput, saved: Set<string>, fits: Map<string, FitMatch>): JobListItem {
+  const extras = extrasOf(row);
+  const text = [toPlainText(row.description), extras.requirements.map((r) => r.text).join(" ")].join(" ");
+  return {
+    ...row,
+    extras,
+    saved: saved.has(row.id),
+    match: quickMatch({ title: row.title, skills: row.skills, text }, profile),
+    fit: fits.get(row.id) ?? null,
+  };
+}
+
+export async function readJob(db: AnyDb, userId: string, id: string, profile: ProfileInput): Promise<JobListItem | null> {
+  const [row] = await db.select().from(schema.job).where(eq(schema.job.id, id));
+  if (!row) return null;
+  const [saved, fits] = await Promise.all([readSavedJobIds(db, userId), readFitMatches(db, userId, [row.id])]);
+  return toListItem(row, profile, saved, fits);
+}
+
+export async function readJobRow(db: AnyDb, id: string): Promise<JobRow | null> {
+  const [row] = await db.select().from(schema.job).where(eq(schema.job.id, id));
+  return row ?? null;
+}
+
+/** Save an AI evaluation (one row per user + job). `model` is a label such as "Ollama · gemma4:12b". */
+export async function writeFitMatch(db: AnyDb, userId: string, jobId: string, result: FitEvaluation, model: string): Promise<FitMatch> {
+  const values = {
+    eligibilityGate: result.eligibility,
+    eligibilityNote: result.eligibilityNote || null,
+    languageGate: result.language,
+    languageNote: result.languageNote || null,
+    locationGate: result.location,
+    locationNote: result.locationNote || null,
+    gateNote: result.dealBreaker || null,
+    skillsScore: result.skillsScore,
+    experienceScore: result.experienceScore,
+    cultureScore: result.cultureScore,
+    careerScore: result.careerScore,
+    overallScore: overallFitScore({
+      skills: result.skillsScore,
+      experience: result.experienceScore,
+      culture: result.cultureScore,
+      career: result.careerScore,
+    }),
+    strengths: result.strengths,
+    gaps: result.gaps,
+    summary: result.summary || null,
+    recommendation: result.recommendation || null,
+    deadline: result.deadline || null,
+    postingClosed: result.postingClosed,
+    model,
+    scoredAt: new Date(),
+  };
+
+  const [row] = await db
+    .insert(schema.jobMatch)
+    .values({ userId, jobId, ...values })
+    .onConflictDoUpdate({ target: [schema.jobMatch.userId, schema.jobMatch.jobId], set: values })
+    .returning();
+  return row;
+}

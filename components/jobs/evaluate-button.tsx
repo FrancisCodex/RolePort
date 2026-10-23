@@ -3,7 +3,7 @@
 import { Loader2, RefreshCw, Sparkles } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
-import { evaluateJob } from "@/app/(app)/jobs/actions";
+import { evaluateJob } from "@/lib/client/mutations";
 import { Button } from "@/components/ui/button";
 
 /** Live "12s" counter while something slow (a local model) is running. */

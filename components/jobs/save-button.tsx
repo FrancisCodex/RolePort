@@ -2,7 +2,7 @@
 
 import { Bookmark, BookmarkCheck } from "lucide-react";
 import { useOptimistic, useTransition } from "react";
-import { toggleSavedJob } from "@/app/(app)/jobs/actions";
+import { toggleSavedJob } from "@/lib/client/mutations";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 

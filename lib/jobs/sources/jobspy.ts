@@ -4,6 +4,7 @@ import { countryOrDefault, type Country, type JobSpyBoard } from "@/lib/geo/coun
 import { findLocation } from "@/lib/ph-locations";
 import { cleanDescription } from "../html";
 import type { EmploymentType, JobSearchParams, JobSource, NormalizedJob, SalaryPeriod, WorkSetup } from "../types";
+import { SOURCE_CREDITS } from "./credits";
 
 /*
  * Job boards read through the JobSpy sidecar (services/jobspy, MIT). These boards forbid
@@ -103,12 +104,12 @@ function normalize(board: Board, job: JobSpyJob, fallbackCurrency: string): Norm
   };
 }
 
-function boardSource(board: Board, label: string, url: string, covers: (country: Country) => boolean): JobSource {
+function boardSource(board: Board, covers: (country: Country) => boolean): JobSource {
   const remoteBoard = board === "linkedin" || board === "indeed";
   return {
     id: board,
-    label,
-    attribution: { name: label, url },
+    label: SOURCE_CREDITS[board].name,
+    attribution: SOURCE_CREDITS[board],
     enabled: (ctx) => isLocalMode && Boolean(jobSpyUrl) && ctx.jobspyEnabled,
     disabledNote: "Turn on JobSpy in Settings (self-hosted only) to search this board",
     covers: (params) => covers(countryOrDefault(params.country)) && (params.locationId !== "remote" || remoteBoard),
@@ -132,13 +133,13 @@ function boardSource(board: Board, label: string, url: string, covers: (country:
 const hasBoard = (board: JobSpyBoard) => (country: Country) => Boolean(country.jobspy?.boards?.includes(board));
 
 export const jobSpySources: JobSource[] = [
-  boardSource("linkedin", "LinkedIn", "https://www.linkedin.com/jobs", () => true),
-  boardSource("indeed", "Indeed", "https://www.indeed.com", (c) => Boolean(c.jobspy?.indeed)),
-  boardSource("google", "Google Jobs", "https://www.google.com/search?udm=8", () => true),
-  boardSource("glassdoor", "Glassdoor", "https://www.glassdoor.com", hasBoard("glassdoor")),
-  boardSource("bayt", "Bayt", "https://www.bayt.com", hasBoard("bayt")),
-  boardSource("naukri", "Naukri", "https://www.naukri.com", hasBoard("naukri")),
-  boardSource("bdjobs", "BDJobs", "https://bdjobs.com", hasBoard("bdjobs")),
-  boardSource("zip_recruiter", "ZipRecruiter", "https://www.ziprecruiter.com", hasBoard("zip_recruiter")),
-  boardSource("hellowork", "HelloWork", "https://www.hellowork.com", hasBoard("hellowork")),
+  boardSource("linkedin", () => true),
+  boardSource("indeed", (c) => Boolean(c.jobspy?.indeed)),
+  boardSource("google", () => true),
+  boardSource("glassdoor", hasBoard("glassdoor")),
+  boardSource("bayt", hasBoard("bayt")),
+  boardSource("naukri", hasBoard("naukri")),
+  boardSource("bdjobs", hasBoard("bdjobs")),
+  boardSource("zip_recruiter", hasBoard("zip_recruiter")),
+  boardSource("hellowork", hasBoard("hellowork")),
 ];

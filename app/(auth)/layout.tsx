@@ -1,8 +1,12 @@
 import { Sparkles } from "lucide-react";
+import { notFound } from "next/navigation";
 import { Logo } from "@/components/brand/logo";
 import { MatchRing } from "@/components/ui/match-ring";
+import { isLite } from "@/lib/mode";
 
 export default function AuthLayout({ children }: LayoutProps<"/">) {
+  // The lite edition has no accounts (proxy.ts also sends these pages to /home).
+  if (isLite) notFound();
   return (
     <div className="grid min-h-dvh lg:grid-cols-2">
       <div className="flex flex-col px-4 py-6 sm:px-10">

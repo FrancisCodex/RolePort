@@ -3,7 +3,7 @@
 import { GripVertical } from "lucide-react";
 import Link from "next/link";
 import { useOptimistic, useState, useTransition, type DragEvent } from "react";
-import { setApplicationStatus } from "@/app/(app)/jobs/actions";
+import { setApplicationStatus } from "@/lib/client/mutations";
 import { cn } from "@/lib/utils";
 import { StatusSelect, type Status } from "./status-select";
 

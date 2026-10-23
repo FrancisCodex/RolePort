@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { AI_PRESET_IDS, AI_PRESETS, type AiPresetId } from "@/lib/ai/presets";
+import type { AiSettingsInput } from "@/lib/ai/settings";
+import { fetchModels, saveAiSettings, testAiConnection, turnOffAi } from "@/lib/client/mutations";
 import { cn } from "@/lib/utils";
-import { fetchModels, saveAiSettings, testAiConnection, turnOffAi, type AiSettingsInput } from "./actions";
 
 export type AiSettingsView = {
   preset: AiPresetId | null;

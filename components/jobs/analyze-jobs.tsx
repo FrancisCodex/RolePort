@@ -4,7 +4,7 @@ import { Check, ChevronRight, Clock, ListChecks, Loader2, Sparkles, Square, X } 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createContext, use, useRef, useState, type MouseEvent, type ReactNode } from "react";
-import { evaluateJob } from "@/app/(app)/jobs/actions";
+import { evaluateJob } from "@/lib/client/mutations";
 import { AiScore } from "@/components/jobs/ai-score";
 import { useJobBrowser } from "@/components/jobs/job-browser";
 import { Badge } from "@/components/ui/badge";

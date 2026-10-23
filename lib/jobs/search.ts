@@ -4,17 +4,15 @@ import { freehireSource } from "./sources/freehire";
 import { jobicySource } from "./sources/jobicy";
 import { jobSpySources } from "./sources/jobspy";
 import { jsearchSource } from "./sources/jsearch";
-import type { JobSearchParams, NormalizedJob, SourceContext, SourceStatus } from "./types";
+import type { KeyedJob } from "./queries";
+import type { JobSearchParams, SourceContext, SourceStatus } from "./types";
 
 /** Order matters: when two sources carry the same posting, the earlier one wins. */
 export const JOB_SOURCES = [jsearchSource, ...jobSpySources, freehireSource, jobicySource];
 
-/** The credit line a source's terms require, for job pages. */
-export function sourceCredit(id: string): { name: string; url: string } | null {
-  return JOB_SOURCES.find((s) => s.id === id)?.attribution ?? null;
-}
+export { sourceCredit } from "./sources/credits";
 
-export type KeyedJob = NormalizedJob & { jobKey: string };
+export type { KeyedJob } from "./queries";
 
 export async function searchAllSources(
   params: JobSearchParams,

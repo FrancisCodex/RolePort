@@ -2,6 +2,7 @@ import { countryOrDefault } from "@/lib/geo/countries";
 import { findLocation } from "@/lib/ph-locations";
 import { cleanDescription } from "../html";
 import type { EmploymentType, JobSource, NormalizedJob, SalaryPeriod } from "../types";
+import { SOURCE_CREDITS } from "./credits";
 
 // JSearch (RapidAPI) returns Google for Jobs listings: JobStreet, Indeed, LinkedIn, Kalibrr and company sites.
 // Not yet verified against a live key — field names follow JSearch's public docs.
@@ -109,7 +110,7 @@ function normalize(job: JSearchJob, fallbackCurrency: string): NormalizedJob {
 export const jsearchSource: JobSource = {
   id: "jsearch",
   label: "JSearch",
-  attribution: { name: "Google for Jobs via JSearch", url: "https://rapidapi.com/letscrunch/api/jsearch" },
+  attribution: SOURCE_CREDITS.jsearch,
   enabled: (ctx) => Boolean(ctx.rapidApiKey),
   disabledNote: "Add a RapidAPI key in Settings to include JobStreet, Indeed, LinkedIn and Kalibrr listings",
   covers: () => true,
