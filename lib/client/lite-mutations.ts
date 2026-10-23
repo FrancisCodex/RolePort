@@ -200,7 +200,11 @@ export async function importData(formData: FormData): Promise<Result<ImportSumma
   }
 }
 
-export async function saveJobSpyEnabled(): Promise<Result> {
-  // Connecting JobSpy on the user's own computer arrives with phase 6.
-  return { ok: false, error: "JobSpy isn't available in HireMe Lite yet." };
+/** Lite: JobSpy runs on the user's computer and the browser calls it (lib/client/lite-jobspy.ts). */
+export async function saveJobSpyEnabled(raw: { enabled: boolean }): Promise<Result> {
+  const input = z.object({ enabled: z.boolean() }).safeParse(raw);
+  if (!input.success) return { ok: false, error: "Invalid setting." };
+  await writeSettings(await getBrowserDb(), LOCAL_USER.id, { jobspyEnabled: input.data.enabled });
+  await invalidate("user_settings");
+  return { ok: true, data: undefined };
 }

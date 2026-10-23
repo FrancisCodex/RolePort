@@ -112,15 +112,31 @@ Keys are encrypted before they're saved and never sent back to the browser.
 
 It needs no key, but these sites' terms don't allow automated access, so HireMe treats it as a personal tool:
 
-- It only works on a self-hosted install (`HIREME_LOCAL_MODE=true`), runs from your own network, and stays off until you turn it on in **Settings**.
+- It runs on your own computer and stays off until you turn it on in **Settings**. A self-hosted install (`HIREME_LOCAL_MODE=true`) calls it from its server; HireMe Lite calls it from your browser ([below](#in-hireme-lite)).
 - Results are cached for a few hours, so repeating a search doesn't hit the boards again. The first search takes 30-60 seconds.
 - Boards change often and may rate-limit you. When one fails, the others still return results.
 - Don't turn it on for a server that hosts HireMe for other people.
+
+### In HireMe Lite
+
+HireMe Lite runs in your browser, so the browser talks to JobSpy on your computer directly. JobSpy only answers the sites you list in `JOBSPY_ALLOWED_ORIGINS`. **Settings → Job sources → LinkedIn, Indeed and more via JobSpy** shows the exact commands with the right address. With Docker:
+
+```bash
+docker build -t hireme-jobspy https://github.com/FrancisCodex/HireMe.git#main:services/jobspy
+```
+
+```bash
+docker run -d --name hireme-jobspy -p 127.0.0.1:8765:8000 -e JOBSPY_ALLOWED_ORIGINS=https://<lite address> hireme-jobspy
+```
+
+Then click **Test** in Settings and turn it on. Results go from JobSpy straight to your browser; HireMe's server never sees them.
 
 ### Troubleshooting
 
 | You see | What to do |
 | --- | --- |
+| Lite: "JobSpy is running but doesn't allow this site" | Restart JobSpy with `JOBSPY_ALLOWED_ORIGINS` set to the address in your browser's address bar (no trailing slash). |
+| Lite: "Couldn't reach JobSpy" | Start it (see above) and check the address in Settings. If the browser asked to let the site access devices on your local network, allow it. |
 | Settings has no JobSpy section | Option B: set `JOBSPY_URL` in `.env.local` and check `HIREME_LOCAL_MODE=true`, then restart `npm run dev`. |
 | "The JobSpy service isn't responding" | Start it: `npm run jobspy` (Option B) or `docker compose up -d` (Option A). Check `npm run jobspy:logs`. |
 | A board shows **unavailable** in search results | The board blocked or rate-limited you, or changed its pages. Wait a while and try again; the other sources still work. |

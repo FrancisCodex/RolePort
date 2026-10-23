@@ -12,8 +12,8 @@ Branch: `feat/liveweb-update`. Update this table as phases land.
 | [2. Data layer](#phase-2-data-layer-all-pages-both-modes) | ✅ Done (`ea93f05`) | Every page loads in both modes; Jobs search and AI are placeholders in lite until phases 3 and 4. See the Phase 2 checklist. |
 | [3. Search](#phase-3-search-proxy-route--browser-merge) | ✅ Done (`e6ee6cf`) | Lite searches through `/api/lite/search` and keeps results in the browser. See the Phase 3 checklist. |
 | [4. AI in the browser](#phase-4-ai-in-the-browser) | ✅ Done (`8528982`) | AI calls go straight from the browser to the provider, Ollama included. See the Phase 4 checklist. |
-| [5. Backups and storage](#phase-5-backups-and-storage) | ✅ Done (not committed yet) | Backup export/import in both editions, storage status and persistence, backup reminder, installable app. See the Phase 5 checklist. |
-| [6. JobSpy connect](#phase-6-jobspy-on-the-users-machine) | ⏳ Not started | |
+| [5. Backups and storage](#phase-5-backups-and-storage) | ✅ Done (`84eee77`) | Backup export/import in both editions, storage status and persistence, backup reminder, installable app. See the Phase 5 checklist. |
+| [6. JobSpy connect](#phase-6-jobspy-on-the-users-machine) | ✅ Done (not committed yet) | Lite searches LinkedIn, Indeed and more through JobSpy on the user's computer, straight from the browser. See the Phase 6 checklist. |
 | [7. Launch polish](#phase-7-launch-polish) | ⏳ Not started | |
 
 Open items carried from earlier phases: Safari and Firefox testing (§1.5 finding 3); Brotli and long-lived caching for the PGlite files and the starter database (phase 7).
@@ -442,6 +442,33 @@ Exit: export from lite, import into a fresh self-hosted install, everything show
 ---
 
 ## Phase 6: JobSpy on the user's machine
+
+### Status
+
+| Item | State | Where |
+| --- | --- | --- |
+| 6.1 CORS allow-list | ✅ | `services/jobspy/server.py`: `JOBSPY_ALLOWED_ORIGINS` (default none). An allowed origin gets CORS headers, and its preflight gets 204 with `Access-Control-Allow-Private-Network`. Any other site's preflight gets 403 |
+| 6.1 Refuse other sites' browser requests | ✅ | Same file: a request with a disallowed `Origin`, or `Sec-Fetch-Site` cross-site/same-site, gets 403 *before* searching (a page elsewhere could otherwise make this computer query the boards). Server-to-server calls send neither header and still work |
+| 6.1 Published image | ⏭ | Not published to GHCR. Settings and the docs use `docker build` straight from the repository (`…HireMe.git#main:services/jobspy`), which works once this branch is merged to `main` |
+| 6.2 Shared board logic | ✅ | `lib/jobs/sources/jobspy-boards.ts` (boards, coverage, query, normalize, response check); `jobspy.ts` keeps the server's cached fetch |
+| 6.2 Browser search and merge | ✅ | `lib/client/lite-jobspy.ts` (one request per covered board, straight from the browser), merged in `lite-search.ts` with the server's precedence (JSearch, JobSpy boards, then the rest). Counts are taken after dedupe, and a search is reused only while the JobSpy setting is unchanged |
+| 6.2 Settings | ✅ | `app/(app)/settings/local-jobspy.tsx`: address and Test, setup steps (Docker or Python, with this site's address), and the terms notice. Turning it on tests the connection first; "doesn't allow this site" and "couldn't reach" are told apart |
+| Docs | ✅ | README "In HireMe Lite" section and troubleshooting rows; `services/jobspy/README.md` with Lite commands and a settings table |
+
+Decision: the JobSpy **address is kept per browser in `localStorage`** (it describes this computer, not the user's data, and a new column would need a migration that breaks a running self-hosted dev server). The on/off switch uses the existing `jobspy_enabled` column.
+
+Verified (2026-10-23), with a test container built from the changed service on port 8766 (`JOBSPY_ALLOWED_ORIGINS=http://localhost:3100`):
+
+- **Service:** the allowed origin gets CORS headers, and its preflight gets 204 with the private-network header. Another site gets 403 on the preflight, and 403 on a GET before any search. A cross-site GET with no `Origin` also gets 403. A plain server call still gets 200.
+- **Lite production build:**
+  - With JobSpy off, the chips show LinkedIn, Indeed and Google Jobs as off, in the server's order.
+  - Test against the existing service on 8765 (no allow-list) reports "running but doesn't allow this site. Restart it with JOBSPY_ALLOWED_ORIGINS=http://localhost:3100."
+  - Test against 8766 connects.
+  - Turning it on shows the terms notice, then "On".
+  - A search ("accountant", PH) returned 60 jobs: LinkedIn 19 and Indeed 20 straight from the local service, freehire 21, Google Jobs unavailable (known JobSpy issue).
+- **Self-hosted:** the same search through the refactored server source gave the same counts (LinkedIn 19, Indeed 20, freehire 21, 60 jobs).
+
+Not done here: Chrome's local network access prompt from an HTTPS site (needs a deployment), and the Python way of running the service (no Python on this machine; the Docker image runs the same `server.py`).
 
 ### 6.1 Service (`services/jobspy/server.py`)
 

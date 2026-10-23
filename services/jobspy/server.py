@@ -2,12 +2,17 @@
 A tiny HTTP wrapper around JobSpy (https://github.com/speedyapply/JobSpy, MIT) for HireMe.
 
 HireMe calls it once per job board so each board reports its own result or error.
-Standard library only, apart from JobSpy itself. Meant for a self-hosted HireMe on the
-user's own network: don't expose it to the internet.
+Standard library only, apart from JobSpy itself. Meant for the user's own machine:
+don't expose it to the internet.
 
     GET /health
     GET /search?site=linkedin&term=nurse&location=Manila, Philippines&country_indeed=philippines
                &hours_old=72&is_remote=false&results=20
+
+Self-hosted HireMe calls it from its server. HireMe Lite calls it from the browser, so the
+site's origin must be listed in JOBSPY_ALLOWED_ORIGINS (comma-separated, default none):
+
+    JOBSPY_ALLOWED_ORIGINS=https://hireme.example python server.py
 """
 
 from __future__ import annotations
@@ -26,6 +31,9 @@ MAX_RESULTS = 25
 FETCH_DESCRIPTION = {"linkedin", "bayt", "hellowork"}
 
 log = logging.getLogger("jobspy-service")
+
+# Web pages allowed to call the service from a browser (HireMe Lite). Empty: browsers can't.
+ALLOWED_ORIGINS = {o.strip().rstrip("/") for o in os.environ.get("JOBSPY_ALLOWED_ORIGINS", "").split(",") if o.strip()}
 
 
 def search(query: dict[str, str]) -> dict[str, object]:
@@ -58,15 +66,48 @@ def search(query: dict[str, str]) -> dict[str, object]:
 
 
 class Handler(BaseHTTPRequestHandler):
+    def _cors(self) -> None:
+        """CORS headers for an allowed browser origin; nothing for any other caller."""
+        origin = self.headers.get("Origin", "")
+        if origin in ALLOWED_ORIGINS:
+            self.send_header("Access-Control-Allow-Origin", origin)
+            self.send_header("Vary", "Origin")
+
     def _send(self, status: int, body: dict[str, object]) -> None:
         data = json.dumps(body).encode()
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(data)))
+        self._cors()
         self.end_headers()
         self.wfile.write(data)
 
+    def do_OPTIONS(self) -> None:
+        """Preflight, including Chrome's check before a public site calls a local address."""
+        allowed = self.headers.get("Origin", "") in ALLOWED_ORIGINS
+        self.send_response(204 if allowed else 403)
+        if allowed:
+            self._cors()
+            self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+            self.send_header("Access-Control-Allow-Headers", self.headers.get("Access-Control-Request-Headers", ""))
+            self.send_header("Access-Control-Allow-Private-Network", "true")
+            self.send_header("Access-Control-Max-Age", "600")
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    def _from_other_site(self) -> bool:
+        """A browser request from a page that isn't allowed. Servers send neither header."""
+        origin = self.headers.get("Origin")
+        if origin is not None:
+            return origin not in ALLOWED_ORIGINS
+        return self.headers.get("Sec-Fetch-Site") in ("cross-site", "same-site")
+
     def do_GET(self) -> None:
+        # Refuse before searching: a page on another site could otherwise make this computer
+        # query the boards (it couldn't read the answer, but the request would still go out).
+        if self._from_other_site():
+            self._send(403, {"error": "origin not allowed; add it to JOBSPY_ALLOWED_ORIGINS"})
+            return
         url = urlparse(self.path)
         if url.path == "/health":
             self._send(200, {"ok": True})
@@ -92,6 +133,8 @@ def main() -> None:
     host = os.environ.get("HOST", "127.0.0.1")
     port = int(os.environ.get("PORT", "8765"))
     log.info("JobSpy service on http://%s:%d", host, port)
+    if ALLOWED_ORIGINS:
+        log.info("Browsers allowed from: %s", ", ".join(sorted(ALLOWED_ORIGINS)))
     ThreadingHTTPServer((host, port), Handler).serve_forever()
 
 

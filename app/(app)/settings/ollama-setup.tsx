@@ -37,7 +37,8 @@ function steps(os: Os, origin: string): { text: string; code?: string }[] {
   }
 }
 
-function CopyBlock({ code }: { code: string }) {
+/** A command with a copy button. */
+export function CopyBlock({ code }: { code: string }) {
   const [copied, setCopied] = useState(false);
   return (
     <div className="flex items-start gap-2 rounded-xl bg-surface-2 px-3 py-2">

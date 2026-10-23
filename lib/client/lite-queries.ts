@@ -78,12 +78,13 @@ export async function loadJob(
   return job && { job, aiEnabled: ai, source: sourceCredit(job.source) };
 }
 
-export async function loadSettings(): Promise<{ ai: AiSettingsView; rapidApiKeyHint: string | null }> {
+export async function loadSettings(): Promise<{ ai: AiSettingsView; rapidApiKeyHint: string | null; jobspyEnabled: boolean }> {
   const db = await getBrowserDb();
   const row = await readSettings(db, LOCAL_USER.id);
   return {
     ai: aiSettingsView(row, readKey, aiConfigFromRow(row, readKey)),
     rapidApiKeyHint: maskSecret(readKey(row?.rapidApiKeyEnc)),
+    jobspyEnabled: Boolean(row?.jobspyEnabled),
   };
 }
 

@@ -28,6 +28,8 @@ export const testAiConnection: typeof settings.testAiConnection = isLite
   : settings.testAiConnection;
 export const fetchModels: typeof settings.fetchModels = isLite ? async (...a) => (await lite()).fetchModels(...a) : settings.fetchModels;
 export const saveRapidApiKey: typeof settings.saveRapidApiKey = isLite ? async (...a) => (await lite()).saveRapidApiKey(...a) : settings.saveRapidApiKey;
-export const saveJobSpyEnabled: typeof settings.saveJobSpyEnabled = isLite ? async () => (await lite()).saveJobSpyEnabled() : settings.saveJobSpyEnabled;
+export const saveJobSpyEnabled: typeof settings.saveJobSpyEnabled = isLite
+  ? async (...a) => (await lite()).saveJobSpyEnabled(...a)
+  : settings.saveJobSpyEnabled;
 export const exportData: typeof settings.exportData = isLite ? async () => (await lite()).exportData() : settings.exportData;
 export const importData: typeof settings.importData = isLite ? async (...a) => (await lite()).importData(...a) : settings.importData;

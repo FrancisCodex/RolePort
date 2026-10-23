@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { AiSettingsForm, type AiSettingsView } from "./ai-settings-form";
 import { BackupControls } from "./backup-controls";
 import { JobSourceForm, JobSpyToggle } from "./job-source-form";
+import { LocalJobSpy } from "./local-jobspy";
 
 export type SettingsData = {
   ai: AiSettingsView;
@@ -13,13 +14,15 @@ export type SettingsData = {
   rapidApiKeyHint: string | null;
   /** The JobSpy switch, when this install can use it. */
   jobSpy: { enabled: boolean; reachable: boolean } | null;
+  /** Lite: JobSpy on the user's computer, called from the browser. */
+  localJobSpy?: { enabled: boolean };
   /** Where the user's data and keys are kept, for the "Your data" card. */
   dataNote: string;
   keyNote: string;
 };
 
 /** The Settings cards, shared by the server page and the lite edition. */
-export function SettingsView({ ai, localMode, aiInBrowser, rapidApiKeyHint, jobSpy, dataNote, keyNote }: SettingsData) {
+export function SettingsView({ ai, localMode, aiInBrowser, rapidApiKeyHint, jobSpy, localJobSpy, dataNote, keyNote }: SettingsData) {
   return (
     <div className="flex flex-col gap-4">
       <Card>
@@ -45,6 +48,7 @@ export function SettingsView({ ai, localMode, aiInBrowser, rapidApiKeyHint, jobS
         <CardContent className="flex flex-col gap-4">
           <JobSourceForm rapidApiKeyHint={rapidApiKeyHint} />
           {jobSpy && <JobSpyToggle enabled={jobSpy.enabled} reachable={jobSpy.reachable} />}
+          {localJobSpy && <LocalJobSpy enabled={localJobSpy.enabled} />}
         </CardContent>
       </Card>
 
