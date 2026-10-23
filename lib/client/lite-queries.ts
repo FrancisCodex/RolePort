@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, min } from "drizzle-orm";
 import type { ResultsData } from "@/app/(app)/jobs/results-view";
 import type { BoardCard } from "@/app/(app)/pipeline/board";
 import { toBoardCards } from "@/app/(app)/pipeline/cards";
@@ -85,4 +85,15 @@ export async function loadSettings(): Promise<{ ai: AiSettingsView; rapidApiKeyH
     ai: aiSettingsView(row, readKey, aiConfigFromRow(row, readKey)),
     rapidApiKeyHint: maskSecret(readKey(row?.rapidApiKeyEnc)),
   };
+}
+
+/** When this browser started holding something worth backing up (a saved profile or job), or null if nothing yet. */
+export async function loadDataSince(): Promise<Date | null> {
+  const db = await getBrowserDb();
+  const [[profile], [apps]] = await Promise.all([
+    db.select({ at: schema.profile.onboardedAt }).from(schema.profile).where(eq(schema.profile.userId, LOCAL_USER.id)),
+    db.select({ at: min(schema.application.createdAt) }).from(schema.application).where(eq(schema.application.userId, LOCAL_USER.id)),
+  ]);
+  const dates = [profile?.at, apps?.at].filter((d): d is Date => d instanceof Date);
+  return dates.length ? new Date(Math.min(...dates.map((d) => d.getTime()))) : null;
 }

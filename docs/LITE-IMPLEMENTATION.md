@@ -11,8 +11,8 @@ Branch: `feat/liveweb-update`. Update this table as phases land.
 | [1. Spike](#phase-1-spike-pglite-in-a-worker-profile-page) | ✅ Done (`c23b821`) | Lite build mode, browser database (OPFS, IndexedDB fallback), starter database, Profile in lite. Results in §1.5. |
 | [2. Data layer](#phase-2-data-layer-all-pages-both-modes) | ✅ Done (`ea93f05`) | Every page loads in both modes; Jobs search and AI are placeholders in lite until phases 3 and 4. See the Phase 2 checklist. |
 | [3. Search](#phase-3-search-proxy-route--browser-merge) | ✅ Done (`e6ee6cf`) | Lite searches through `/api/lite/search` and keeps results in the browser. See the Phase 3 checklist. |
-| [4. AI in the browser](#phase-4-ai-in-the-browser) | ✅ Done (not committed yet) | AI calls go straight from the browser to the provider, Ollama included. See the Phase 4 checklist. |
-| [5. Backups and storage](#phase-5-backups-and-storage) | ⏳ Not started | |
+| [4. AI in the browser](#phase-4-ai-in-the-browser) | ✅ Done (`8528982`) | AI calls go straight from the browser to the provider, Ollama included. See the Phase 4 checklist. |
+| [5. Backups and storage](#phase-5-backups-and-storage) | ✅ Done (not committed yet) | Backup export/import in both editions, storage status and persistence, backup reminder, installable app. See the Phase 5 checklist. |
 | [6. JobSpy connect](#phase-6-jobspy-on-the-users-machine) | ⏳ Not started | |
 | [7. Launch polish](#phase-7-launch-polish) | ⏳ Not started | |
 
@@ -388,6 +388,46 @@ Exit: evaluate, CV import, test connection and model list work in lite with at l
 ---
 
 ## Phase 5: Backups and storage
+
+### Status
+
+| Item | State | Where |
+| --- | --- | --- |
+| Backup format | ✅ | `lib/backup/format.ts`: `hireme-backup` v1 with app and schema version; every row checked against its table (unknown fields rejected, timestamps revived) |
+| Export | ✅ | `lib/backup/export.ts`: the user's profile, settings, pipeline, events, evaluations and documents, plus only the jobs they saved or evaluated (jobs are a shared cache) |
+| Import | ✅ | `lib/backup/import.ts`: one transaction; merge (newer row wins, re-import is a no-op) or replace; job ids remapped by dedupe key |
+| Settings → Your data, both editions | ✅ | `app/(app)/settings/backup-controls.tsx`; server actions `exportData` / `importData` (5 MB, under the 6 MB action limit); lite versions in `lite-mutations.ts` |
+| Storage status and persistence | ✅ | `lib/client/storage.ts`: storage used / quota, "Protect my data" (`navigator.storage.persist()`), and an automatic request after each profile save |
+| Backup reminder | ✅ | `components/app/backup-reminder.tsx` in the lite layout: after 14 days without a backup once there's data; "Later" snoozes 3 days |
+| Installable app | ✅ | `app/manifest.ts` (both editions; "HireMe Lite" in lite), icons from `scripts/build-icons.mjs` in `public/icons`, Apple touch icon and web-app tags in `app/layout.tsx` |
+
+Decisions that differ from the plan below:
+
+- **API keys are never in a backup** (no "include keys" option). Server keys are encrypted with that server's secret, and a browser key sitting in a file is a needless risk. After moving installs, the user re-enters keys. Import never touches the receiving side's keys.
+- **The last-backup date is kept in `localStorage`, not a new `user_settings` column.** It's per browser, like the lite data itself, and a schema change would have broken a running self-hosted dev server until restart (its migrations run once at start). If it's lost, the reminder just shows a little early.
+- **No service worker yet.** Chrome installs from the manifest alone. Offline use and precaching the PGlite files are for phase 7 with the caching work.
+
+Verified (2026-10-23):
+
+- **Scratch script, two in-memory databases** (6 checks):
+  - export (no keys in the file, only the jobs referenced);
+  - merge into a database that already has one of the jobs, which re-points the application to it;
+  - re-import is a no-op, and newer local changes survive a merge;
+  - replace restores exactly;
+  - rejects other files, newer schema versions, unknown fields and bad dates;
+  - a failed import rolls back, even in replace mode.
+
+  The 11 earlier checks still pass.
+- **Lite production build in the browser:**
+  - The Your data card shows storage ("Using 39 MB of 5.x GB", not protected).
+  - Download backup produced `hireme-backup-2026-10-23.json` (11 KB: profile, settings without keys, 2 jobs, 2 applications, 2 events, 1 evaluation) and recorded the date.
+  - After changing the profile, restoring with merge kept the newer change ("Everything in that backup is already here"); replace restored the backup ("Imported your profile, settings, 2 applications, 1 evaluation"), and Profile and Pipeline reloaded with it.
+  - The reminder shows after 20 days, hides with "Later" across reloads, and doesn't show after a recent backup.
+  - "Protect my data" was declined by this browser, and the page explains why.
+  - The manifest, icons and head tags are served.
+- **Self-hosted:** pages, manifest and icons are served. Export and import use the same functions through server actions (type-checked); they weren't clicked in the running install, so its data stayed untouched.
+
+Not done here: a real install (Chrome's install prompt, Safari home screen), and a lite → self-hosted import by hand (the same code path the script covers).
 
 - `lib/backup/format.ts`: zod schema `{ format: "hireme-backup", version: 1, appVersion, exportedAt, includesKeys, tables: { user, profile, job, job_match, application, application_event, document, user_settings } }`. Dates as ISO strings. Auth tables (`session`, `account`, `verification`) are never exported.
 - `lib/backup/export.ts` / `import.ts` take a `Db`, so they run in the browser **and** on the server.

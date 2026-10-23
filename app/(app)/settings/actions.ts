@@ -6,6 +6,9 @@ import { generateStructured, listModels } from "@/lib/ai/client";
 import { getMySettingsRow } from "@/lib/ai/config";
 import { AI_PRESETS } from "@/lib/ai/presets";
 import { aiInput, aiSettingsValues, checkBaseUrl, CONNECTION_TEST, resolveAiInput, type AiSettingsInput } from "@/lib/ai/settings";
+import { exportBackup } from "@/lib/backup/export";
+import { importErrorMessage, readBackupForm } from "@/lib/backup/form";
+import { importBackup, type ImportSummary } from "@/lib/backup/import";
 import { getDb } from "@/lib/db";
 import { isLocalMode, jobSpyUrl } from "@/lib/env";
 import type { Result } from "@/lib/result";
@@ -109,4 +112,28 @@ export async function saveJobSpyEnabled(raw: { enabled: boolean }): Promise<Resu
   await writeSettings(await getDb(), user.id, { jobspyEnabled: input.data.enabled });
   refresh();
   return { ok: true, data: undefined };
+}
+
+/* Backups ------------------------------------------------------------------- */
+
+// Server actions accept bodies up to 6 MB (next.config.ts).
+const MAX_BACKUP_BYTES = 5 * 1024 * 1024;
+
+/** The current user's data as a backup file's text. */
+export async function exportData(): Promise<Result<string>> {
+  const user = await getCurrentUser();
+  return { ok: true, data: JSON.stringify(await exportBackup(await getDb(), user)) };
+}
+
+export async function importData(formData: FormData): Promise<Result<ImportSummary>> {
+  const user = await getCurrentUser();
+  const read = await readBackupForm(formData, MAX_BACKUP_BYTES);
+  if (!read.ok) return read;
+  try {
+    const summary = await importBackup(await getDb(), user.id, read.data.backup, read.data.mode);
+    refresh();
+    return { ok: true, data: summary };
+  } catch (error) {
+    return { ok: false, error: importErrorMessage(error) };
+  }
 }

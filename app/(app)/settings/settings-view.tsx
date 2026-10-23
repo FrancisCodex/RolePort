@@ -1,13 +1,14 @@
 import { Database, Lock } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AiSettingsForm, type AiSettingsView } from "./ai-settings-form";
+import { BackupControls } from "./backup-controls";
 import { JobSourceForm, JobSpyToggle } from "./job-source-form";
 
 export type SettingsData = {
   ai: AiSettingsView;
   /** Whether to suggest a local model (Ollama) first. */
   localMode: boolean;
-  /** AI calls run from this browser (the lite edition). */
+  /** AI calls run from this browser and data lives in it (the lite edition). */
   aiInBrowser?: boolean;
   rapidApiKeyHint: string | null;
   /** The JobSpy switch, when this install can use it. */
@@ -60,6 +61,7 @@ export function SettingsView({ ai, localMode, aiInBrowser, rapidApiKeyHint, jobS
             <Lock className="mt-0.5 size-4 shrink-0 text-brand" />
             {keyNote}
           </p>
+          <BackupControls browserStorage={aiInBrowser} />
         </CardContent>
       </Card>
     </div>

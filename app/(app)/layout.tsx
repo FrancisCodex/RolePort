@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { SidebarNav, SidebarNavFallback, TabBar, TabBarFallback } from "@/components/app/app-nav";
+import { BackupReminder } from "@/components/app/backup-reminder";
 import { OpenBrowserDb } from "@/components/app/open-browser-db";
 import { LiteUserChip, UserChip, UserChipSkeleton } from "@/components/app/user-chip";
 import { SettingsLink } from "@/components/app/settings-link";
@@ -39,7 +40,10 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
           </div>
         </header>
         {/* Pages that need room (the jobs split view) mark themselves with data-wide. */}
-        <main className="mx-auto w-full max-w-5xl flex-1 has-[[data-wide]]:max-w-7xl px-4 pt-6 pb-28 sm:px-8 lg:pt-10 lg:pb-12">{children}</main>
+        <main className="mx-auto w-full max-w-5xl flex-1 has-[[data-wide]]:max-w-7xl px-4 pt-6 pb-28 sm:px-8 lg:pt-10 lg:pb-12">
+          {isLite && <BackupReminder />}
+          {children}
+        </main>
       </div>
 
       <Suspense fallback={<TabBarFallback />}>

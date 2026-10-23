@@ -14,6 +14,9 @@ import {
   type AiSettingsInput,
 } from "@/lib/ai/settings";
 import { AiUnavailableError, generateStructured, listModels } from "@/lib/ai/structured";
+import { exportBackup } from "@/lib/backup/export";
+import { importErrorMessage, readBackupForm } from "@/lib/backup/form";
+import { importBackup, type ImportSummary } from "@/lib/backup/import";
 import { getBrowserDb, type BrowserDb } from "@/lib/db/browser";
 import { LOCAL_USER } from "@/lib/db/local-user";
 import { setStatus, toggleSaved, type ApplicationStatus } from "@/lib/jobs/applications";
@@ -28,6 +31,7 @@ import { readSettings, writeSettings } from "@/lib/settings/queries";
 import { invalidate } from "./bus";
 import { readKey, storeKey } from "./lite-keys";
 import { me } from "./lite-queries";
+import { requestPersistence } from "./storage";
 
 /*
  * The lite edition's versions of the server actions, run against the browser database.
@@ -57,6 +61,8 @@ export async function saveProfile(input: ProfileInput): Promise<Result> {
   }
   await writeProfile(await getBrowserDb(), LOCAL_USER.id, parsed.data);
   await invalidate("profile");
+  // There's something worth keeping now: ask the browser not to evict this site's storage.
+  void requestPersistence();
   return { ok: true, data: undefined };
 }
 
@@ -170,6 +176,28 @@ export async function saveRapidApiKey(raw: { apiKey: string | null; clear: boole
   await writeSettings(await getBrowserDb(), LOCAL_USER.id, { rapidApiKeyEnc: value });
   await invalidate("user_settings");
   return { ok: true, data: undefined };
+}
+
+/* Backups ------------------------------------------------------------------- */
+
+// Read in the browser, not uploaded anywhere, so the limit is only there to stay responsive.
+const MAX_BACKUP_BYTES = 100 * 1024 * 1024;
+
+export async function exportData(): Promise<Result<string>> {
+  const db = await getBrowserDb();
+  return { ok: true, data: JSON.stringify(await exportBackup(db, await me(db))) };
+}
+
+export async function importData(formData: FormData): Promise<Result<ImportSummary>> {
+  const read = await readBackupForm(formData, MAX_BACKUP_BYTES);
+  if (!read.ok) return read;
+  try {
+    const summary = await importBackup(await getBrowserDb(), LOCAL_USER.id, read.data.backup, read.data.mode);
+    await invalidate("profile", "user_settings", "job", "job_match", "application");
+    return { ok: true, data: summary };
+  } catch (error) {
+    return { ok: false, error: importErrorMessage(error) };
+  }
 }
 
 export async function saveJobSpyEnabled(): Promise<Result> {
