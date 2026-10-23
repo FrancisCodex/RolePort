@@ -3,6 +3,7 @@
 A free, open-source job search app you run yourself. Find jobs in the Philippines or abroad, see how well each one fits you, and track every application, with your CV and data staying on your own machine.
 
 Bring your own AI: Claude, OpenAI, OpenRouter, Groq, or a free local model through [Ollama](https://ollama.com).
+Don't want to install anything? [HireMe Lite](#hireme-lite-in-your-browser) runs the same app in your browser.
 Inspired by [ai-job-search](https://github.com/MadsLorentzen/ai-job-search). See [docs/PLAN.md](docs/PLAN.md) for the roadmap.
 
 ## Quick start
@@ -70,6 +71,27 @@ To add JobSpy:
 3. In **Settings → Job sources**, turn on **LinkedIn, Indeed and more via JobSpy**.
 
 `npm run jobspy:logs` shows what the service is doing, and `npm run jobspy:stop` stops it. After restarting your computer, start Docker Desktop and run `npm run jobspy` again.
+
+## HireMe Lite (in your browser)
+
+HireMe Lite is the same app as a website: nothing to install, no account. Everything you add (profile, CV text, saved jobs, evaluations, settings and API keys) is stored in your browser, on your device. HireMe's server only relays job searches and keeps nothing. [docs/LITE.md](docs/LITE.md) explains how it works and its Privacy page (`/privacy`) says exactly what goes where.
+
+| | Self-hosted | Lite |
+| --- | --- | --- |
+| Install | Docker or Node.js | None |
+| Where your data lives | A database on your computer | Your browser, on that device |
+| AI | From your server | From your browser, with your own key or Ollama |
+| JobSpy (LinkedIn, Indeed…) | Included with Docker | Runs on your computer, the browser connects to it |
+| Several devices | Any browser that reaches your install | One browser; move with a backup file |
+
+Using Lite:
+
+- **AI with Ollama:** Ollama only answers sites you allow. Settings shows the command for your system (`OLLAMA_ORIGINS=<the Lite address>`, then restart Ollama). Hosted providers (Claude, OpenAI, OpenRouter, Groq) work with just your key.
+- **JobSpy:** start the service with `JOBSPY_ALLOWED_ORIGINS` set to the Lite address ([details](#in-hireme-lite)).
+- **Keep a backup:** clearing the site's data in your browser deletes everything. **Settings → Your data → Download backup** makes one file that also imports into a self-hosted install. Installing Lite as an app (the install icon in Chrome's address bar, or Add to Home Screen on iPhone) makes the browser less likely to clear it.
+- **Browsers:** Chrome, Edge and Firefox. Safari can't always reach Ollama on your computer.
+
+Run Lite yourself with `npm run dev:lite` (port 3100), or build it with `npm run build:lite` and `npm run start:lite`. Hosting it is covered [below](#hosting-hireme-lite).
 
 ## What you get
 
@@ -142,6 +164,17 @@ Then click **Test** in Settings and turn it on. Results go from JobSpy straight 
 | A board shows **unavailable** in search results | The board blocked or rate-limited you, or changed its pages. Wait a while and try again; the other sources still work. |
 | Google Jobs is always **unavailable** | Known: JobSpy's Google scraper is broken at the moment. |
 | `port is already allocated` from Docker | Something else uses port 3000 or 8765, such as `npm run dev`. Stop it, or change the left-hand port in `docker-compose.yml`. |
+
+## Hosting HireMe Lite
+
+Lite is a static site plus one stateless route (`POST /api/lite/search`), so any host that runs Next.js route handlers works (Vercel, Netlify, Cloudflare). There's no database and nothing to configure for users.
+
+- **Build:** use `npm run build:lite` as the build command. It sets `NEXT_PUBLIC_HIREME_MODE=lite` and builds the starter database into `public/pglite/` first. Also set `NEXT_PUBLIC_HIREME_MODE=lite` in the host's environment, so anything that runs `next` directly builds Lite too. The output goes to `.next-lite` (the `distDir` in `next.config.ts`); hosts that read the config, such as Vercel, pick it up, and others need their output directory set to it.
+- **Optional:** `FREEHIRE_API_URL` for a different freehire instance. Don't set any AI keys or `RAPIDAPI_KEY`: users bring their own. On a self-hosted install, `NEXT_PUBLIC_HIREME_LITE_URL` adds a "Try it in your browser" link to its landing page.
+- **Security headers:** production Lite builds send a Content Security Policy (`lib/security-headers.ts`) that only lets the page talk to HireMe, the supported AI providers and `localhost`. To support another hosted AI provider, add it there.
+- **Rate limiting:** the search route allows about 20 searches a minute per address, keyed on `X-Forwarded-For`. Each server instance counts on its own, so keep the host's own rate limiting or firewall on as well.
+- **Caching:** `/_next/static/*` and the PGlite files are content-hashed and can be cached for a year. `/pglite/seed.tar.gz` keeps its name between builds, so leave it on revalidation. Serving with Brotli cuts the first visit's download noticeably (the PGlite runtime and the starter database are about 10 MB gzipped together).
+- **Logs:** turn off request-body logging if your host offers it. The route itself logs nothing about users.
 
 ## Hosting for others
 

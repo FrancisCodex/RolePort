@@ -13,8 +13,8 @@ Branch: `feat/liveweb-update`. Update this table as phases land.
 | [3. Search](#phase-3-search-proxy-route--browser-merge) | ✅ Done (`e6ee6cf`) | Lite searches through `/api/lite/search` and keeps results in the browser. See the Phase 3 checklist. |
 | [4. AI in the browser](#phase-4-ai-in-the-browser) | ✅ Done (`8528982`) | AI calls go straight from the browser to the provider, Ollama included. See the Phase 4 checklist. |
 | [5. Backups and storage](#phase-5-backups-and-storage) | ✅ Done (`84eee77`) | Backup export/import in both editions, storage status and persistence, backup reminder, installable app. See the Phase 5 checklist. |
-| [6. JobSpy connect](#phase-6-jobspy-on-the-users-machine) | ✅ Done (not committed yet) | Lite searches LinkedIn, Indeed and more through JobSpy on the user's computer, straight from the browser. See the Phase 6 checklist. |
-| [7. Launch polish](#phase-7-launch-polish) | ⏳ Not started | |
+| [6. JobSpy connect](#phase-6-jobspy-on-the-users-machine) | ✅ Done (`387f613`) | Lite searches LinkedIn, Indeed and more through JobSpy on the user's computer, straight from the browser. See the Phase 6 checklist. |
+| [7. Launch polish](#phase-7-launch-polish) | ✅ Done in code (not committed yet) | CSP, landing page, privacy page, README. Deployment and the "Before launch" checks remain. See the Phase 7 checklist. |
 
 Open items carried from earlier phases: Safari and Firefox testing (§1.5 finding 3); Brotli and long-lived caching for the PGlite files and the starter database (phase 7).
 
@@ -488,6 +488,40 @@ Exit: with the service running locally, lite search includes LinkedIn/Indeed res
 ---
 
 ## Phase 7: Launch polish
+
+### Status
+
+| Item | State | Where |
+| --- | --- | --- |
+| 7.1 Content Security Policy | ✅ | `lib/security-headers.ts`, applied by `next.config.ts` to every response of production lite builds. Strict `connect-src` (this site, Claude, OpenAI, OpenRouter, Groq, `localhost`/`127.0.0.1` on any port); `script-src self unsafe-inline wasm-unsafe-eval`. Also `frame-ancestors none`, `object-src none`, `Referrer-Policy`, `nosniff`, `Permissions-Policy` |
+| 7.2 Landing page | ✅ | Lite: "Try it in your browser" (→ `/home`) first, "Install on your computer" second, and lite copy. Self-hosted: unchanged, plus "Try it in your browser" when `NEXT_PUBLIC_HIREME_LITE_URL` is set |
+| 7.2 Privacy page | ✅ | `/privacy` in both editions: what stays in the browser, what the search route sees, AI and JobSpy going direct, self-hosted, backups. Linked from the landing footer |
+| 7.2 Settings copy | ✅ | Done in phases 2 and 4 (data and key notes in lite) |
+| 7.2 README | ✅ | "HireMe Lite (in your browser)" section with a comparison table, and "Hosting HireMe Lite" (build, environment, headers, rate limiting, caching, logs). LITE.md status updated |
+| 7.3 Hosting | ⏳ | Not deployed: needs a host account and a domain. The README section covers what a host needs |
+
+Decision on `script-src`: **unsafe-inline without nonces.** Next.js inlines each page's data as scripts, so a strict `script-src` would need nonces (every page rendered per request, which partial prerendering and lite's static pages rule out). SRI (experimental) only covers script files. The protection that matters for keys is `connect-src`: injected script still can't send anything to a site outside the list. `[::1]` isn't listed because CSP has no syntax for IPv6 addresses (Chrome rejected it in testing).
+
+Custom OpenAI-compatible providers on other hosted domains are blocked by `connect-src` in lite; local ones (LM Studio, any port on `localhost`) work. To allow another hosted provider, add it in `lib/security-headers.ts`.
+
+Verified (2026-10-24, lite production build in Chromium):
+
+- **Headers:** pages, the search route and static chunks (including the PGlite worker's script) carry the CSP and the other headers. Self-hosted gets none.
+- **What `connect-src` allows:** a no-cors request to an unlisted site is blocked, with a `securitypolicyviolation` event naming `connect-src`. The Claude API and Ollama on `localhost` are allowed.
+- **Every flow, with no CSP violations:**
+  - first-visit database setup (WebAssembly in the worker);
+  - Ollama Test connection;
+  - a PDF CV import, read with pdf.js and then filled by AI;
+  - job search and fit evaluation.
+- **Landing and Privacy:** lite shows "Your job search, right in your browser.", "Try it in your browser → /home", "Install on your computer → #get-started" and "Prefer your own install?". The Privacy page has its four sections and the footer links to it. On the self-hosted dev server, `/`, `/home` and `/privacy` return 200.
+
+### Before launch
+
+- Pick a host and domain, deploy, and set `NEXT_PUBLIC_HIREME_LITE_URL` for self-hosted landing pages.
+- On the deployment: Chrome's local network access prompt for Ollama and JobSpy; installing the app (Chrome install, Safari home screen); "Protect my data" in a real browser.
+- Safari and Firefox (§1.5 finding 3, including OPFS handle limits).
+- Brotli and long-lived caching for `/pglite/*` on the host; consider a content-hashed starter database name.
+- Publish the JobSpy image (GHCR) so lite users don't build it, and merge this branch so the `#main` build path has the CORS changes.
 
 ### 7.1 Content Security Policy
 

@@ -11,9 +11,9 @@ export default function MarketingLayout({ children }: LayoutProps<"/">) {
         <nav className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Logo />
           <div className="hidden items-center gap-8 text-sm font-medium text-muted md:flex">
-            <a href="#how" className="hover:text-fg">How it works</a>
-            <a href="#features" className="hover:text-fg">Features</a>
-            <a href="#get-started" className="hover:text-fg">Install</a>
+            <Link href="/#how" className="hover:text-fg">How it works</Link>
+            <Link href="/#features" className="hover:text-fg">Features</Link>
+            <Link href="/#get-started" className="hover:text-fg">Install</Link>
           </div>
           <div className="flex items-center gap-1 sm:gap-2">
             <ThemeToggle />
@@ -35,7 +35,10 @@ export default function MarketingLayout({ children }: LayoutProps<"/">) {
             <a href={`${REPO_URL}/blob/main/LICENSE`} className="underline-offset-4 hover:text-fg hover:underline">
               MIT licence
             </a>{" "}
-            · Made in the Philippines 🇵🇭 for job seekers everywhere
+            · Made in the Philippines 🇵🇭 for job seekers everywhere ·{" "}
+            <Link href="/privacy" className="underline-offset-4 hover:text-fg hover:underline">
+              Privacy
+            </Link>
           </p>
         </div>
       </footer>

@@ -1,6 +1,6 @@
 # HireMe Lite: a hosted web version with no user data on the server
 
-Status: plan only. Nothing here is built yet. The step-by-step build plan is in [LITE-IMPLEMENTATION.md](LITE-IMPLEMENTATION.md).
+Status: built on the `feat/liveweb-update` branch, not deployed yet. [LITE-IMPLEMENTATION.md](LITE-IMPLEMENTATION.md) has the build plan, what each phase delivered and how it was verified, and what's still open.
 
 ## 1. Goal
 

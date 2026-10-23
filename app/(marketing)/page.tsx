@@ -15,6 +15,7 @@ import Link from "next/link";
 import { HeroCards } from "@/components/marketing/hero-cards";
 import { GitHubMark, REPO_URL, SetupGuide } from "@/components/marketing/setup-guide";
 import { buttonVariants } from "@/components/ui/button";
+import { isLite, liteUrl } from "@/lib/mode";
 import { cn } from "@/lib/utils";
 
 const places = ["Philippines", "Singapore", "Australia", "United Kingdom", "United States", "Canada", "UAE", "India", "Remote"];
@@ -41,7 +42,14 @@ const features = [
   { icon: Target, title: "Honest match scores", body: "See why a job fits, and what's missing, before you spend time applying.", tone: "bg-brand-soft text-brand-ink" },
   { icon: Globe, title: "Search anywhere", body: "Jobs from freehire, Jobicy, JSearch and JobSpy, filtered by the country you choose.", tone: "bg-success-soft text-success" },
   { icon: Bot, title: "Bring your own AI", body: "Claude, OpenAI, OpenRouter, Groq, or a free local model through Ollama.", tone: "bg-warning-soft text-warning" },
-  { icon: Lock, title: "Private by default", body: "Your CV, profile and keys live in a database on your machine. No account needed.", tone: "bg-brand-soft text-brand-ink" },
+  {
+    icon: Lock,
+    title: "Private by default",
+    body: isLite
+      ? "Your CV, profile and keys stay in your browser, on your device. No account needed."
+      : "Your CV, profile and keys live in a database on your machine. No account needed.",
+    tone: "bg-brand-soft text-brand-ink",
+  },
   { icon: KanbanSquare, title: "Application pipeline", body: "A drag-and-drop board for every job you save, from first look to offer.", tone: "bg-success-soft text-success" },
   { icon: FileText, title: "Tailored CV & cover letter", body: "Coming next: ATS-friendly documents written from your real experience.", tone: "bg-warning-soft text-warning", soon: true },
   { icon: MessagesSquare, title: "Interview coach", body: "Coming next: prep packs and mock interviews built from the job you applied to.", tone: "bg-brand-soft text-brand-ink", soon: true },
@@ -73,21 +81,43 @@ export default function LandingPage() {
               Free and open source · MIT licence
             </a>
             <h1 className="mt-6 font-display text-[2.6rem] leading-[1.05] font-bold tracking-tight text-balance sm:text-6xl">
-              Your job search, <span className="text-brand">on your own machine.</span>
+              Your job search, <span className="text-brand">{isLite ? "right in your browser." : "on your own machine."}</span>
             </h1>
             <p className="mt-5 max-w-lg text-lg text-muted text-pretty">
               HireMe finds jobs in your country or abroad, scores how well each one fits you, and tracks every
-              application. Your CV and data never leave your computer.
+              application.{" "}
+              {isLite
+                ? "Nothing to install: your CV and data stay in your browser, on your device."
+                : "Your CV and data never leave your computer."}
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
-              <a href="#get-started" className={buttonVariants({ size: "lg" })}>
-                Get started
-                <ArrowRight />
-              </a>
-              <a href={REPO_URL} className={buttonVariants({ size: "lg", variant: "secondary" })}>
-                <GitHubMark />
-                View on GitHub
-              </a>
+              {isLite ? (
+                <>
+                  <Link href="/home" className={buttonVariants({ size: "lg" })}>
+                    Try it in your browser
+                    <ArrowRight />
+                  </Link>
+                  <a href="#get-started" className={buttonVariants({ size: "lg", variant: "secondary" })}>
+                    Install on your computer
+                  </a>
+                </>
+              ) : (
+                <>
+                  <a href="#get-started" className={buttonVariants({ size: "lg" })}>
+                    Get started
+                    <ArrowRight />
+                  </a>
+                  {liteUrl && (
+                    <a href={`${liteUrl}/home`} className={buttonVariants({ size: "lg", variant: "secondary" })}>
+                      Try it in your browser
+                    </a>
+                  )}
+                  <a href={REPO_URL} className={buttonVariants({ size: "lg", variant: liteUrl ? "ghost" : "secondary" })}>
+                    <GitHubMark />
+                    View on GitHub
+                  </a>
+                </>
+              )}
             </div>
             <p className="mt-5 flex items-center gap-2 text-sm text-subtle">
               <Lock className="size-4" />
@@ -162,12 +192,14 @@ export default function LandingPage() {
       <section id="get-started" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-24 sm:px-6">
         <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
           <div className="min-w-0">
-            <p className="text-sm font-semibold tracking-wider text-brand uppercase">Get started</p>
+            <p className="text-sm font-semibold tracking-wider text-brand uppercase">{isLite ? "Install" : "Get started"}</p>
             <h2 className="mt-2 font-display text-4xl font-bold tracking-tight text-balance">
-              Run HireMe on your computer
+              {isLite ? "Prefer your own install?" : "Run HireMe on your computer"}
             </h2>
             <p className="mt-4 text-lg text-muted text-pretty">
-              Every feature works on your own install, with no sign-in. It takes a few commands and about five minutes.
+              {isLite
+                ? "The installed version keeps your data in a database on your computer, so it's not tied to one browser. Move over any time with a backup from Settings. It takes a few commands and about five minutes."
+                : "Every feature works on your own install, with no sign-in. It takes a few commands and about five minutes."}
             </p>
             <ol className="mt-8 flex flex-col gap-4">
               {afterInstall.map((step, i) => (
