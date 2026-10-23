@@ -2,11 +2,12 @@ import "server-only";
 import { jobKey } from "./job-key";
 import { freehireSource } from "./sources/freehire";
 import { jobicySource } from "./sources/jobicy";
+import { jobSpySources } from "./sources/jobspy";
 import { jsearchSource } from "./sources/jsearch";
 import type { JobSearchParams, NormalizedJob, SourceContext, SourceStatus } from "./types";
 
 /** Order matters: when two sources carry the same posting, the earlier one wins. */
-export const JOB_SOURCES = [jsearchSource, freehireSource, jobicySource];
+export const JOB_SOURCES = [jsearchSource, ...jobSpySources, freehireSource, jobicySource];
 
 /** The credit line a source's terms require, for job pages. */
 export function sourceCredit(id: string): { name: string; url: string } | null {
@@ -45,7 +46,8 @@ export async function searchAllSources(
   });
 
   for (const source of JOB_SOURCES) {
-    if (!source.enabled(ctx)) statuses.push({ id: source.id, label: source.label, count: 0, note: source.disabledNote });
+    // Boards that don't cover this search's country stay out of the list, even when switched off.
+    if (!source.enabled(ctx) && source.covers(params)) statuses.push({ id: source.id, label: source.label, count: 0, note: source.disabledNote });
   }
 
   return { jobs, statuses };

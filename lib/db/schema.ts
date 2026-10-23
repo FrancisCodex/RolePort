@@ -342,6 +342,8 @@ export const userSettings = pgTable("user_settings", {
   /** OpenAI-compatible reasoning_effort to send, or null to leave it to the provider. */
   aiReasoningEffort: text("ai_reasoning_effort"),
   rapidApiKeyEnc: text("rapid_api_key_enc"),
+  /** Opted in to the JobSpy boards (LinkedIn, Indeed, …) on a self-hosted install. */
+  jobspyEnabled: boolean("jobspy_enabled").default(false).notNull(),
   ...timestamps,
 });
 

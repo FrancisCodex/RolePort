@@ -52,8 +52,8 @@ export type SourceStatus = {
   failed?: boolean;
 };
 
-/** Per-request keys for sources that need one. */
-export type SourceContext = { rapidApiKey: string | null };
+/** Per-request keys and opt-ins for sources that need one. */
+export type SourceContext = { rapidApiKey: string | null; jobspyEnabled: boolean };
 
 export interface JobSource {
   id: string;

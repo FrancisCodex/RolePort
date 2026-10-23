@@ -6,7 +6,7 @@ import { generateStructured, listModels } from "@/lib/ai/client";
 import { getMySettingsRow, type AiConfig } from "@/lib/ai/config";
 import { AI_PRESET_IDS, AI_PRESETS } from "@/lib/ai/presets";
 import { getDb, schema } from "@/lib/db";
-import { isLocalMode } from "@/lib/env";
+import { isLocalMode, jobSpyUrl } from "@/lib/env";
 import { decryptSecret, encryptSecret } from "@/lib/secrets";
 import { getCurrentUser } from "@/lib/session";
 
@@ -168,6 +168,23 @@ export async function saveRapidApiKey(raw: { apiKey: string | null; clear: boole
     .insert(schema.userSettings)
     .values({ userId: user.id, rapidApiKeyEnc: value })
     .onConflictDoUpdate({ target: schema.userSettings.userId, set: { rapidApiKeyEnc: value } });
+  refresh();
+  return { ok: true, data: undefined };
+}
+
+export async function saveJobSpyEnabled(raw: { enabled: boolean }): Promise<Result> {
+  const user = await getCurrentUser();
+  const input = z.object({ enabled: z.boolean() }).safeParse(raw);
+  if (!input.success) return { ok: false, error: "Invalid setting." };
+  // The JobSpy boards are for self-hosted, single-person installs only.
+  if (input.data.enabled && (!isLocalMode || !jobSpyUrl)) {
+    return { ok: false, error: "JobSpy is only available on a self-hosted install with the JobSpy service running." };
+  }
+  const db = await getDb();
+  await db
+    .insert(schema.userSettings)
+    .values({ userId: user.id, jobspyEnabled: input.data.enabled })
+    .onConflictDoUpdate({ target: schema.userSettings.userId, set: { jobspyEnabled: input.data.enabled } });
   refresh();
   return { ok: true, data: undefined };
 }

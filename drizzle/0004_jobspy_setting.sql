@@ -1,0 +1,1 @@
+ALTER TABLE "user_settings" ADD COLUMN "jobspy_enabled" boolean DEFAULT false NOT NULL;

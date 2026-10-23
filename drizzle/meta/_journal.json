@@ -29,6 +29,13 @@
       "when": 1792737687145,
       "tag": "0003_global_profile",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792738129144,
+      "tag": "0004_jobspy_setting",
+      "breakpoints": true
     }
   ]
 }

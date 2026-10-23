@@ -1,6 +1,6 @@
 import "server-only";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
-import { getRapidApiKey } from "@/lib/ai/config";
+import { getJobSpyEnabled, getRapidApiKey } from "@/lib/ai/config";
 import { getDb, schema } from "@/lib/db";
 import { getMyProfile } from "@/lib/profile/data";
 import { getCurrentUser } from "@/lib/session";
@@ -103,9 +103,9 @@ export async function searchJobs(
   sort: "match" | "date",
 ): Promise<{ jobs: JobListItem[]; statuses: SourceStatus[]; hasSkills: boolean }> {
   const user = await getCurrentUser();
-  const rapidApiKey = await getRapidApiKey();
+  const [rapidApiKey, jobspyEnabled] = await Promise.all([getRapidApiKey(), getJobSpyEnabled()]);
   const [{ jobs, statuses }, { profile }, saved] = await Promise.all([
-    searchAllSources(params, { rapidApiKey }),
+    searchAllSources(params, { rapidApiKey, jobspyEnabled }),
     getMyProfile(),
     savedJobIds(user.id),
   ]);
