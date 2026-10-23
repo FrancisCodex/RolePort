@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, inArray, lt, notExists, sql } from "drizzle-orm";
 import type { FitEvaluation } from "@/lib/ai/evaluate-job";
 import * as schema from "@/lib/db/schema";
 import type { AnyDb } from "@/lib/db/types";
@@ -86,6 +86,40 @@ export async function storeJobs(db: AnyDb, jobs: KeyedJob[]): Promise<JobRow[]> 
   const rows = await db.select().from(schema.job).where(inArray(schema.job.jobKey, jobs.map((j) => j.jobKey)));
   const order = new Map(jobs.map((j, i) => [j.jobKey, i]));
   return rows.sort((a, b) => (order.get(a.jobKey) ?? 0) - (order.get(b.jobKey) ?? 0));
+}
+
+/**
+ * Delete stored search results not fetched in `days` that nothing refers to: not saved to
+ * the pipeline and never evaluated. Keeps the lite edition's browser storage small.
+ * Returns how many were removed.
+ */
+export async function pruneJobs(db: AnyDb, days: number): Promise<number> {
+  const cutoff = new Date(Date.now() - days * 86_400_000);
+  const removed = await db
+    .delete(schema.job)
+    .where(
+      and(
+        lt(schema.job.fetchedAt, cutoff),
+        notExists(db.select({ one: sql`1` }).from(schema.application).where(eq(schema.application.jobId, schema.job.id))),
+        notExists(db.select({ one: sql`1` }).from(schema.jobMatch).where(eq(schema.jobMatch.jobId, schema.job.id))),
+      ),
+    )
+    .returning({ id: schema.job.id });
+  return removed.length;
+}
+
+/** Stored jobs by id, in the order given (ids that no longer exist are skipped). */
+export async function readJobsByIds(db: AnyDb, ids: string[]): Promise<JobRow[]> {
+  if (ids.length === 0) return [];
+  const rows = await db.select().from(schema.job).where(inArray(schema.job.id, ids));
+  const order = new Map(ids.map((id, i) => [id, i]));
+  return rows.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+}
+
+/** "Best match" (AI score, else quick match) or "Newest", in place. */
+export function sortJobs(items: JobListItem[], sort: "match" | "date"): JobListItem[] {
+  if (sort === "match") return items.sort((a, b) => matchSortScore(b) - matchSortScore(a));
+  return items.sort((a, b) => (b.postedAt?.getTime() ?? 0) - (a.postedAt?.getTime() ?? 0));
 }
 
 export async function readSavedJobIds(db: AnyDb, userId: string): Promise<Set<string>> {

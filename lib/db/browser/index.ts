@@ -30,8 +30,15 @@ async function start(): Promise<BrowserDb> {
   const internals = db as unknown as Migratable;
   await internals.dialect.migrate(migrations, internals.session, { migrationsFolder: "" });
   await db.insert(schema.user).values(LOCAL_USER).onConflictDoNothing();
+  // Keep browser storage small: drop old search results nothing refers to. Not awaited, so
+  // pages don't wait for it; loaded on demand to keep the job queries out of this chunk.
+  void import("@/lib/jobs/queries")
+    .then((q) => q.pruneJobs(db, PRUNE_AFTER_DAYS))
+    .catch((error) => console.warn("[lite] couldn't prune old jobs", error));
   return db;
 }
+
+const PRUNE_AFTER_DAYS = 60;
 
 let ready: Promise<BrowserDb> | undefined;
 

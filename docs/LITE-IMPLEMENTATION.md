@@ -9,8 +9,8 @@ Branch: `feat/liveweb-update`. Update this table as phases land.
 | Phase | Status | Notes |
 | --- | --- | --- |
 | [1. Spike](#phase-1-spike-pglite-in-a-worker-profile-page) | ✅ Done (`c23b821`) | Lite build mode, browser database (OPFS, IndexedDB fallback), starter database, Profile in lite. Results in §1.5. |
-| [2. Data layer](#phase-2-data-layer-all-pages-both-modes) | ✅ Done (not committed yet) | Every page loads in both modes; Jobs search and AI are placeholders in lite until phases 3 and 4. See the Phase 2 checklist. |
-| [3. Search](#phase-3-search-proxy-route--browser-merge) | ⏳ Not started | |
+| [2. Data layer](#phase-2-data-layer-all-pages-both-modes) | ✅ Done (`ea93f05`) | Every page loads in both modes; Jobs search and AI are placeholders in lite until phases 3 and 4. See the Phase 2 checklist. |
+| [3. Search](#phase-3-search-proxy-route--browser-merge) | ✅ Done (not committed yet) | Lite searches through `/api/lite/search` and keeps results in the browser. See the Phase 3 checklist. |
 | [4. AI in the browser](#phase-4-ai-in-the-browser) | ⏳ Not started | |
 | [5. Backups and storage](#phase-5-backups-and-storage) | ⏳ Not started | |
 | [6. JobSpy connect](#phase-6-jobspy-on-the-users-machine) | ⏳ Not started | |
@@ -169,7 +169,7 @@ Exit: Profile loads and saves in lite, survives a reload, works in two tabs; sel
 | 2.3 Lite loader | ✅ | `components/app/lite-data.tsx` (first-visit, loading, error, reload on invalidation) |
 | 2.3 Mutations module | ✅ | `lib/client/mutations.ts` covers every write; no component imports an `actions.ts` |
 | 2.4 Home, Profile, Pipeline, Job, Settings | ✅ | View + server loader + `lite-*.tsx` loader each |
-| 2.4 Jobs (search) | ⏭ Phase 3 | Lite shows a "coming soon" state |
+| 2.4 Jobs (search) | ✅ in Phase 3 | `app/(app)/jobs/lite-jobs.tsx` |
 | 2.5 No auth in lite | ✅ | `proxy.ts` redirect, `(auth)/layout.tsx` 404, `/api/auth` 404 |
 
 Verified (2026-10-23):
@@ -247,6 +247,38 @@ Exit: every app page works in both modes; self-hosted smoke test passes; `next b
 ---
 
 ## Phase 3: Search (proxy route + browser merge)
+
+### Status
+
+| Item | State | Where |
+| --- | --- | --- |
+| 3.1 Search route | ✅ | `app/api/lite/search/route.ts`: POST only, 404 unless lite, zod-checked input, JSearch key from `x-rapidapi-key` used for that request only |
+| 3.1 Shared search rules | ✅ | `lib/jobs/search-params.ts`: URL parsing for both editions and the route's input schema |
+| 3.1 No JobSpy from the server | ✅ | `HOSTED_SOURCES` in `lib/jobs/search.ts`; `searchAllSources` takes the source list |
+| 3.1 JSearch cache per key | ✅ | `lib/jobs/sources/jsearch.ts` keys its memo by a SHA-256 of the API key (decided: hash) |
+| 3.1 Rate limit | ✅ | `lib/rate-limit.ts`: 20-request burst, 20 per minute per address, `429` with `Retry-After` |
+| 3.2 Browser search and save | ✅ | `lib/client/lite-search.ts` (route → `storeJobs` in the browser; the same search is reused for 5 minutes) |
+| 3.2 Jobs page in both editions | ✅ | `search-view.tsx` and `results-view.tsx` shared; `lite-jobs.tsx` loads the profile, searches, then shows stored results that reload on save |
+| 3.3 Storage hygiene | ✅ | `pruneJobs` in `lib/jobs/queries.ts`, run in the background when the browser database opens: jobs older than 60 days that aren't saved or evaluated |
+
+Open question from LITE.md answered: **Jobicy allows browser requests (`Access-Control-Allow-Origin: *`); freehire doesn't** (no CORS header on its responses). The route therefore stays for every source: one code path, server-side caching and HTML cleaning, and no CORS handling in the browser.
+
+Verified (2026-10-23):
+
+- **Scratch script:** the shared-query checks from phase 2, plus four new ones, against in-memory PGlite. `pruneJobs` keeps saved and evaluated jobs. `parseJobSearch` behaves as before. The route schema rejects a bad country, location, days, extra fields and an empty query. The rate limit handles bursts, waits, separate addresses and refills. 11 of 11 passed.
+- **Route (lite production build):**
+  - A valid search returned 28 normalized, deduped jobs (freehire 28, Jobicy 0, JSearch off, no JobSpy boards).
+  - Invalid input returns 400 and GET returns 405.
+  - The self-hosted server returns 404 for the route.
+  - The 21st request in a burst gets 429 with `Retry-After`.
+  - With a fake RapidAPI key, JSearch ran and showed "unavailable" while the rest returned. The key never appeared in the server log.
+- **Lite in the browser:** with no query and no saved roles, Jobs shows the prompt. A search shows results and source chips. Saving a job marks it, and it appears in Pipeline. Its job page loads from the browser database with the source credit. A reload keeps it saved. No console errors.
+- **Self-hosted:** the Jobs page still renders a search (67 results for "nurse") through the shared views.
+
+Notes:
+
+- The rate limit keys on `X-Forwarded-For` (or `X-Real-IP`). Without those headers, as on localhost, every request shares one bucket. Hosts like Vercel set them; keep the host's own rate limiting on too, since each serverless instance has its own memory.
+- The "Analyze jobs" panel in lite still needs AI (phase 4).
 
 ### 3.1 Route
 

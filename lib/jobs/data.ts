@@ -4,7 +4,7 @@ import { getDb } from "@/lib/db";
 import { getMyProfile } from "@/lib/profile/data";
 import { getCurrentUser } from "@/lib/session";
 import { countApplications, readApplications, type PipelineItem } from "./applications";
-import { matchSortScore, readFitMatches, readJob, readSavedJobIds, storeJobs, toListItem, type JobListItem } from "./queries";
+import { readFitMatches, readJob, readSavedJobIds, sortJobs, storeJobs, toListItem, type JobListItem } from "./queries";
 import { searchAllSources } from "./search";
 import type { JobSearchParams, SourceStatus } from "./types";
 
@@ -25,13 +25,10 @@ export async function searchJobs(
   ]);
   const rows = await storeJobs(db, jobs);
   const fits = await readFitMatches(db, user.id, rows.map((r) => r.id));
-  const items = rows.map((row) => toListItem(row, profile, saved, fits));
-
-  if (sort === "match") {
-    items.sort((a, b) => matchSortScore(b) - matchSortScore(a));
-  } else {
-    items.sort((a, b) => (b.postedAt?.getTime() ?? 0) - (a.postedAt?.getTime() ?? 0));
-  }
+  const items = sortJobs(
+    rows.map((row) => toListItem(row, profile, saved, fits)),
+    sort,
+  );
   return { jobs: items, statuses, hasSkills: profile.skills.length > 0 };
 }
 

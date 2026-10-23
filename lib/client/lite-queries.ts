@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
-import { toBoardCards } from "@/app/(app)/pipeline/cards";
+import type { ResultsData } from "@/app/(app)/jobs/results-view";
 import type { BoardCard } from "@/app/(app)/pipeline/board";
+import { toBoardCards } from "@/app/(app)/pipeline/cards";
 import type { AiSettingsView } from "@/app/(app)/settings/ai-settings-form";
 import { aiSettingsView } from "@/app/(app)/settings/view";
 import { aiConfigFromRow } from "@/lib/ai/settings";
@@ -8,7 +9,8 @@ import { getBrowserDb, type BrowserDb } from "@/lib/db/browser";
 import { LOCAL_USER } from "@/lib/db/local-user";
 import * as schema from "@/lib/db/schema";
 import { countApplications, readApplications } from "@/lib/jobs/applications";
-import { readJob, type JobListItem } from "@/lib/jobs/queries";
+import { readFitMatches, readJob, readJobsByIds, readSavedJobIds, sortJobs, toListItem, type JobListItem } from "@/lib/jobs/queries";
+import type { JobSort } from "@/lib/jobs/search-params";
 import { sourceCredit } from "@/lib/jobs/sources/credits";
 import { readProfile, type ProfileView } from "@/lib/profile/queries";
 import { maskSecret } from "@/lib/secret-hint";
@@ -42,6 +44,25 @@ export async function loadHome(): Promise<ProfileView & { saved: number; aiEnabl
 export async function loadPipeline(): Promise<BoardCard[]> {
   const db = await getBrowserDb();
   return toBoardCards(await readApplications(db, LOCAL_USER.id));
+}
+
+/** A search's stored results (from lite-search.ts), ranked for the list. */
+export async function loadJobList(ids: string[], sort: JobSort): Promise<Omit<ResultsData, "statuses">> {
+  const db = await getBrowserDb();
+  const { profile } = await readProfile(db, await me(db));
+  const [rows, saved, fits] = await Promise.all([
+    readJobsByIds(db, ids),
+    readSavedJobIds(db, LOCAL_USER.id),
+    readFitMatches(db, LOCAL_USER.id, ids),
+  ]);
+  return {
+    jobs: sortJobs(
+      rows.map((row) => toListItem(row, profile, saved, fits)),
+      sort,
+    ),
+    hasSkills: profile.skills.length > 0,
+    aiEnabled: AI_IN_BROWSER,
+  };
 }
 
 export async function loadJob(

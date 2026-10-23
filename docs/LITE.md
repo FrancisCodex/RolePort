@@ -129,7 +129,7 @@ Today the database is read in server components and server actions:
 ## 10. Open questions
 
 - Which providers allow browser requests today (verify before phase 4)?
-- Do freehire and Jobicy allow browser requests? If so, the proxy is only needed for JSearch.
+- ~~Do freehire and Jobicy allow browser requests?~~ Answered in LITE-IMPLEMENTATION.md phase 3: Jobicy does, freehire doesn't, so every source goes through the route.
 - Hosting: any platform with route handlers works (Vercel, Netlify, Cloudflare). Pick one with a free tier and edge caching.
 - Is a lite → self-hosted migration (export, then import) enough, or do we want a "Move to my install" button?
 - Bundle size: PGlite's WASM is a few MB; load it only on app pages, never on the landing page.
