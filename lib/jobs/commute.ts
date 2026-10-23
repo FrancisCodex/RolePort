@@ -1,3 +1,4 @@
+import { COUNTRIES, countryName } from "@/lib/geo/countries";
 import { PH_LOCATIONS } from "@/lib/ph-locations";
 
 /**
@@ -52,13 +53,46 @@ export function areaOf(place: string | null | undefined): string | null {
   return best?.id ?? null;
 }
 
-export type Commute = "remote" | "same_area" | "neighbouring" | "far" | "unknown";
+// Short names postings use for countries, besides the full name.
+const COUNTRY_ALIASES: Record<string, string[]> = {
+  AE: ["uae", "dubai", "abu dhabi"],
+  GB: ["uk", "england", "london"],
+  US: ["usa", "u.s."],
+  SA: ["ksa", "riyadh", "jeddah"],
+  QA: ["doha"],
+};
+
+/** The country a job's location names, as a code, or null. */
+export function countryOf(place: string | null | undefined): string | null {
+  if (!place) return null;
+  const text = ` ${fold(place).replace(/[^a-z0-9.-]+/g, " ")} `;
+  for (const c of COUNTRIES) {
+    const names = [c.name, ...(COUNTRY_ALIASES[c.code] ?? [])].map((n) => fold(n).replace(/[^a-z0-9.-]+/g, " "));
+    if (names.some((n) => text.includes(` ${n} `))) return c.code;
+  }
+  return null;
+}
+
+export type Commute = "remote" | "same_area" | "neighbouring" | "far" | "target_country" | "abroad" | "unknown";
 
 export function commuteCheck(
   job: { location: string | null; workSetup: string | null },
-  candidate: { city: string | null; region: string | null },
+  candidate: { city: string | null; region: string | null; country: string; targetCountries: string[] },
 ): { kind: Commute; text: string } {
   if (job.workSetup === "remote") return { kind: "remote", text: "Remote role: no commute needed." };
+  const jobCountry = countryOf(job.location);
+  if (jobCountry && jobCountry !== candidate.country) {
+    return candidate.targetCountries.includes(jobCountry)
+      ? {
+          kind: "target_country",
+          text: `The job is in ${countryName(jobCountry)}, one of the countries the candidate wants to move to: relocation is wanted, not a problem.`,
+        }
+      : { kind: "abroad", text: `The job is in ${countryName(jobCountry)}, which the candidate hasn't listed as a country they'd move to.` };
+  }
+  // The area map below only knows the Philippines.
+  if (candidate.country !== "PH") {
+    return { kind: "unknown", text: "The app can't judge commutes outside the Philippines; judge from the text." };
+  }
   const jobArea = areaOf(job.location);
   const homeArea = areaOf(candidate.city) ?? (candidate.region === "NCR" ? "metro-manila" : areaOf(candidate.region));
   const label = (id: string) => PH_LOCATIONS.find((l) => l.id === id)?.label ?? id;

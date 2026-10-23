@@ -1,4 +1,5 @@
 import { cacheLife } from "next/cache";
+import { countryOrDefault } from "@/lib/geo/countries";
 import { findLocation } from "@/lib/ph-locations";
 import { cleanDescription } from "../html";
 import type { EmploymentType, JobSearchParams, JobSource, NormalizedJob, SalaryPeriod, WorkSetup } from "../types";
@@ -44,11 +45,13 @@ function buildQuery(params: JobSearchParams): URLSearchParams {
   if (params.postedWithinDays) q.set("posted_within_days", String(params.postedWithinDays));
 
   // freehire ORs countries and cities together, so send exactly one geography facet.
-  const location = findLocation(params.locationId);
+  const location = params.country === "PH" ? findLocation(params.locationId) : undefined;
   if (location) {
     for (const city of location.cities) q.append("cities", city);
+  } else if (params.city && params.locationId !== "remote") {
+    q.append("cities", params.city);
   } else {
-    q.set("countries", "ph");
+    q.set("countries", params.country.toLowerCase());
   }
 
   const workMode = params.locationId === "remote" ? "remote" : params.workSetup;
@@ -61,7 +64,7 @@ async function fetchFreehire(query: string): Promise<FreehireJob[]> {
   cacheLife("hours");
 
   const res = await fetch(`${BASE_URL}/api/v1/agent/jobs/search?${query}`, {
-    headers: { Accept: "application/json", "User-Agent": "HireMe/0.1 (job search for the Philippines)" },
+    headers: { Accept: "application/json", "User-Agent": "HireMe/0.1 (job search)" },
     signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) throw new Error(`freehire responded ${res.status}`);
@@ -69,7 +72,7 @@ async function fetchFreehire(query: string): Promise<FreehireJob[]> {
   return body.data ?? [];
 }
 
-function normalize(job: FreehireJob): NormalizedJob {
+function normalize(job: FreehireJob, fallbackCurrency: string): NormalizedJob {
   const e = job.enrichment ?? {};
   return {
     source: "freehire",
@@ -86,7 +89,7 @@ function normalize(job: FreehireJob): NormalizedJob {
     employmentType: EMPLOYMENT[e.employment_type ?? ""] ?? null,
     salaryMin: e.salary_min ?? null,
     salaryMax: e.salary_max ?? null,
-    salaryCurrency: e.salary_currency ?? "PHP",
+    salaryCurrency: e.salary_currency ?? fallbackCurrency,
     salaryPeriod: PERIODS[e.salary_period ?? ""] ?? null,
     description: cleanDescription(job.description),
     summary: e.summary ?? null,
@@ -108,6 +111,7 @@ export const freehireSource: JobSource = {
   covers: () => true,
   async search(params) {
     const jobs = await fetchFreehire(buildQuery(params).toString());
-    return jobs.map(normalize);
+    const currency = countryOrDefault(params.country).currency;
+    return jobs.map((job) => normalize(job, currency));
   },
 };

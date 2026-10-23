@@ -27,6 +27,9 @@ export async function getMyProfile(): Promise<ProfileView> {
     summary: row.summary,
     city: row.city,
     region: row.region,
+    country: row.country,
+    targetCountries: row.targetCountries,
+    workAuthorizations: row.workAuthorizations,
     yearsExperience: row.yearsExperience,
     desiredRoles: row.desiredRoles,
     workSetups: row.workSetups,
@@ -38,6 +41,7 @@ export async function getMyProfile(): Promise<ProfileView> {
     dealBreakers: row.dealBreakers,
     salaryMinMonthly: row.salaryMinMonthly,
     salaryMaxMonthly: row.salaryMaxMonthly,
+    salaryCurrency: row.salaryCurrency,
   };
 
   return {

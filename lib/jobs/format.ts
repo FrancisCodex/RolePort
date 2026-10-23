@@ -1,4 +1,26 @@
-const SYMBOLS: Record<string, string> = { PHP: "₱", USD: "$", EUR: "€", GBP: "£", SGD: "S$", AUD: "A$" };
+const symbols = new Map<string, string>();
+
+/** The short symbol for a currency ("₱", "S$", "AED "), from Intl so every ISO code works. */
+export function currencySymbol(currency: string): string {
+  let sym = symbols.get(currency);
+  if (!sym) {
+    try {
+      const parts = new Intl.NumberFormat("en", { style: "currency", currency, currencyDisplay: "narrowSymbol" }).formatToParts(0);
+      sym = parts.find((p) => p.type === "currency")?.value ?? currency;
+    } catch {
+      sym = currency;
+    }
+    // Letter codes read better with a space: "AED 5k", not "AED5k".
+    if (/^[a-z]{2,}$/i.test(sym)) sym = `${sym} `;
+    symbols.set(currency, sym);
+  }
+  return sym;
+}
+
+/** A whole amount with its currency symbol, e.g. "₱45,000". */
+export function formatMoney(amount: number, currency: string): string {
+  return `${currencySymbol(currency)}${Math.round(amount).toLocaleString("en")}`;
+}
 const PERIOD_LABEL = { hour: "/ hr", day: "/ day", month: "/ mo", year: "/ yr" } as const;
 
 function compact(n: number) {
@@ -14,7 +36,7 @@ export function formatSalary(
   period: keyof typeof PERIOD_LABEL | null,
 ): string | null {
   if (!min && !max) return null;
-  const sym = SYMBOLS[currency] ?? `${currency} `;
+  const sym = currencySymbol(currency);
   const range = min && max && min !== max ? `${sym}${compact(min)}–${sym}${compact(max)}` : `${sym}${compact((min || max)!)}`;
   return period ? `${range} ${PERIOD_LABEL[period]}` : range;
 }

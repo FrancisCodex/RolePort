@@ -77,6 +77,11 @@ export async function isAiConfigured(): Promise<boolean> {
   return (await getAiConfig()) !== null;
 }
 
+export async function getJobSpyEnabled(): Promise<boolean> {
+  const row = await getMySettingsRow();
+  return Boolean(row?.jobspyEnabled);
+}
+
 export async function getRapidApiKey(): Promise<string | null> {
   const row = await getMySettingsRow();
   return decryptSecret(row?.rapidApiKeyEnc) ?? process.env.RAPIDAPI_KEY ?? null;

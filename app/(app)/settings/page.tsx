@@ -5,10 +5,10 @@ import { PageHeader } from "@/components/app/page-header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { describeAiConfig, getAiConfig, getMySettingsRow } from "@/lib/ai/config";
 import { AI_PRESETS, type AiPresetId } from "@/lib/ai/presets";
-import { isLocalMode } from "@/lib/env";
+import { isLocalMode, jobSpyUrl } from "@/lib/env";
 import { decryptSecret, maskSecret } from "@/lib/secrets";
 import { AiSettingsForm, type AiSettingsView } from "./ai-settings-form";
-import { JobSourceForm } from "./job-source-form";
+import { JobSourceForm, JobSpyToggle } from "./job-source-form";
 
 export const metadata: Metadata = { title: "Settings" };
 
@@ -23,8 +23,24 @@ export default function SettingsPage() {
   );
 }
 
+/** Whether the JobSpy sidecar answers, so Settings can say when it isn't running. */
+async function jobSpyReachable(): Promise<boolean> {
+  if (!jobSpyUrl) return false;
+  try {
+    const res = await fetch(`${jobSpyUrl}/health`, { signal: AbortSignal.timeout(2_000), cache: "no-store" });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 async function SettingsContent() {
-  const [row, active] = await Promise.all([getMySettingsRow(), getAiConfig()]);
+  const showJobSpy = isLocalMode && Boolean(jobSpyUrl);
+  const [row, active, reachable] = await Promise.all([
+    getMySettingsRow(),
+    getAiConfig(),
+    showJobSpy ? jobSpyReachable() : false,
+  ]);
 
   const preset = row?.aiPreset && row.aiPreset in AI_PRESETS ? (row.aiPreset as AiPresetId) : null;
   const ai: AiSettingsView = {
@@ -55,11 +71,13 @@ async function SettingsContent() {
         <CardHeader>
           <CardTitle>Job sources</CardTitle>
           <CardDescription>
-            freehire and Jobicy work without a key. Add JSearch to include Google for Jobs listings from JobStreet, Indeed, LinkedIn and Kalibrr.
+            freehire and Jobicy work without a key, in every country. Add JSearch to include Google for Jobs listings from JobStreet,
+            Indeed, LinkedIn and Kalibrr.
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="flex flex-col gap-4">
           <JobSourceForm rapidApiKeyHint={maskSecret(decryptSecret(row?.rapidApiKeyEnc))} />
+          {showJobSpy && <JobSpyToggle enabled={Boolean(row?.jobspyEnabled)} reachable={reachable} />}
         </CardContent>
       </Card>
 

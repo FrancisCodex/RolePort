@@ -1,3 +1,4 @@
+import { countryOrDefault } from "@/lib/geo/countries";
 import { findLocation } from "@/lib/ph-locations";
 import { cleanDescription } from "../html";
 import type { EmploymentType, JobSource, NormalizedJob, SalaryPeriod } from "../types";
@@ -45,12 +46,18 @@ function datePosted(days?: number) {
 const CACHE_TTL_MS = 60 * 60_000;
 const memo = new Map<string, { at: number; jobs: JSearchJob[] }>();
 
-async function fetchJSearch(apiKey: string, query: string, remoteOnly: boolean, posted: string): Promise<JSearchJob[]> {
-  const cacheKey = JSON.stringify([query, remoteOnly, posted]);
+async function fetchJSearch(
+  apiKey: string,
+  country: string,
+  query: string,
+  remoteOnly: boolean,
+  posted: string,
+): Promise<JSearchJob[]> {
+  const cacheKey = JSON.stringify([country, query, remoteOnly, posted]);
   const hit = memo.get(cacheKey);
   if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.jobs;
 
-  const q = new URLSearchParams({ query, page: "1", num_pages: "1", country: "ph", date_posted: posted });
+  const q = new URLSearchParams({ query, page: "1", num_pages: "1", country: country.toLowerCase(), date_posted: posted });
   if (remoteOnly) q.set("work_from_home", "true");
   const res = await fetch(`https://jsearch.p.rapidapi.com/search?${q}`, {
     headers: {
@@ -67,7 +74,7 @@ async function fetchJSearch(apiKey: string, query: string, remoteOnly: boolean, 
   return jobs;
 }
 
-function normalize(job: JSearchJob): NormalizedJob {
+function normalize(job: JSearchJob, fallbackCurrency: string): NormalizedJob {
   const place = [job.job_city, job.job_state, job.job_country].filter(Boolean).join(", ");
   return {
     source: "jsearch",
@@ -82,7 +89,7 @@ function normalize(job: JSearchJob): NormalizedJob {
     employmentType: TYPES[job.job_employment_type ?? ""] ?? null,
     salaryMin: job.job_min_salary ?? null,
     salaryMax: job.job_max_salary ?? null,
-    salaryCurrency: job.job_salary_currency ?? "PHP",
+    salaryCurrency: job.job_salary_currency ?? fallbackCurrency,
     salaryPeriod: PERIODS[job.job_salary_period ?? ""] ?? null,
     // JSearch descriptions are plain text; keep paragraphs.
     description: cleanDescription(
@@ -107,10 +114,17 @@ export const jsearchSource: JobSource = {
   disabledNote: "Add a RapidAPI key in Settings to include JobStreet, Indeed, LinkedIn and Kalibrr listings",
   covers: () => true,
   async search(params, ctx) {
-    const location = findLocation(params.locationId);
-    const where = location ? ` in ${location.label}, Philippines` : params.locationId === "remote" ? "" : " in Philippines";
+    const country = countryOrDefault(params.country);
+    const area = params.country === "PH" ? findLocation(params.locationId)?.label : params.city;
+    const where = params.locationId === "remote" ? "" : ` in ${area ? `${area}, ` : ""}${country.name}`;
     const remoteOnly = params.locationId === "remote" || params.workSetup === "remote";
-    const jobs = await fetchJSearch(ctx.rapidApiKey!, `${params.query}${where}`, remoteOnly, datePosted(params.postedWithinDays));
-    return jobs.map(normalize);
+    const jobs = await fetchJSearch(
+      ctx.rapidApiKey!,
+      country.code,
+      `${params.query}${where}`,
+      remoteOnly,
+      datePosted(params.postedWithinDays),
+    );
+    return jobs.map((job) => normalize(job, country.currency));
   },
 };

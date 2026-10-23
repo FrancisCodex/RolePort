@@ -5,6 +5,8 @@ services:
       - "3000:3000"
     environment:
       HIREME_LOCAL_MODE: "true"
+      # LinkedIn, Indeed and more via the JobSpy service below. Off until you turn it on in Settings.
+      JOBSPY_URL: "http://jobspy:8000"
       # Optional — you can also set these in the app under Settings.
       # ANTHROPIC_API_KEY: ""
       # RAPIDAPI_KEY: ""
@@ -13,6 +15,15 @@ services:
     # Lets the app reach Ollama on your computer at http://host.docker.internal:11434/v1
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  # Optional JobSpy sidecar (services/jobspy). Remove this service and JOBSPY_URL above if you don't want it.
+  # For `npm run dev`, start only this service (`npm run jobspy`) and set JOBSPY_URL=http://127.0.0.1:8765.
+  jobspy:
+    build: ./services/jobspy
+    # Bound to this computer only, never to your network.
+    ports:
+      - "127.0.0.1:8765:8000"
     restart: unless-stopped
 
 volumes:
