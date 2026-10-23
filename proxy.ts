@@ -1,5 +1,6 @@
 import { getSessionCookie } from "better-auth/cookies";
 import { NextResponse, type NextRequest } from "next/server";
+import { isLite } from "@/lib/mode";
 
 const AUTH_PAGES = ["/sign-in", "/sign-up"];
 
@@ -10,8 +11,8 @@ const AUTH_PAGES = ["/sign-in", "/sign-up"];
 export function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
 
-  // Local mode has no accounts: skip sign-in entirely.
-  if (process.env.HIREME_LOCAL_MODE === "true") {
+  // Local mode and the lite edition have no accounts: skip sign-in entirely.
+  if (process.env.HIREME_LOCAL_MODE === "true" || isLite) {
     return AUTH_PAGES.includes(pathname) ? NextResponse.redirect(new URL("/home", request.url)) : NextResponse.next();
   }
 

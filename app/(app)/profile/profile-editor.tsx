@@ -14,7 +14,7 @@ import { PH_REGIONS } from "@/lib/ph-locations";
 import { normalizeProfileDates } from "@/lib/profile/dates";
 import type { ProfileInput } from "@/lib/profile/schema";
 import { cn } from "@/lib/utils";
-import { importCv, saveProfile } from "./actions";
+import { importCv, saveProfile } from "@/lib/client/mutations";
 
 type Level = ProfileInput["skills"][number]["level"];
 

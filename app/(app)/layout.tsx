@@ -1,13 +1,16 @@
 import { Suspense } from "react";
 import { SidebarNav, SidebarNavFallback, TabBar, TabBarFallback } from "@/components/app/app-nav";
-import { UserChip, UserChipSkeleton } from "@/components/app/user-chip";
+import { OpenBrowserDb } from "@/components/app/open-browser-db";
+import { LiteUserChip, UserChip, UserChipSkeleton } from "@/components/app/user-chip";
 import { SettingsLink } from "@/components/app/settings-link";
 import { Logo } from "@/components/brand/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { isLite } from "@/lib/mode";
 
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex min-h-dvh">
+      {isLite && <OpenBrowserDb />}
       <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-border bg-surface px-4 py-5 lg:flex">
         <div className="flex items-center justify-between px-2">
           <Logo href="/home" />
@@ -18,9 +21,13 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
             <SidebarNav />
           </Suspense>
         </div>
-        <Suspense fallback={<UserChipSkeleton />}>
-          <UserChip />
-        </Suspense>
+        {isLite ? (
+          <LiteUserChip />
+        ) : (
+          <Suspense fallback={<UserChipSkeleton />}>
+            <UserChip />
+          </Suspense>
+        )}
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">

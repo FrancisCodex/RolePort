@@ -33,6 +33,19 @@ export async function UserChip() {
   );
 }
 
+/** The lite edition has no accounts and no server-side user: say where the data lives instead. */
+export function LiteUserChip() {
+  return (
+    <div className="flex items-center gap-3 rounded-2xl p-2">
+      <Avatar name="" image={null} />
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-sm font-semibold">You</p>
+        <p className="truncate text-xs text-muted">Lite · saved in this browser</p>
+      </div>
+    </div>
+  );
+}
+
 export function UserChipSkeleton() {
   return (
     <div className="flex items-center gap-3 p-2">

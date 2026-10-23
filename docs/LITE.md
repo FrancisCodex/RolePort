@@ -1,6 +1,6 @@
 # HireMe Lite: a hosted web version with no user data on the server
 
-Status: plan only. Nothing here is built yet.
+Status: plan only. Nothing here is built yet. The step-by-step build plan is in [LITE-IMPLEMENTATION.md](LITE-IMPLEMENTATION.md).
 
 ## 1. Goal
 
@@ -11,7 +11,7 @@ The rule: **no user data on the server**. The profile, CV, saved jobs, evaluatio
 | | Self-hosted (today) | Lite (hosted) |
 | --- | --- | --- |
 | Install | Docker or Node.js | None, open the website |
-| Where data lives | `.data/pglite` or Postgres on the user's machine | IndexedDB in the user's browser |
+| Where data lives | `.data/pglite` or Postgres on the user's machine | Browser storage (OPFS, or IndexedDB as a fallback) |
 | AI calls | From the server | From the browser, with the user's own key |
 | Ollama | Server → Ollama | Browser → Ollama on the user's machine |
 | JobSpy | Bundled sidecar | Optional: user runs it locally, browser connects to it |
@@ -21,7 +21,7 @@ The rule: **no user data on the server**. The profile, CV, saved jobs, evaluatio
 
 ## 2. Data: PGlite in the browser
 
-HireMe already runs on PGlite (`lib/db/index.ts`). PGlite also runs in the browser and saves to IndexedDB (`new PGlite("idb://hireme")`), so the lite version keeps the same Drizzle schema (`lib/db/schema.ts`) and the migrations in `drizzle/`. They run in the browser on first load and after each update.
+HireMe already runs on PGlite (`lib/db/index.ts`). PGlite also runs in the browser, so the lite version keeps the same Drizzle schema (`lib/db/schema.ts`) and the migrations in `drizzle/`. They run in the browser on first load and after each update. Data is saved to OPFS (`opfs-ahp://hireme`) where the browser supports it, and to IndexedDB (`idb://hireme`) otherwise; [LITE-IMPLEMENTATION.md §1.5](LITE-IMPLEMENTATION.md) has the measurements.
 
 Run PGlite in a Web Worker (PGlite's `PGliteWorker`) so queries don't block the UI and several open tabs share one database.
 
