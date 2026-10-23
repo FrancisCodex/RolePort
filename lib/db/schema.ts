@@ -147,6 +147,12 @@ export const profile = pgTable("profile", {
   city: text("city"),
   /** e.g. "NCR", "Central Visayas" */
   region: text("region"),
+  /** ISO 3166-1 alpha-2 code of the country the candidate lives in. */
+  country: text("country").default("PH").notNull(),
+  /** Other countries the candidate would move to or work for (codes). */
+  targetCountries: text("target_countries").array().default(sql`'{}'::text[]`).notNull(),
+  /** Countries the candidate can already work in without sponsorship, besides `country` (codes). */
+  workAuthorizations: text("work_authorizations").array().default(sql`'{}'::text[]`).notNull(),
   yearsExperience: integer("years_experience"),
   desiredRoles: text("desired_roles").array().default(sql`'{}'::text[]`).notNull(),
   workSetups: workSetup("work_setups").array().default(sql`'{}'::work_setup[]`).notNull(),
@@ -156,9 +162,10 @@ export const profile = pgTable("profile", {
   languages: jsonb("languages").$type<Language[]>().default([]).notNull(),
   careerGoals: text("career_goals").array().default(sql`'{}'::text[]`).notNull(),
   dealBreakers: text("deal_breakers").array().default(sql`'{}'::text[]`).notNull(),
-  /** Monthly expectation in PHP, the norm for PH postings. */
+  /** Monthly expectation in `salaryCurrency`. */
   salaryMinMonthly: integer("salary_min_monthly"),
   salaryMaxMonthly: integer("salary_max_monthly"),
+  salaryCurrency: text("salary_currency").default("PHP").notNull(),
   /** Plain text of the last imported CV, kept so drafts can quote the candidate accurately. */
   cvText: text("cv_text"),
   cvFileName: text("cv_file_name"),

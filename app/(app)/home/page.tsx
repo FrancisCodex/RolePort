@@ -95,7 +95,7 @@ async function Dashboard() {
                 </span>
                 <div className="min-w-0">
                   <p className="font-display text-lg font-bold">Find jobs</p>
-                  <p className="truncate text-sm text-muted">{firstRole ? `Search “${firstRole}”` : "Search across the Philippines"}</p>
+                  <p className="truncate text-sm text-muted">{firstRole ? `Search “${firstRole}”` : "Search jobs at home or abroad"}</p>
                 </div>
               </CardContent>
             </Card>

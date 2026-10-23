@@ -1,11 +1,13 @@
 "use client";
 
-import { Check, FileUp, Loader2, Plus, Sparkles, Trash2 } from "lucide-react";
+import { Check, FileUp, Loader2, Plus, Sparkles, Trash2, X } from "lucide-react";
 import { useRef, useState, useTransition, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, TagInput, Textarea, ToggleGroup } from "@/components/ui/fields";
 import { Input, Label } from "@/components/ui/input";
+import { COUNTRIES, countryName, findCountry } from "@/lib/geo/countries";
+import { currencySymbol } from "@/lib/jobs/format";
 import { PH_REGIONS } from "@/lib/ph-locations";
 import type { ProfileInput } from "@/lib/profile/schema";
 import { cn } from "@/lib/utils";
@@ -18,6 +20,43 @@ const SKILL_GROUPS: { level: Level; label: string; hint: string }[] = [
   { level: "secondary", label: "Also comfortable with", hint: "Used before, could pick up again quickly." },
   { level: "learning", label: "Currently learning", hint: "Courses, certificates in progress, self-study." },
 ];
+
+const SORTED_COUNTRIES = [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name));
+const CURRENCIES = [...new Set(COUNTRIES.map((c) => c.currency))].sort();
+
+/** Pick several countries: chips for the chosen ones, a select to add more. */
+function CountryPicker({ id, value, onChange, exclude }: { id: string; value: string[]; onChange: (next: string[]) => void; exclude?: string }) {
+  const options = SORTED_COUNTRIES.filter((c) => c.code !== exclude && !value.includes(c.code));
+  return (
+    <div className="flex flex-col gap-2">
+      {value.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {value.map((code) => (
+            <span key={code} className="inline-flex items-center gap-1 rounded-full bg-brand-soft py-1 pr-1.5 pl-3 text-sm font-medium text-brand-ink">
+              {countryName(code)}
+              <button
+                type="button"
+                onClick={() => onChange(value.filter((c) => c !== code))}
+                className="grid size-5 place-items-center rounded-full hover:bg-brand/15"
+                aria-label={`Remove ${countryName(code)}`}
+              >
+                <X className="size-3.5" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <Select id={id} value="" onChange={(e) => e.target.value && onChange([...value, e.target.value])}>
+        <option value="">Add a country…</option>
+        {options.map((c) => (
+          <option key={c.code} value={c.code}>
+            {c.name}
+          </option>
+        ))}
+      </Select>
+    </div>
+  );
+}
 
 /** Overlay an import draft onto the form: fill what the draft has, keep what the user already typed otherwise. */
 function mergeDraft(current: ProfileInput, draft: Partial<ProfileInput>): ProfileInput {
@@ -54,6 +93,22 @@ export function ProfileEditor({
 
   function update<K extends keyof ProfileInput>(key: K, value: ProfileInput[K]) {
     setProfile((p) => ({ ...p, [key]: value }));
+    setDirty(true);
+  }
+
+  function changeCountry(code: string) {
+    setProfile((p) => {
+      const was = findCountry(p.country);
+      const next = findCountry(code);
+      return {
+        ...p,
+        country: code,
+        // PH regions don't apply elsewhere, and the salary currency follows the country unless the user changed it.
+        region: code === "PH" || p.country !== "PH" ? p.region : null,
+        salaryCurrency: next && (!was || p.salaryCurrency === was.currency) ? next.currency : p.salaryCurrency,
+        targetCountries: p.targetCountries.filter((c) => c !== code),
+      };
+    });
     setDirty(true);
   }
 
@@ -186,22 +241,37 @@ export function ProfileEditor({
               onChange={(e) => update("headline", e.target.value || null)}
             />
           </Field>
+          <Field label="Country you live in" htmlFor="country">
+            <Select id="country" value={profile.country} onChange={(e) => changeCountry(e.target.value)}>
+              {SORTED_COUNTRIES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.name}
+                </option>
+              ))}
+            </Select>
+          </Field>
           <Field label="City" htmlFor="city">
             <Input
               id="city"
-              placeholder="e.g. Quezon City"
+              placeholder={profile.country === "PH" ? "e.g. Quezon City" : "Your city"}
               value={profile.city ?? ""}
               onChange={(e) => update("city", e.target.value || null)}
             />
           </Field>
-          <Field label="Region" htmlFor="region">
-            <Select id="region" value={profile.region ?? ""} onChange={(e) => update("region", e.target.value || null)}>
-              <option value="">Select a region</option>
-              {PH_REGIONS.map((r) => (
-                <option key={r}>{r}</option>
-              ))}
-            </Select>
-          </Field>
+          {profile.country === "PH" ? (
+            <Field label="Region" htmlFor="region">
+              <Select id="region" value={profile.region ?? ""} onChange={(e) => update("region", e.target.value || null)}>
+                <option value="">Select a region</option>
+                {PH_REGIONS.map((r) => (
+                  <option key={r}>{r}</option>
+                ))}
+              </Select>
+            </Field>
+          ) : (
+            <Field label="State or province" htmlFor="region">
+              <Input id="region" value={profile.region ?? ""} onChange={(e) => update("region", e.target.value || null)} />
+            </Field>
+          )}
           <Field label="Years of experience" htmlFor="years">
             <Input
               id="years"
@@ -244,8 +314,39 @@ export function ProfileEditor({
             onChange={(v) => update("workSetups", v)}
           />
         </Field>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Expected salary from (₱ / month)" htmlFor="salmin">
+        <Field
+          label="Countries you'd work in besides your own"
+          htmlFor="targets"
+          hint="Add these to search jobs overseas. Jobs there are flagged for visa sponsorship instead of ruled out."
+        >
+          <CountryPicker
+            id="targets"
+            value={profile.targetCountries}
+            onChange={(v) => update("targetCountries", v)}
+            exclude={profile.country}
+          />
+        </Field>
+        <Field
+          label="Countries you can already work in without a visa"
+          htmlFor="auth"
+          hint={`Besides ${countryName(profile.country)}. For example a second citizenship or a work permit you hold.`}
+        >
+          <CountryPicker
+            id="auth"
+            value={profile.workAuthorizations}
+            onChange={(v) => update("workAuthorizations", v)}
+            exclude={profile.country}
+          />
+        </Field>
+        <div className="grid gap-4 sm:grid-cols-[8rem_1fr_1fr]">
+          <Field label="Currency" htmlFor="salcur">
+            <Select id="salcur" value={profile.salaryCurrency} onChange={(e) => update("salaryCurrency", e.target.value)}>
+              {CURRENCIES.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </Select>
+          </Field>
+          <Field label={`Expected salary from (${currencySymbol(profile.salaryCurrency).trim()} / month)`} htmlFor="salmin">
             <Input
               id="salmin"
               type="number"
@@ -256,7 +357,7 @@ export function ProfileEditor({
               onChange={(e) => update("salaryMinMonthly", e.target.value === "" ? null : Number(e.target.value))}
             />
           </Field>
-          <Field label="Up to (₱ / month)" htmlFor="salmax">
+          <Field label={`Up to (${currencySymbol(profile.salaryCurrency).trim()} / month)`} htmlFor="salmax">
             <Input
               id="salmax"
               type="number"

@@ -4,8 +4,15 @@ export type SalaryPeriod = "hour" | "day" | "month" | "year";
 
 export type JobSearchParams = {
   query: string;
-  /** An id from PH_LOCATIONS, "remote" for remote roles open to the Philippines, or undefined for anywhere in PH. */
+  /** ISO 3166-1 alpha-2 code of the country to search, from lib/geo/countries.ts. */
+  country: string;
+  /**
+   * "remote" for remote roles open to people living in `country`. In the Philippines, an id from
+   * PH_LOCATIONS narrows the search to that area. Undefined means anywhere in the country.
+   */
   locationId?: string;
+  /** Free-text city for countries without a curated location list. */
+  city?: string;
   workSetup?: WorkSetup;
   postedWithinDays?: number;
 };

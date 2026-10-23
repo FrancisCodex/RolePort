@@ -10,6 +10,9 @@ export const profileSchema = z.object({
   summary: z.string().trim().max(2000).nullable(),
   city: z.string().trim().max(80).nullable(),
   region: z.string().trim().max(80).nullable(),
+  country: z.string().trim().length(2, "Pick the country you live in").toUpperCase(),
+  targetCountries: z.array(z.string().trim().length(2).toUpperCase()).max(20),
+  workAuthorizations: z.array(z.string().trim().length(2).toUpperCase()).max(20),
   yearsExperience: z.number().int().min(0).max(60).nullable(),
   desiredRoles: z.array(z.string().trim().min(1).max(80)).max(10),
   workSetups: z.array(z.enum(WORK_SETUPS)),
@@ -42,7 +45,8 @@ export const profileSchema = z.object({
   careerGoals: z.array(z.string().trim().min(1).max(200)).max(8),
   dealBreakers: z.array(z.string().trim().min(1).max(200)).max(8),
   salaryMinMonthly: z.number().int().min(0).max(10_000_000).nullable(),
-  salaryMaxMonthly: z.number().int().min(0).max(10_000_000).nullable(),
+  salaryMaxMonthly: z.number().int().min(0).max(1_000_000_000).nullable(),
+  salaryCurrency: z.string().trim().length(3).toUpperCase(),
 });
 
 export type ProfileInput = z.infer<typeof profileSchema>;
@@ -53,6 +57,9 @@ export const emptyProfile: ProfileInput = {
   summary: null,
   city: null,
   region: null,
+  country: "PH",
+  targetCountries: [],
+  workAuthorizations: [],
   yearsExperience: null,
   desiredRoles: [],
   workSetups: [],
@@ -64,4 +71,5 @@ export const emptyProfile: ProfileInput = {
   dealBreakers: [],
   salaryMinMonthly: null,
   salaryMaxMonthly: null,
+  salaryCurrency: "PHP",
 };

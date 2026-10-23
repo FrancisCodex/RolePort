@@ -1,4 +1,5 @@
 import { cacheLife } from "next/cache";
+import { findCountry } from "@/lib/geo/countries";
 import { cleanDescription } from "../html";
 import type { EmploymentType, JobSource, NormalizedJob, SalaryPeriod } from "../types";
 
@@ -35,14 +36,14 @@ const PERIODS: Record<string, SalaryPeriod> = {
   annual: "year",
 };
 
-async function fetchJobicy(tag: string): Promise<JobicyJob[]> {
+async function fetchJobicy(geo: string, tag: string): Promise<JobicyJob[]> {
   "use cache";
   cacheLife("hours");
 
-  const q = new URLSearchParams({ count: "30", geo: "philippines" });
+  const q = new URLSearchParams({ count: "30", geo });
   if (tag) q.set("tag", tag);
   const res = await fetch(`https://jobicy.com/api/v2/remote-jobs?${q}`, {
-    headers: { Accept: "application/json", "User-Agent": "HireMe/0.1 (job search for the Philippines)" },
+    headers: { Accept: "application/json", "User-Agent": "HireMe/0.1 (job search)" },
     signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) throw new Error(`Jobicy responded ${res.status}`);
@@ -80,12 +81,14 @@ export const jobicySource: JobSource = {
   label: "Jobicy",
   attribution: { name: "Jobicy", url: "https://jobicy.com" },
   enabled: () => true,
-  // Jobicy only lists remote roles.
+  // Jobicy only lists remote roles, filtered by where the applicant lives.
   covers: (params) =>
+    Boolean(findCountry(params.country)?.jobicy) &&
     (params.locationId === undefined || params.locationId === "remote") &&
+    !params.city &&
     (params.workSetup === undefined || params.workSetup === "remote"),
   async search(params) {
-    const jobs = await fetchJobicy(params.query.trim().toLowerCase());
+    const jobs = await fetchJobicy(findCountry(params.country)!.jobicy!, params.query.trim().toLowerCase());
     const cutoff = params.postedWithinDays ? Date.now() - params.postedWithinDays * 86_400_000 : 0;
     return jobs.map(normalize).filter((j) => !cutoff || !j.postedAt || Date.parse(j.postedAt) >= cutoff);
   },

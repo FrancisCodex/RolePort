@@ -1,6 +1,6 @@
 # HireMe
 
-A free, open-source job search app you run yourself. Find jobs across the Philippines, see how well each one fits you, and track every application, with your CV and data staying on your own machine.
+A free, open-source job search app you run yourself. Find jobs in the Philippines or abroad, see how well each one fits you, and track every application, with your CV and data staying on your own machine.
 
 Bring your own AI: Claude, OpenAI, OpenRouter, Groq, or a free local model through [Ollama](https://ollama.com).
 Inspired by [ai-job-search](https://github.com/MadsLorentzen/ai-job-search). See [docs/PLAN.md](docs/PLAN.md) for the roadmap.
@@ -25,7 +25,7 @@ docker compose up -d
 
 | Feature | Needs |
 | --- | --- |
-| Job search: about 28k Philippine jobs from [freehire](https://freehire.me), remote roles from [Jobicy](https://jobicy.com) | Nothing |
+| Job search in your country or abroad: jobs from [freehire](https://freehire.me), remote roles from [Jobicy](https://jobicy.com). Set where you live and which countries you'd move to in your profile | Nothing |
 | Quick match score from your skills on every job | Nothing |
 | Pipeline: save jobs, track Saved → Applied → Interview → Offer | Nothing |
 | CV import with automatic skill detection | Nothing |

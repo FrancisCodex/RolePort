@@ -22,6 +22,13 @@
       "when": 1792399954180,
       "tag": "0002_job_match_details",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792737687145,
+      "tag": "0003_global_profile",
+      "breakpoints": true
     }
   ]
 }

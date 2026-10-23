@@ -8,9 +8,11 @@ import { PageHeader } from "@/components/app/page-header";
 import { AnalyzePanel, AnalyzeProvider } from "@/components/jobs/analyze-jobs";
 import { JobCard } from "@/components/jobs/job-card";
 import { JobBrowser } from "@/components/jobs/job-browser";
+import { LocationFields } from "@/components/jobs/location-fields";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/fields";
 import { isAiConfigured } from "@/lib/ai/config";
+import { findCountry, orderedCountries } from "@/lib/geo/countries";
 import { searchJobs } from "@/lib/jobs/data";
 import { MAX_PER_RUN } from "@/lib/jobs/fit";
 import { sourceCredit } from "@/lib/jobs/search";
@@ -30,7 +32,7 @@ function one(value: string | string[] | undefined) {
 export default function JobsPage(props: PageProps<"/jobs">) {
   return (
     <>
-      <PageHeader title="Jobs" description="Roles across the Philippines, ranked by how well they fit you." />
+      <PageHeader title="Jobs" description="Roles at home or abroad, ranked by how well they fit you." />
       <Suspense fallback={<ResultsSkeleton withForm />}>
         <JobSearch searchParams={props.searchParams} />
       </Suspense>
@@ -43,14 +45,19 @@ async function JobSearch({ searchParams }: { searchParams: PageProps<"/jobs">["s
   const { profile } = await getMyProfile();
 
   const query = one(sp.q) ?? profile.desiredRoles[0] ?? "";
+  const country = (findCountry(one(sp.country)) ?? findCountry(profile.country))?.code ?? "PH";
   const locationId = one(sp.loc);
+  const city = locationId === "remote" || country === "PH" ? undefined : one(sp.city)?.slice(0, 80);
   const setup = one(sp.setup) as WorkSetup | undefined;
   const days = Number(one(sp.days)) || undefined;
   const sort = one(sp.sort) === "date" ? "date" : "match";
 
   const params: JobSearchParams = {
     query,
-    locationId: locationId === "remote" || PH_LOCATIONS.some((l) => l.id === locationId) ? locationId : undefined,
+    country,
+    locationId:
+      locationId === "remote" || (country === "PH" && PH_LOCATIONS.some((l) => l.id === locationId)) ? locationId : undefined,
+    city,
     workSetup: setup && SETUPS.includes(setup) ? setup : undefined,
     postedWithinDays: days && [1, 3, 7, 14, 30].includes(days) ? days : undefined,
   };
@@ -73,16 +80,15 @@ async function JobSearch({ searchParams }: { searchParams: PageProps<"/jobs">["s
             Search
           </Button>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-          <Select name="loc" defaultValue={params.locationId ?? ""} aria-label="Location">
-            <option value="">Anywhere in PH</option>
-            <option value="remote">Remote</option>
-            {PH_LOCATIONS.map((l) => (
-              <option key={l.id} value={l.id}>
-                {l.label}
-              </option>
-            ))}
-          </Select>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-[1fr_1.6fr_1fr_1fr_1fr]">
+          <LocationFields
+            key={country}
+            countries={orderedCountries(profile.country, profile.targetCountries).map(({ code, name }) => ({ code, name }))}
+            phLocations={PH_LOCATIONS.map(({ id, label }) => ({ id, label }))}
+            country={country}
+            locationId={params.locationId}
+            city={city}
+          />
           <Select name="setup" defaultValue={params.workSetup ?? ""} aria-label="Work setup">
             <option value="">Any setup</option>
             <option value="onsite">Onsite</option>
@@ -103,13 +109,42 @@ async function JobSearch({ searchParams }: { searchParams: PageProps<"/jobs">["s
         </div>
       </Form>
 
+      {profile.targetCountries.length > 0 && (
+        <div className="-mt-2 flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-subtle">Your countries:</span>
+          {[profile.country, ...profile.targetCountries.filter((c) => c !== profile.country)].map((code) => (
+            <Link
+              key={code}
+              href={`/jobs?q=${encodeURIComponent(query)}&country=${code}`}
+              className={cn(
+                "rounded-full border px-3 py-1 font-medium transition-colors",
+                code === country && params.locationId !== "remote"
+                  ? "border-brand bg-brand-soft text-brand-ink"
+                  : "border-border text-muted hover:border-border-strong",
+              )}
+            >
+              {findCountry(code)?.name ?? code}
+            </Link>
+          ))}
+          <Link
+            href={`/jobs?q=${encodeURIComponent(query)}&country=${profile.country}&loc=remote`}
+            className={cn(
+              "rounded-full border px-3 py-1 font-medium transition-colors",
+              params.locationId === "remote" ? "border-brand bg-brand-soft text-brand-ink" : "border-border text-muted hover:border-border-strong",
+            )}
+          >
+            Remote
+          </Link>
+        </div>
+      )}
+
       {profile.desiredRoles.length > 1 && (
         <div className="-mt-2 flex flex-wrap items-center gap-2 text-sm">
           <span className="text-subtle">Your roles:</span>
           {profile.desiredRoles.map((role) => (
             <Link
               key={role}
-              href={`/jobs?q=${encodeURIComponent(role)}`}
+              href={`/jobs?q=${encodeURIComponent(role)}&country=${country}`}
               className={cn(
                 "rounded-full border px-3 py-1 font-medium transition-colors",
                 role === query ? "border-brand bg-brand-soft text-brand-ink" : "border-border text-muted hover:border-border-strong",
