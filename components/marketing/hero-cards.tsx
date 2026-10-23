@@ -1,13 +1,13 @@
 "use client";
 
-import { Bookmark, Briefcase, Flame, MapPin } from "lucide-react";
+import { Bookmark, Briefcase, Laptop, MapPin } from "lucide-react";
 import { motion, useReducedMotion } from "motion/react";
 import { MatchRing } from "@/components/ui/match-ring";
 
 const jobs = [
-  { title: "Frontend Engineer", company: "Kalye Labs", place: "Makati · Hybrid", pay: "₱90k–₱130k / mo", score: 94 },
-  { title: "Data Analyst", company: "Isla Bank", place: "Cebu IT Park · Onsite", pay: "₱55k–₱75k / mo", score: 81 },
-  { title: "Customer Success Lead", company: "Tala Health", place: "Remote · PH", pay: "₱60k–₱85k / mo", score: 68 },
+  { title: "Frontend Engineer", company: "Kalye Labs", place: "Makati, PH · Hybrid", pay: "₱90k–₱130k / mo", score: 94 },
+  { title: "Data Analyst", company: "Harbour Bank", place: "Singapore · Onsite", pay: "S$6k–S$8k / mo", score: 81 },
+  { title: "Customer Success Lead", company: "Tala Health", place: "Remote · Worldwide", pay: "$3k–$4.5k / mo", score: 68 },
 ];
 
 const spring = { type: "spring", stiffness: 260, damping: 22 } as const;
@@ -23,8 +23,8 @@ export function HeroCards() {
         transition={{ ...spring, delay: 0.5 }}
         className="absolute -top-6 right-0 z-20 flex items-center gap-2 rounded-2xl bg-surface px-3.5 py-2 text-sm font-bold shadow-[var(--shadow-lift)] sm:-right-8"
       >
-        <Flame className="size-4 text-warning" fill="currentColor" />
-        7-day streak
+        <Laptop className="size-4 text-brand" />
+        Running on localhost
       </motion.div>
 
       <div className="flex flex-col gap-3">

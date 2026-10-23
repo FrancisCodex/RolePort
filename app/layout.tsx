@@ -20,11 +20,11 @@ const display = Bricolage_Grotesque({
 
 export const metadata: Metadata = {
   title: {
-    default: "HireMe — Find your next job in the Philippines",
+    default: "HireMe — Open-source job search you run yourself",
     template: "%s · HireMe",
   },
   description:
-    "HireMe matches you with jobs across the Philippines, scores your fit, and tailors your CV and cover letter in one tap.",
+    "Free, open-source job search that runs on your own machine. Find jobs in your country or abroad, score your fit with your own AI, and track every application.",
 };
 
 export const viewport: Viewport = {
