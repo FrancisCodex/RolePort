@@ -14,6 +14,9 @@ const lite = () => import("./lite-mutations");
 
 export const saveProfile: typeof profile.saveProfile = isLite ? async (...a) => (await lite()).saveProfile(...a) : profile.saveProfile;
 export const importCv: typeof profile.importCv = isLite ? async (...a) => (await lite()).importCv(...a) : profile.importCv;
+export const setOnboardingStep: typeof profile.setOnboardingStep = isLite
+  ? async (...a) => (await lite()).setOnboardingStep(...a)
+  : profile.setOnboardingStep;
 
 export const toggleSavedJob: typeof jobs.toggleSavedJob = isLite ? async (...a) => (await lite()).toggleSavedJob(...a) : jobs.toggleSavedJob;
 export const setApplicationStatus: typeof jobs.setApplicationStatus = isLite

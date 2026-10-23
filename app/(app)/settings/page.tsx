@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { BackToGuide } from "@/components/app/back-to-guide";
 import { PageHeader } from "@/components/app/page-header";
 import { getAiConfig, getMySettingsRow } from "@/lib/ai/config";
 import { isLocalMode, jobSpyUrl } from "@/lib/env";
@@ -17,6 +18,10 @@ const skeleton = <div className="h-96 animate-pulse rounded-3xl bg-surface-3" />
 export default function SettingsPage() {
   return (
     <>
+      {/* Reads the URL in the browser, so the page shell still prerenders. */}
+      <Suspense>
+        <BackToGuide />
+      </Suspense>
       <PageHeader
         title="Settings"
         description={`Bring your own AI and job-source keys. Everything stays ${isLite ? "in this browser" : "on your server"}.`}

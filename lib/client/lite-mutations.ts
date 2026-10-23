@@ -24,7 +24,7 @@ import { vetoReason } from "@/lib/jobs/fit";
 import { evaluateStoredJob } from "@/lib/jobs/fit-evaluation";
 import { readCvFile, type CvImport } from "@/lib/profile/cv-file";
 import { draftFromCv } from "@/lib/profile/cv-import";
-import { writeCv, writeProfile } from "@/lib/profile/queries";
+import { ONBOARDING_DONE, writeCv, writeOnboardingStep, writeProfile } from "@/lib/profile/queries";
 import { profileSchema, type ProfileInput } from "@/lib/profile/schema";
 import type { Result } from "@/lib/result";
 import { readSettings, writeSettings } from "@/lib/settings/queries";
@@ -75,6 +75,13 @@ export async function importCv(formData: FormData): Promise<Result<CvImport>> {
   await writeCv(db, LOCAL_USER.id, fileName, text);
   await invalidate("profile");
   return { ok: true, data: await draftFromCv(fileName, text, await savedAiConfig(db)) };
+}
+
+export async function setOnboardingStep(step: number): Promise<Result> {
+  if (!Number.isInteger(step) || step < 0 || step > ONBOARDING_DONE) return { ok: false, error: "Invalid step." };
+  await writeOnboardingStep(await getBrowserDb(), LOCAL_USER.id, step);
+  await invalidate("profile");
+  return { ok: true, data: undefined };
 }
 
 /* Jobs and pipeline --------------------------------------------------------- */

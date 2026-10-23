@@ -5,7 +5,7 @@ import { getAiConfig } from "@/lib/ai/config";
 import { getDb } from "@/lib/db";
 import { readCvFile, type CvImport } from "@/lib/profile/cv-file";
 import { draftFromCv } from "@/lib/profile/cv-import";
-import { writeCv, writeProfile } from "@/lib/profile/queries";
+import { ONBOARDING_DONE, writeCv, writeOnboardingStep, writeProfile } from "@/lib/profile/queries";
 import { profileSchema, type ProfileInput } from "@/lib/profile/schema";
 import type { Result } from "@/lib/result";
 import { getCurrentUser } from "@/lib/session";
@@ -32,4 +32,12 @@ export async function importCv(formData: FormData): Promise<Result<CvImport>> {
 
   await writeCv(await getDb(), user.id, fileName, text);
   return { ok: true, data: await draftFromCv(fileName, text, await getAiConfig()) };
+}
+
+/** Remember where the welcome guide is (1-5), or that it's finished or skipped (ONBOARDING_DONE). */
+export async function setOnboardingStep(step: number): Promise<Result> {
+  const user = await getCurrentUser();
+  if (!Number.isInteger(step) || step < 0 || step > ONBOARDING_DONE) return { ok: false, error: "Invalid step." };
+  await writeOnboardingStep(await getDb(), user.id, step);
+  return { ok: true, data: undefined };
 }

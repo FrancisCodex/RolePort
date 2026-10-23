@@ -1,18 +1,23 @@
 import { eq, min } from "drizzle-orm";
+import { toHomeData } from "@/app/(app)/home/home-data";
+import type { HomeData } from "@/app/(app)/home/home-view";
 import type { ResultsData } from "@/app/(app)/jobs/results-view";
 import type { BoardCard } from "@/app/(app)/pipeline/board";
 import { toBoardCards } from "@/app/(app)/pipeline/cards";
 import type { AiSettingsView } from "@/app/(app)/settings/ai-settings-form";
 import { aiSettingsView } from "@/app/(app)/settings/view";
+import { toOnboardingData } from "@/app/(onboarding)/welcome/onboarding-data";
+import type { OnboardingData } from "@/app/(onboarding)/welcome/onboarding-flow";
 import { aiConfigFromRow } from "@/lib/ai/settings";
 import { getBrowserDb, type BrowserDb } from "@/lib/db/browser";
 import { LOCAL_USER } from "@/lib/db/local-user";
 import * as schema from "@/lib/db/schema";
-import { countApplications, readApplications } from "@/lib/jobs/applications";
+import { readApplications } from "@/lib/jobs/applications";
+import { readDashboard } from "@/lib/jobs/dashboard";
 import { readFitMatches, readJob, readJobsByIds, readSavedJobIds, sortJobs, toListItem, type JobListItem } from "@/lib/jobs/queries";
 import type { JobSort } from "@/lib/jobs/search-params";
 import { sourceCredit } from "@/lib/jobs/sources/credits";
-import { readProfile, type ProfileView } from "@/lib/profile/queries";
+import { readOnboarding, readProfile, type ProfileView } from "@/lib/profile/queries";
 import { maskSecret } from "@/lib/secret-hint";
 import { readSettings } from "@/lib/settings/queries";
 import { readKey } from "./lite-keys";
@@ -38,10 +43,15 @@ export async function loadProfile(): Promise<ProfileView & { aiEnabled: boolean 
   return { ...view, aiEnabled: ai };
 }
 
-export async function loadHome(): Promise<ProfileView & { saved: number; aiEnabled: boolean }> {
+export async function loadHome(): Promise<HomeData> {
   const db = await getBrowserDb();
-  const [view, saved, ai] = await Promise.all([readProfile(db, await me(db)), countApplications(db, LOCAL_USER.id), aiEnabled(db)]);
-  return { ...view, saved, aiEnabled: ai };
+  const [view, stats, ai, onboarding] = await Promise.all([
+    readProfile(db, await me(db)),
+    readDashboard(db, LOCAL_USER.id),
+    aiEnabled(db),
+    readOnboarding(db, LOCAL_USER.id),
+  ]);
+  return toHomeData(view, stats, ai, onboarding);
 }
 
 export async function loadPipeline(): Promise<BoardCard[]> {
@@ -97,4 +107,10 @@ export async function loadDataSince(): Promise<Date | null> {
   ]);
   const dates = [profile?.at, apps?.at].filter((d): d is Date => d instanceof Date);
   return dates.length ? new Date(Math.min(...dates.map((d) => d.getTime()))) : null;
+}
+
+export async function loadWelcome(): Promise<OnboardingData> {
+  const db = await getBrowserDb();
+  const [{ profile, cvFileName }, ai, onboarding] = await Promise.all([readProfile(db, await me(db)), aiEnabled(db), readOnboarding(db, LOCAL_USER.id)]);
+  return toOnboardingData(profile, cvFileName, ai, onboarding, true);
 }

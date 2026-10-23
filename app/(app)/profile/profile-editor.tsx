@@ -24,11 +24,11 @@ const SKILL_GROUPS: { level: Level; label: string; hint: string }[] = [
   { level: "learning", label: "Currently learning", hint: "Courses, certificates in progress, self-study." },
 ];
 
-const SORTED_COUNTRIES = [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name));
+export const SORTED_COUNTRIES = [...COUNTRIES].sort((a, b) => a.name.localeCompare(b.name));
 const CURRENCIES = [...new Set(COUNTRIES.map((c) => c.currency))].sort();
 
 /** Pick several countries: chips for the chosen ones, a select to add more. */
-function CountryPicker({ id, value, onChange, exclude }: { id: string; value: string[]; onChange: (next: string[]) => void; exclude?: string }) {
+export function CountryPicker({ id, value, onChange, exclude }: { id: string; value: string[]; onChange: (next: string[]) => void; exclude?: string }) {
   const options = SORTED_COUNTRIES.filter((c) => c.code !== exclude && !value.includes(c.code));
   return (
     <div className="flex flex-col gap-2">
@@ -61,7 +61,7 @@ function CountryPicker({ id, value, onChange, exclude }: { id: string; value: st
 }
 
 /** Overlay an import draft onto the form: fill what the draft has, keep what the user already typed otherwise. */
-function mergeDraft(current: ProfileInput, draft: Partial<ProfileInput>): ProfileInput {
+export function mergeDraft(current: ProfileInput, draft: Partial<ProfileInput>): ProfileInput {
   const next = { ...current };
   for (const [key, value] of Object.entries(draft) as [keyof ProfileInput, unknown][]) {
     if (value == null || value === "" || (Array.isArray(value) && value.length === 0)) continue;

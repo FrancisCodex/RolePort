@@ -15,6 +15,7 @@ Branch: `feat/liveweb-update`. Update this table as phases land.
 | [5. Backups and storage](#phase-5-backups-and-storage) | ✅ Done (`84eee77`) | Backup export/import in both editions, storage status and persistence, backup reminder, installable app. See the Phase 5 checklist. |
 | [6. JobSpy connect](#phase-6-jobspy-on-the-users-machine) | ✅ Done (`387f613`) | Lite searches LinkedIn, Indeed and more through JobSpy on the user's computer, straight from the browser. See the Phase 6 checklist. |
 | [7. Launch polish](#phase-7-launch-polish) | ✅ Done in code (`1e62f99`) | CSP, landing page, privacy page, README. Deployment and the "Before launch" checks remain. See the Phase 7 checklist. |
+| Extra: onboarding and dashboard | ✅ Done (not committed yet) | A welcome guide at `/welcome` (first stop for new users in lite) and a statistics dashboard on Home. See [Onboarding and dashboard](#onboarding-and-dashboard). |
 
 Open items carried from earlier phases: Safari and Firefox testing (§1.5 finding 3); Brotli and long-lived caching for the PGlite files and the starter database (phase 7).
 
@@ -559,3 +560,30 @@ Verified (2026-10-24, lite production build in Chromium):
 2. Phase 2a: query split + `mutations` module, no lite pages yet (pure refactor, self-hosted only, easy to review).
 3. Phase 2b: lite loaders for the remaining pages, auth off in lite.
 4. Phase 3, 4, 5, 6, 7 as listed. 5 can run in parallel with 3–4 since export/import only needs the `Db` interface.
+
+## Onboarding and dashboard
+
+Added after phase 7, before the pull request.
+
+- **Welcome guide** (`app/(onboarding)/welcome`, its own quiet layout). It has six screens: welcome; about you (name, country, city); what you're looking for (roles, work setup, other countries); CV or skills (optional); AI (optional, links to Settings and back); and ready (search your first role, plus the tools to add later: AI, JobSpy, JSearch, backups).
+  - **Progress:** saved in the existing `profile.onboarding_step` column (no migration): 1-5 while in progress, `ONBOARDING_DONE` (100) when finished or skipped. Leaving for Settings or closing the tab resumes where the user left off. Profiles saved before the guide existed count as done.
+  - **First run:** `NEXT_PUBLIC_HIREME_ONBOARDING` decides whether new users are sent from Home to the guide. It's on by default in lite and off for self-hosted. The guide stays reachable from Home ("Setup guide") either way, and a finished guide opens as a revisit.
+- **Home dashboard** (`app/(app)/home/home-view.tsx`), from `readDashboard` in `lib/jobs/dashboard.ts`, shared by both editions:
+  - **Stat tiles:** applications sent (this week), response rate with a meter, interviews, offers.
+  - **Funnel:** how far applications get, counted from each one's event history, so a rejected application still counts as applied. Closed outcomes are summarized below it.
+  - **Weekly chart:** applications sent per week over the last 8 weeks, Monday-based.
+  - **Lists:** recent activity, follow-ups due (applied or screening with no change for 7+ days), and fit evaluations (count, average, strong fits).
+  - **Setup checklist:** shown until roles, skills, CV and AI are all set.
+  - **Charts:** one hue, direct labels, hover and keyboard tooltips, and a screen-reader table for the weekly chart. Relative times and week labels are formatted where the data loads, so server and browser renders agree.
+
+Verified (2026-10-24):
+
+- **Scratch script:** onboarding flags (in progress, finished, existing profiles left alone) and every dashboard number on a crafted pipeline: reached counts, 40% response rate, Monday weeks, follow-ups, evaluations, and an empty dashboard.
+- **Lite production build:**
+  - A fresh visitor opening `/home` lands on the guide.
+  - Name and roles are validated, and a reload resumes at the saved step.
+  - "Go to your dashboard" finishes the guide.
+  - Restoring a sample backup fills the dashboard with the expected numbers.
+  - Tooltips work, and the layout holds in light and dark mode and at phone width with no horizontal scroll.
+  - Settings opened from the guide offers a way back.
+- **Self-hosted:** Home shows the dashboard with existing data and doesn't redirect (onboarding off). `/welcome` opens as a revisit for an existing profile.

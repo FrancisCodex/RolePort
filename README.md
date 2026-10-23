@@ -100,6 +100,8 @@ Run Lite yourself with `npm run dev:lite` (port 3100), or build it with `npm run
 | Job search in your country or abroad: jobs from [freehire](https://freehire.me), remote roles from [Jobicy](https://jobicy.com). Set where you live and which countries you'd move to in your profile | Nothing |
 | Quick match score from your skills on every job | Nothing |
 | Pipeline: save jobs, track Saved → Applied → Interview → Offer | Nothing |
+| Dashboard: applications sent, response rate, interviews and offers, how far applications get, weekly pace, follow-ups due | Nothing |
+| Setup guide (`/welcome`): name, roles and CV in a few steps, then pointers to AI, JobSpy and more. New users start there in HireMe Lite; set `NEXT_PUBLIC_HIREME_ONBOARDING=on` to do the same on a self-hosted install | Nothing |
 | CV import with automatic skill detection | Nothing |
 | AI fills in your whole profile from your CV | An AI provider |
 | AI fit evaluation: eligibility, language and location gates, four scored dimensions, strengths, gaps and a recommendation. Evaluate one job or the top 10 results | An AI provider |

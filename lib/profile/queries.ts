@@ -82,3 +82,29 @@ export async function writeCv(db: AnyDb, userId: string, fileName: string, text:
     .values({ userId, cvText: text, cvFileName: fileName })
     .onConflictDoUpdate({ target: schema.profile.userId, set: { cvText: text, cvFileName: fileName } });
 }
+
+/* Onboarding (app/(onboarding)/welcome) -------------------------------------- */
+
+/** profile.onboarding_step once the guide is finished or skipped; 1-5 while it's in progress. */
+export const ONBOARDING_DONE = 100;
+
+/**
+ * Whether the user has been through the welcome guide. Profiles saved before the guide existed
+ * (onboarded_at set, step still 0) count as done, so existing users aren't sent through it.
+ */
+export async function readOnboarding(db: AnyDb, userId: string): Promise<{ done: boolean; step: number }> {
+  const [row] = await db
+    .select({ step: schema.profile.onboardingStep, onboardedAt: schema.profile.onboardedAt })
+    .from(schema.profile)
+    .where(eq(schema.profile.userId, userId));
+  if (!row) return { done: false, step: 0 };
+  return { done: row.step >= ONBOARDING_DONE || (row.step === 0 && row.onboardedAt != null), step: row.step };
+}
+
+export async function writeOnboardingStep(db: AnyDb, userId: string, step: number): Promise<void> {
+  const onboardingStep = Math.max(0, Math.min(ONBOARDING_DONE, Math.round(step)));
+  await db
+    .insert(schema.profile)
+    .values({ userId, onboardingStep })
+    .onConflictDoUpdate({ target: schema.profile.userId, set: { onboardingStep } });
+}
