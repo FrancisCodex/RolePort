@@ -9,7 +9,7 @@ export const buttonVariants = cva(
       variant: {
         // Duolingo-style tactile button: a solid "ledge" that compresses on press.
         primary:
-          "bg-brand text-brand-fg shadow-[var(--shadow-press)] hover:bg-brand-hover active:translate-y-[3px] active:shadow-[0_1px_0_0_var(--brand-ink)]",
+          "bg-brand text-brand-fg shadow-[var(--shadow-press)] hover:bg-brand-hover active:translate-y-[3px] active:shadow-[0_1px_0_0_var(--brand-ledge)]",
         secondary:
           "border border-border-strong bg-surface text-fg shadow-[0_3px_0_0_var(--border-strong)] hover:bg-surface-2 active:translate-y-[2px] active:shadow-[0_1px_0_0_var(--border-strong)]",
         ghost: "text-muted hover:bg-surface-2 hover:text-fg",

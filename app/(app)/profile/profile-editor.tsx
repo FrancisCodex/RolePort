@@ -4,11 +4,14 @@ import { Check, FileUp, Loader2, Plus, Sparkles, Trash2, X } from "lucide-react"
 import { useRef, useState, useTransition, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, TagInput, Textarea, ToggleGroup } from "@/components/ui/fields";
+import { TagInput, Textarea, ToggleGroup } from "@/components/ui/fields";
 import { Input, Label } from "@/components/ui/input";
+import { MonthPicker, MonthRangePicker } from "@/components/ui/month-picker";
+import { Select } from "@/components/ui/select";
 import { COUNTRIES, countryName, findCountry } from "@/lib/geo/countries";
 import { currencySymbol } from "@/lib/jobs/format";
 import { PH_REGIONS } from "@/lib/ph-locations";
+import { normalizeProfileDates } from "@/lib/profile/dates";
 import type { ProfileInput } from "@/lib/profile/schema";
 import { cn } from "@/lib/utils";
 import { importCv, saveProfile } from "./actions";
@@ -46,14 +49,13 @@ function CountryPicker({ id, value, onChange, exclude }: { id: string; value: st
           ))}
         </div>
       )}
-      <Select id={id} value="" onChange={(e) => e.target.value && onChange([...value, e.target.value])}>
-        <option value="">Add a country…</option>
-        {options.map((c) => (
-          <option key={c.code} value={c.code}>
-            {c.name}
-          </option>
-        ))}
-      </Select>
+      <Select
+        id={id}
+        value=""
+        placeholder="Add a country…"
+        options={options.map((c) => ({ value: c.code, label: c.name }))}
+        onValueChange={(code) => onChange([...value, code])}
+      />
     </div>
   );
 }
@@ -82,7 +84,8 @@ export function ProfileEditor({
   initialCvFileName: string | null;
   aiEnabled: boolean;
 }) {
-  const [profile, setProfile] = useState(initial);
+  // Profiles saved before the date pickers may hold free-text dates; read them into the picker format.
+  const [profile, setProfile] = useState(() => normalizeProfileDates(initial));
   const [cvFileName, setCvFileName] = useState(initialCvFileName);
   const [dirty, setDirty] = useState(false);
   const [status, setStatus] = useState<{ tone: "success" | "error" | "info"; text: string } | null>(null);
@@ -242,13 +245,12 @@ export function ProfileEditor({
             />
           </Field>
           <Field label="Country you live in" htmlFor="country">
-            <Select id="country" value={profile.country} onChange={(e) => changeCountry(e.target.value)}>
-              {SORTED_COUNTRIES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.name}
-                </option>
-              ))}
-            </Select>
+            <Select
+              id="country"
+              value={profile.country}
+              options={SORTED_COUNTRIES.map((c) => ({ value: c.code, label: c.name }))}
+              onValueChange={changeCountry}
+            />
           </Field>
           <Field label="City" htmlFor="city">
             <Input
@@ -260,12 +262,13 @@ export function ProfileEditor({
           </Field>
           {profile.country === "PH" ? (
             <Field label="Region" htmlFor="region">
-              <Select id="region" value={profile.region ?? ""} onChange={(e) => update("region", e.target.value || null)}>
-                <option value="">Select a region</option>
-                {PH_REGIONS.map((r) => (
-                  <option key={r}>{r}</option>
-                ))}
-              </Select>
+              <Select
+                id="region"
+                value={profile.region ?? ""}
+                placeholder="Select a region"
+                options={PH_REGIONS.map((r) => ({ value: r, label: r }))}
+                onValueChange={(r) => update("region", r || null)}
+              />
             </Field>
           ) : (
             <Field label="State or province" htmlFor="region">
@@ -340,11 +343,12 @@ export function ProfileEditor({
         </Field>
         <div className="grid gap-4 sm:grid-cols-[8rem_1fr_1fr]">
           <Field label="Currency" htmlFor="salcur">
-            <Select id="salcur" value={profile.salaryCurrency} onChange={(e) => update("salaryCurrency", e.target.value)}>
-              {CURRENCIES.map((c) => (
-                <option key={c}>{c}</option>
-              ))}
-            </Select>
+            <Select
+              id="salcur"
+              value={profile.salaryCurrency}
+              options={CURRENCIES.map((c) => ({ value: c, label: c }))}
+              onValueChange={(c) => update("salaryCurrency", c)}
+            />
           </Field>
           <Field label={`Expected salary from (${currencySymbol(profile.salaryCurrency).trim()} / month)`} htmlFor="salmin">
             <Input
@@ -406,13 +410,8 @@ export function ProfileEditor({
               <div className="grid gap-3 sm:grid-cols-2">
                 <Input placeholder="Job title" value={exp.role} onChange={(e) => set({ role: e.target.value })} />
                 <Input placeholder="Company" value={exp.company} onChange={(e) => set({ company: e.target.value })} />
-                <Input placeholder="Start (e.g. 2022-03)" value={exp.start} onChange={(e) => set({ start: e.target.value })} />
-                <Input
-                  placeholder="End (blank if current)"
-                  value={exp.end ?? ""}
-                  onChange={(e) => set({ end: e.target.value || null })}
-                />
               </div>
+              <MonthRangePicker start={exp.start} end={exp.end} onChange={set} startLabel="Started" endLabel="Ended" />
               <Textarea
                 placeholder="Key achievements, one per line"
                 value={exp.highlights.join("\n")}
@@ -447,7 +446,12 @@ export function ProfileEditor({
                 <Input placeholder="School" value={edu.school} onChange={(e) => set({ school: e.target.value })} />
                 <Input placeholder="Degree (e.g. BS)" value={edu.degree} onChange={(e) => set({ degree: e.target.value })} />
                 <Input placeholder="Field of study" value={edu.field ?? ""} onChange={(e) => set({ field: e.target.value || null })} />
-                <Input placeholder="Year" value={edu.year ?? ""} onChange={(e) => set({ year: e.target.value || null })} />
+                <MonthPicker
+                  aria-label="Graduated"
+                  placeholder="Graduated (or expected)"
+                  value={edu.year}
+                  onChange={(year) => set({ year })}
+                />
               </div>
               <RemoveButton onClick={() => update("education", profile.education.filter((_, j) => j !== i))} />
             </div>

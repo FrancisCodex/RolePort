@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Select } from "@/components/ui/fields";
+import { Select } from "@/components/ui/select";
 
 /** Country and location filters for the job search form. The location control follows the chosen country. */
 export function LocationFields({
@@ -23,23 +23,24 @@ export function LocationFields({
 
   return (
     <>
-      <Select name="country" value={country} onChange={(e) => setCountry(e.target.value)} aria-label="Country">
-        {countries.map((c) => (
-          <option key={c.code} value={c.code}>
-            {c.name}
-          </option>
-        ))}
-      </Select>
+      <Select
+        name="country"
+        value={country}
+        onValueChange={setCountry}
+        aria-label="Country"
+        options={countries.map((c) => ({ value: c.code, label: c.name }))}
+      />
       {country === "PH" ? (
-        <Select name="loc" defaultValue={locationId ?? ""} aria-label="Location">
-          <option value="">Anywhere in PH</option>
-          <option value="remote">Remote</option>
-          {phLocations.map((l) => (
-            <option key={l.id} value={l.id}>
-              {l.label}
-            </option>
-          ))}
-        </Select>
+        <Select
+          name="loc"
+          defaultValue={locationId ?? ""}
+          aria-label="Location"
+          options={[
+            { value: "", label: "Anywhere in PH" },
+            { value: "remote", label: "Remote" },
+            ...phLocations.map((l) => ({ value: l.id, label: l.label })),
+          ]}
+        />
       ) : (
         <div className="col-span-2 flex gap-2 sm:col-span-1">
           <input

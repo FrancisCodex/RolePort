@@ -9,7 +9,7 @@ export default function SignUpPage() {
   return (
     <>
       <h1 className="font-display text-3xl font-bold tracking-tight">Let&apos;s get you hired</h1>
-      <p className="mt-2 mb-8 text-muted">Free to start. Set up your profile in about 3 minutes.</p>
+      <p className="mt-2 mb-8 text-muted">Set up your profile in about 3 minutes.</p>
       <Suspense>
         <AuthForm mode="sign-up" googleEnabled={isGoogleEnabled} />
       </Suspense>

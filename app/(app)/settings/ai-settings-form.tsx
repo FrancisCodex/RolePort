@@ -3,8 +3,8 @@
 import { Check, ExternalLink, Loader2, PlugZap, RefreshCw } from "lucide-react";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/fields";
 import { Input, Label } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { AI_PRESET_IDS, AI_PRESETS, type AiPresetId } from "@/lib/ai/presets";
 import { cn } from "@/lib/utils";
 import { fetchModels, saveAiSettings, testAiConnection, turnOffAi, type AiSettingsInput } from "./actions";
@@ -160,11 +160,13 @@ export function AiSettingsForm({ initial, localMode }: { initial: AiSettingsView
           <Label htmlFor="model">Model</Label>
           <div className="flex gap-2">
             {models.length > 0 ? (
-              <Select id="model" value={model} onChange={(e) => setModel(e.target.value)}>
-                {models.map((m) => (
-                  <option key={m}>{m}</option>
-                ))}
-              </Select>
+              <Select
+                id="model"
+                value={model}
+                placeholder="Choose a model"
+                options={models.map((m) => ({ value: m, label: m }))}
+                onValueChange={setModel}
+              />
             ) : (
               <Input id="model" value={model} onChange={(e) => setModel(e.target.value)} placeholder="Model name" />
             )}
@@ -180,13 +182,18 @@ export function AiSettingsForm({ initial, localMode }: { initial: AiSettingsView
         {config.provider === "openai_compatible" && (
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="reasoning">Thinking</Label>
-            <Select id="reasoning" value={reasoning} onChange={(e) => setReasoning(e.target.value)}>
-              <option value="">Provider default</option>
-              <option value="none">Off (fastest)</option>
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High (slowest, most careful)</option>
-            </Select>
+            <Select
+              id="reasoning"
+              value={reasoning}
+              onValueChange={setReasoning}
+              options={[
+                { value: "", label: "Provider default" },
+                { value: "none", label: "Off (fastest)" },
+                { value: "low", label: "Low" },
+                { value: "medium", label: "Medium" },
+                { value: "high", label: "High (slowest, most careful)" },
+              ]}
+            />
             <p className="text-xs text-subtle">Only for models that think before answering.</p>
           </div>
         )}

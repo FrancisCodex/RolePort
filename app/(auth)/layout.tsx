@@ -8,7 +8,7 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
       <div className="flex flex-col px-4 py-6 sm:px-10">
         <Logo />
         <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-12">{children}</main>
-        <p className="text-center text-xs text-subtle">Made for Filipino job seekers 🇵🇭</p>
+        <p className="text-center text-xs text-subtle">Free and open source · Made in the Philippines 🇵🇭</p>
       </div>
 
       <aside className="relative hidden overflow-hidden bg-brand lg:flex lg:items-center lg:justify-center">
