@@ -14,7 +14,7 @@ Branch: `feat/liveweb-update`. Update this table as phases land.
 | [4. AI in the browser](#phase-4-ai-in-the-browser) | ✅ Done (`8528982`) | AI calls go straight from the browser to the provider, Ollama included. See the Phase 4 checklist. |
 | [5. Backups and storage](#phase-5-backups-and-storage) | ✅ Done (`84eee77`) | Backup export/import in both editions, storage status and persistence, backup reminder, installable app. See the Phase 5 checklist. |
 | [6. JobSpy connect](#phase-6-jobspy-on-the-users-machine) | ✅ Done (`387f613`) | Lite searches LinkedIn, Indeed and more through JobSpy on the user's computer, straight from the browser. See the Phase 6 checklist. |
-| [7. Launch polish](#phase-7-launch-polish) | ✅ Done in code (not committed yet) | CSP, landing page, privacy page, README. Deployment and the "Before launch" checks remain. See the Phase 7 checklist. |
+| [7. Launch polish](#phase-7-launch-polish) | ✅ Done in code (`1e62f99`) | CSP, landing page, privacy page, README. Deployment and the "Before launch" checks remain. See the Phase 7 checklist. |
 
 Open items carried from earlier phases: Safari and Firefox testing (§1.5 finding 3); Brotli and long-lived caching for the PGlite files and the starter database (phase 7).
 
