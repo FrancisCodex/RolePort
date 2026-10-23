@@ -11,14 +11,6 @@ export function Textarea({ className, ...props }: ComponentProps<"textarea">) {
   return <textarea className={cn(fieldBase, "min-h-24 px-4 py-3", className)} {...props} />;
 }
 
-export function Select({ className, children, ...props }: ComponentProps<"select">) {
-  return (
-    <select className={cn(fieldBase, "h-12 px-4", className)} {...props}>
-      {children}
-    </select>
-  );
-}
-
 /** Free-form tags: Enter or comma adds, Backspace on an empty input removes the last one. */
 export function TagInput({
   value,

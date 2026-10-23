@@ -22,11 +22,12 @@
   --muted: #6b6b66;
   --subtle: #9a9a93;
 
-  --brand: #5b4cf5;
-  --brand-hover: #4c3de6;
-  --brand-soft: #eeecff;
+  --brand: #22c55e;
+  --brand-hover: #1fb556;
+  --brand-soft: #e3f8ea;
   --brand-fg: #ffffff;
-  --brand-ink: #3b2fc4;
+  --brand-ink: #126a32;
+  --brand-ledge: #126a32;
 
   --success: #16a34a;
   --success-soft: #e7f7ec;
@@ -53,11 +54,13 @@
   --muted: #a1a19b;
   --subtle: #6f6f69;
 
-  --brand: #7b6dff;
-  --brand-hover: #8d81ff;
-  --brand-soft: #221f3d;
+  /* Same green as light mode; only the text-on-soft ink lightens for contrast. */
+  --brand: #22c55e;
+  --brand-hover: #34d06d;
+  --brand-soft: #112a1b;
   --brand-fg: #ffffff;
-  --brand-ink: #b9b1ff;
+  --brand-ink: #4ade80;
+  --brand-ledge: #126a32;
 
   --success: #3ccf6e;
   --success-soft: #12291a;
@@ -84,6 +87,7 @@
   --color-brand-soft: var(--brand-soft);
   --color-brand-fg: var(--brand-fg);
   --color-brand-ink: var(--brand-ink);
+  --color-brand-ledge: var(--brand-ledge);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
   --color-warning: var(--warning);
@@ -103,7 +107,7 @@
 
   --shadow-soft: 0 1px 2px hsl(var(--shadow-color) / 0.04), 0 4px 16px -4px hsl(var(--shadow-color) / 0.08);
   --shadow-lift: 0 2px 4px hsl(var(--shadow-color) / 0.05), 0 16px 40px -12px hsl(var(--shadow-color) / 0.18);
-  --shadow-press: 0 4px 0 0 var(--brand-ink);
+  --shadow-press: 0 4px 0 0 var(--brand-ledge);
 
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 }
@@ -190,6 +194,18 @@
 @keyframes pop {
   0% {
     transform: scale(0.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* A select menu opening beside its trigger. */
+@keyframes menu-in {
+  0% {
+    transform: scale(0.97);
     opacity: 0;
   }
   100% {

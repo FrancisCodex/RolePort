@@ -10,7 +10,7 @@ import { JobCard } from "@/components/jobs/job-card";
 import { JobBrowser } from "@/components/jobs/job-browser";
 import { LocationFields } from "@/components/jobs/location-fields";
 import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/fields";
+import { Select } from "@/components/ui/select";
 import { isAiConfigured } from "@/lib/ai/config";
 import { findCountry, orderedCountries } from "@/lib/geo/countries";
 import { searchJobs } from "@/lib/jobs/data";
@@ -24,6 +24,24 @@ import { cn } from "@/lib/utils";
 export const metadata: Metadata = { title: "Jobs" };
 
 const SETUPS: WorkSetup[] = ["onsite", "hybrid", "remote"];
+
+const SETUP_OPTIONS = [
+  { value: "", label: "Any setup" },
+  { value: "onsite", label: "Onsite" },
+  { value: "hybrid", label: "Hybrid" },
+  { value: "remote", label: "Remote" },
+];
+const POSTED_OPTIONS = [
+  { value: "", label: "Any time" },
+  { value: "1", label: "Past 24 hours" },
+  { value: "3", label: "Past 3 days" },
+  { value: "7", label: "Past week" },
+  { value: "30", label: "Past month" },
+];
+const SORT_OPTIONS = [
+  { value: "match", label: "Best match" },
+  { value: "date", label: "Newest" },
+];
 
 function one(value: string | string[] | undefined) {
   return (Array.isArray(value) ? value[0] : value)?.trim() || undefined;
@@ -89,23 +107,14 @@ async function JobSearch({ searchParams }: { searchParams: PageProps<"/jobs">["s
             locationId={params.locationId}
             city={city}
           />
-          <Select name="setup" defaultValue={params.workSetup ?? ""} aria-label="Work setup">
-            <option value="">Any setup</option>
-            <option value="onsite">Onsite</option>
-            <option value="hybrid">Hybrid</option>
-            <option value="remote">Remote</option>
-          </Select>
-          <Select name="days" defaultValue={params.postedWithinDays ? String(params.postedWithinDays) : ""} aria-label="Date posted">
-            <option value="">Any time</option>
-            <option value="1">Past 24 hours</option>
-            <option value="3">Past 3 days</option>
-            <option value="7">Past week</option>
-            <option value="30">Past month</option>
-          </Select>
-          <Select name="sort" defaultValue={sort} aria-label="Sort by">
-            <option value="match">Best match</option>
-            <option value="date">Newest</option>
-          </Select>
+          <Select name="setup" defaultValue={params.workSetup ?? ""} aria-label="Work setup" options={SETUP_OPTIONS} />
+          <Select
+            name="days"
+            defaultValue={params.postedWithinDays ? String(params.postedWithinDays) : ""}
+            aria-label="Date posted"
+            options={POSTED_OPTIONS}
+          />
+          <Select name="sort" defaultValue={sort} aria-label="Sort by" options={SORT_OPTIONS} />
         </div>
       </Form>
 

@@ -4,8 +4,9 @@ import { Check, FileUp, Loader2, Plus, Sparkles, Trash2, X } from "lucide-react"
 import { useRef, useState, useTransition, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, TagInput, Textarea, ToggleGroup } from "@/components/ui/fields";
+import { TagInput, Textarea, ToggleGroup } from "@/components/ui/fields";
 import { Input, Label } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { COUNTRIES, countryName, findCountry } from "@/lib/geo/countries";
 import { currencySymbol } from "@/lib/jobs/format";
 import { PH_REGIONS } from "@/lib/ph-locations";
@@ -46,14 +47,13 @@ function CountryPicker({ id, value, onChange, exclude }: { id: string; value: st
           ))}
         </div>
       )}
-      <Select id={id} value="" onChange={(e) => e.target.value && onChange([...value, e.target.value])}>
-        <option value="">Add a country…</option>
-        {options.map((c) => (
-          <option key={c.code} value={c.code}>
-            {c.name}
-          </option>
-        ))}
-      </Select>
+      <Select
+        id={id}
+        value=""
+        placeholder="Add a country…"
+        options={options.map((c) => ({ value: c.code, label: c.name }))}
+        onValueChange={(code) => onChange([...value, code])}
+      />
     </div>
   );
 }
@@ -242,13 +242,12 @@ export function ProfileEditor({
             />
           </Field>
           <Field label="Country you live in" htmlFor="country">
-            <Select id="country" value={profile.country} onChange={(e) => changeCountry(e.target.value)}>
-              {SORTED_COUNTRIES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.name}
-                </option>
-              ))}
-            </Select>
+            <Select
+              id="country"
+              value={profile.country}
+              options={SORTED_COUNTRIES.map((c) => ({ value: c.code, label: c.name }))}
+              onValueChange={changeCountry}
+            />
           </Field>
           <Field label="City" htmlFor="city">
             <Input
@@ -260,12 +259,13 @@ export function ProfileEditor({
           </Field>
           {profile.country === "PH" ? (
             <Field label="Region" htmlFor="region">
-              <Select id="region" value={profile.region ?? ""} onChange={(e) => update("region", e.target.value || null)}>
-                <option value="">Select a region</option>
-                {PH_REGIONS.map((r) => (
-                  <option key={r}>{r}</option>
-                ))}
-              </Select>
+              <Select
+                id="region"
+                value={profile.region ?? ""}
+                placeholder="Select a region"
+                options={PH_REGIONS.map((r) => ({ value: r, label: r }))}
+                onValueChange={(r) => update("region", r || null)}
+              />
             </Field>
           ) : (
             <Field label="State or province" htmlFor="region">
@@ -340,11 +340,12 @@ export function ProfileEditor({
         </Field>
         <div className="grid gap-4 sm:grid-cols-[8rem_1fr_1fr]">
           <Field label="Currency" htmlFor="salcur">
-            <Select id="salcur" value={profile.salaryCurrency} onChange={(e) => update("salaryCurrency", e.target.value)}>
-              {CURRENCIES.map((c) => (
-                <option key={c}>{c}</option>
-              ))}
-            </Select>
+            <Select
+              id="salcur"
+              value={profile.salaryCurrency}
+              options={CURRENCIES.map((c) => ({ value: c, label: c }))}
+              onValueChange={(c) => update("salaryCurrency", c)}
+            />
           </Field>
           <Field label={`Expected salary from (${currencySymbol(profile.salaryCurrency).trim()} / month)`} htmlFor="salmin">
             <Input
