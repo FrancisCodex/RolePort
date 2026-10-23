@@ -7,6 +7,8 @@ export type SettingsData = {
   ai: AiSettingsView;
   /** Whether to suggest a local model (Ollama) first. */
   localMode: boolean;
+  /** AI calls run from this browser (the lite edition). */
+  aiInBrowser?: boolean;
   rapidApiKeyHint: string | null;
   /** The JobSpy switch, when this install can use it. */
   jobSpy: { enabled: boolean; reachable: boolean } | null;
@@ -16,7 +18,7 @@ export type SettingsData = {
 };
 
 /** The Settings cards, shared by the server page and the lite edition. */
-export function SettingsView({ ai, localMode, rapidApiKeyHint, jobSpy, dataNote, keyNote }: SettingsData) {
+export function SettingsView({ ai, localMode, aiInBrowser, rapidApiKeyHint, jobSpy, dataNote, keyNote }: SettingsData) {
   return (
     <div className="flex flex-col gap-4">
       <Card>
@@ -27,7 +29,7 @@ export function SettingsView({ ai, localMode, rapidApiKeyHint, jobSpy, dataNote,
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <AiSettingsForm initial={ai} localMode={localMode} />
+          <AiSettingsForm initial={ai} localMode={localMode} aiInBrowser={aiInBrowser} />
         </CardContent>
       </Card>
 

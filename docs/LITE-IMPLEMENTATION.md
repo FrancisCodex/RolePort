@@ -10,8 +10,8 @@ Branch: `feat/liveweb-update`. Update this table as phases land.
 | --- | --- | --- |
 | [1. Spike](#phase-1-spike-pglite-in-a-worker-profile-page) | ✅ Done (`c23b821`) | Lite build mode, browser database (OPFS, IndexedDB fallback), starter database, Profile in lite. Results in §1.5. |
 | [2. Data layer](#phase-2-data-layer-all-pages-both-modes) | ✅ Done (`ea93f05`) | Every page loads in both modes; Jobs search and AI are placeholders in lite until phases 3 and 4. See the Phase 2 checklist. |
-| [3. Search](#phase-3-search-proxy-route--browser-merge) | ✅ Done (not committed yet) | Lite searches through `/api/lite/search` and keeps results in the browser. See the Phase 3 checklist. |
-| [4. AI in the browser](#phase-4-ai-in-the-browser) | ⏳ Not started | |
+| [3. Search](#phase-3-search-proxy-route--browser-merge) | ✅ Done (`e6ee6cf`) | Lite searches through `/api/lite/search` and keeps results in the browser. See the Phase 3 checklist. |
+| [4. AI in the browser](#phase-4-ai-in-the-browser) | ✅ Done (not committed yet) | AI calls go straight from the browser to the provider, Ollama included. See the Phase 4 checklist. |
 | [5. Backups and storage](#phase-5-backups-and-storage) | ⏳ Not started | |
 | [6. JobSpy connect](#phase-6-jobspy-on-the-users-machine) | ⏳ Not started | |
 | [7. Launch polish](#phase-7-launch-polish) | ⏳ Not started | |
@@ -181,8 +181,8 @@ Verified (2026-10-23):
 
 Known gaps, by design until later phases:
 
-- Lite AI is off. `testAiConnection` and `fetchModels` return "not available yet", and choosing the Ollama preset in lite shows that message because the form loads models on pick (phase 4).
-- `components/jobs/analyze-jobs.tsx` calls `router.refresh()` after a batch. Lite needs `invalidate("job_match")` there (phase 4, with evaluation).
+- ~~Lite AI is off.~~ Done in phase 4.
+- ~~`analyze-jobs.tsx` refresh after a batch.~~ Done in phase 4: lite evaluations invalidate `job_match` themselves, so the panel's `router.refresh()` is harmless there.
 - Lite hides the JobSpy switch (phase 6).
 
 Testing note: in the browser pane, a hidden pane can keep server-streamed Suspense content hidden (React reveals it on an animation frame). Read the `S:` placeholders or bring the tab to the front.
@@ -309,6 +309,42 @@ Exit: lite search returns, saves, and ranks jobs; statuses list matches self-hos
 
 ## Phase 4: AI in the browser
 
+### Status
+
+| Item | State | Where |
+| --- | --- | --- |
+| 4.1 Shared AI core | ✅ | `lib/ai/structured.ts` (config required, `dangerouslyAllowBrowser` in lite); `lib/ai/client.ts` is the server wrapper that adds the user's config |
+| 4.1 Evaluator and CV extractor | ✅ | `evaluate-job.ts`, `extract-profile.ts` take the config and are no longer server-only |
+| 4.1 Shared flows | ✅ | `lib/jobs/fit-evaluation.ts` (`evaluateStoredJob`), `lib/profile/cv-import.ts` (`draftFromCv`), `lib/ai/errors.ts` (Node and browser network errors), `CONNECTION_TEST` in `lib/ai/settings.ts` |
+| 4.2 Lite evaluate, CV import, Test connection, model list | ✅ | `lib/client/lite-mutations.ts`; lite pages read the real AI status from browser settings |
+| 4.3 Provider checks | ✅ | All allow browser requests (table below); no pass-through route |
+| 4.4 Ollama setup | ✅ | `app/(app)/settings/ollama-setup.tsx` (per-OS `OLLAMA_ORIGINS` steps with copy buttons, shown in lite when Ollama is picked); `lib/ai/local-server.ts` tells apart "not running", "doesn't allow this site" and "model not pulled" |
+
+Verified (2026-10-23):
+
+- **Scratch script against local Ollama** (`qwen3:4b-instruct-2507-q4_K_M`):
+  - model list (9 models) and connection test (0.5 s);
+  - `evaluateStoredJob` (7.4 s, overall 69, saved with its model label);
+  - `draftFromCv` with AI (10.9 s: 6 skills, 2 roles, country PH), and its fallback to detected skills when Ollama is unreachable;
+  - the error mapping.
+
+  The 11 earlier checks still pass.
+- **Lite production build, browser to Ollama with no server in between:**
+  - Settings shows the Ollama help ("already allows http://localhost:3100").
+  - Save works, Test connection reports "It works (0.9s)", and Load models fills the model list.
+  - A wrong port reports "Couldn't reach …".
+  - CV import fills the profile in 10.6 s.
+  - Evaluate fit on a search result saves "Strong fit" with the model label.
+- **Site not allowed:** served at `http://lite.localhost:3100`, which Ollama refuses. The help shows the per-OS steps for that origin, and Test connection reports "Ollama is running but doesn't allow this site yet. Set OLLAMA_ORIGINS to http://lite.localhost:3100…".
+- **Self-hosted:** pages still render, and the server path uses the same shared core (type-checked; exercised by the script). Clicking Test connection in the running app wasn't possible in the hidden browser pane.
+- **Bundles:** no page's initial JS includes PGlite, `sanitize-html` or the AI SDK; the AI chunk (80 KB gzipped) loads on first AI use.
+
+Not done here:
+
+- Chrome's local network access prompt (an HTTPS site calling `http://localhost`) can't be tested on localhost. Check it on the first real deployment; the "Couldn't reach" message already tells users to allow it.
+- Hosted providers (Claude, OpenAI, OpenRouter, Groq) were checked by preflight only, not with a real key from the browser.
+
+
 ### 4.1 Shared AI core
 
 - `lib/ai/structured.ts` (new, no `server-only`): `generateStructured({ config, ... })` with `config` **required**, `listModels`, `toStrictJsonSchema`, `extractJson`, and the OpenAI-compatible retry loop, moved from `client.ts` unchanged.
@@ -329,13 +365,15 @@ For each, from a page on an HTTPS origin: preflight with `Authorization` / `x-ap
 
 | Provider | CORS OK? | Notes |
 | --- | --- | --- |
-| Claude | | needs `anthropic-dangerous-direct-browser-access`; check the `server-side-fallback` beta header passes preflight |
-| OpenAI | | |
-| OpenRouter | | |
-| Groq | | |
-| Ollama | | `OLLAMA_ORIGINS`, Chrome Local Network Access prompt |
+| Claude | ✅ | Preflight allows `x-api-key`, `anthropic-version`, `anthropic-beta` and `anthropic-dangerous-direct-browser-access` from any origin |
+| OpenAI | ✅ | `/chat/completions` echoes the origin; `/models` allows `*` |
+| OpenRouter | ✅ | `*` |
+| Groq | ✅ | `*` |
+| Ollama | ✅ with setup | Allows `localhost` / `127.0.0.1` on any port by default; any other site gets 403 until it's in `OLLAMA_ORIGINS` |
 
-Any provider that fails gets a pass-through in a second route (`app/api/lite/ai/route.ts`) that forwards the request and body unchanged, stores and logs nothing. Only built if needed.
+Checked 2026-10-23 with CORS preflights (no keys needed) and against Ollama on this machine.
+
+Any provider that fails gets a pass-through in a second route (`app/api/lite/ai/route.ts`) that forwards the request and body unchanged, stores and logs nothing. **Not needed:** every provider above accepts browser requests.
 
 ### 4.4 Ollama setup UI
 

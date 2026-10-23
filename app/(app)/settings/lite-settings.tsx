@@ -16,10 +16,11 @@ export function LiteSettings() {
           {...data}
           // Lite's story is a model on the user's own machine, so suggest Ollama first.
           localMode
+          aiInBrowser
           // Connecting JobSpy on this computer arrives with phase 6 (docs/LITE-IMPLEMENTATION.md).
           jobSpy={null}
           dataNote="Your profile, jobs and applications are stored in this browser, on this device. Nothing is kept on HireMe's servers. Clearing this site's data deletes them."
-          keyNote="API keys are stored in this browser and sent only to the provider you choose. Your CV is only sent to the AI provider you choose."
+          keyNote="Your key is stored in this browser and sent only to the provider. AI requests, your CV included, go straight from this browser to the provider you choose."
         />
       )}
     </LiteData>

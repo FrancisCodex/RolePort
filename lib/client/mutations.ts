@@ -19,11 +19,13 @@ export const toggleSavedJob: typeof jobs.toggleSavedJob = isLite ? async (...a) 
 export const setApplicationStatus: typeof jobs.setApplicationStatus = isLite
   ? async (...a) => (await lite()).setApplicationStatus(...a)
   : jobs.setApplicationStatus;
-export const evaluateJob: typeof jobs.evaluateJob = isLite ? async () => (await lite()).evaluateJob() : jobs.evaluateJob;
+export const evaluateJob: typeof jobs.evaluateJob = isLite ? async (jobId) => (await lite()).evaluateJob(jobId) : jobs.evaluateJob;
 
 export const saveAiSettings: typeof settings.saveAiSettings = isLite ? async (...a) => (await lite()).saveAiSettings(...a) : settings.saveAiSettings;
 export const turnOffAi: typeof settings.turnOffAi = isLite ? async () => (await lite()).turnOffAi() : settings.turnOffAi;
-export const testAiConnection: typeof settings.testAiConnection = isLite ? async () => (await lite()).testAiConnection() : settings.testAiConnection;
-export const fetchModels: typeof settings.fetchModels = isLite ? async () => (await lite()).fetchModels() : settings.fetchModels;
+export const testAiConnection: typeof settings.testAiConnection = isLite
+  ? async (...a) => (await lite()).testAiConnection(...a)
+  : settings.testAiConnection;
+export const fetchModels: typeof settings.fetchModels = isLite ? async (...a) => (await lite()).fetchModels(...a) : settings.fetchModels;
 export const saveRapidApiKey: typeof settings.saveRapidApiKey = isLite ? async (...a) => (await lite()).saveRapidApiKey(...a) : settings.saveRapidApiKey;
 export const saveJobSpyEnabled: typeof settings.saveJobSpyEnabled = isLite ? async () => (await lite()).saveJobSpyEnabled() : settings.saveJobSpyEnabled;

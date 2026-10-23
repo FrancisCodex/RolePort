@@ -5,7 +5,7 @@ import { z } from "zod";
 import { generateStructured, listModels } from "@/lib/ai/client";
 import { getMySettingsRow } from "@/lib/ai/config";
 import { AI_PRESETS } from "@/lib/ai/presets";
-import { aiInput, aiSettingsValues, checkBaseUrl, resolveAiInput, type AiSettingsInput } from "@/lib/ai/settings";
+import { aiInput, aiSettingsValues, checkBaseUrl, CONNECTION_TEST, resolveAiInput, type AiSettingsInput } from "@/lib/ai/settings";
 import { getDb } from "@/lib/db";
 import { isLocalMode, jobSpyUrl } from "@/lib/env";
 import type { Result } from "@/lib/result";
@@ -61,13 +61,7 @@ export async function testAiConnection(raw: AiSettingsInput): Promise<Result<{ m
     const { config } = await resolve(parsed.data);
     if (!config.model) return { ok: false, error: "Choose a model first." };
     const started = Date.now();
-    const result = await generateStructured({
-      config,
-      system: "You are a connection check for a job search app.",
-      prompt: 'Say hello to a job seeker in the Philippines in at most six words. Put it in the "reply" field.',
-      schema: z.object({ reply: z.string() }),
-      effort: "low",
-    });
+    const result = await generateStructured({ ...CONNECTION_TEST, config });
     return { ok: true, data: { ms: Date.now() - started, reply: result.reply } };
   } catch (error) {
     return { ok: false, error: errorMessage(error) };

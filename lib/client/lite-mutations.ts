@@ -1,25 +1,52 @@
 import { z } from "zod";
 import type { EvaluateResult } from "@/app/(app)/jobs/actions";
-import { aiInput, aiSettingsValues, resolveAiInput, type AiSettingsInput } from "@/lib/ai/settings";
-import { getBrowserDb } from "@/lib/db/browser";
+import { aiErrorMessage, isUnreachable } from "@/lib/ai/errors";
+import { explainLocalFailure, isLocalUrl, isOllamaUrl } from "@/lib/ai/local-server";
+import { AI_PRESETS } from "@/lib/ai/presets";
+import {
+  aiConfigFromRow,
+  aiInput,
+  aiSettingsValues,
+  checkBaseUrl,
+  CONNECTION_TEST,
+  resolveAiInput,
+  type AiConfig,
+  type AiSettingsInput,
+} from "@/lib/ai/settings";
+import { AiUnavailableError, generateStructured, listModels } from "@/lib/ai/structured";
+import { getBrowserDb, type BrowserDb } from "@/lib/db/browser";
 import { LOCAL_USER } from "@/lib/db/local-user";
 import { setStatus, toggleSaved, type ApplicationStatus } from "@/lib/jobs/applications";
+import { vetoReason } from "@/lib/jobs/fit";
+import { evaluateStoredJob } from "@/lib/jobs/fit-evaluation";
 import { readCvFile, type CvImport } from "@/lib/profile/cv-file";
-import { detectSkills } from "@/lib/profile/detect-skills";
+import { draftFromCv } from "@/lib/profile/cv-import";
 import { writeCv, writeProfile } from "@/lib/profile/queries";
 import { profileSchema, type ProfileInput } from "@/lib/profile/schema";
 import type { Result } from "@/lib/result";
 import { readSettings, writeSettings } from "@/lib/settings/queries";
 import { invalidate } from "./bus";
 import { readKey, storeKey } from "./lite-keys";
+import { me } from "./lite-queries";
 
 /*
  * The lite edition's versions of the server actions, run against the browser database.
  * Same signatures and results; invalidate() stands in for the server's refresh().
+ * AI calls go straight from the browser to the user's provider with the user's own key.
  */
 
-// AI from the browser arrives with phase 4 (docs/LITE-IMPLEMENTATION.md).
-const NO_AI_YET = "AI from the browser isn't available in HireMe Lite yet. Your settings are saved.";
+async function savedAiConfig(db: BrowserDb): Promise<AiConfig | null> {
+  return aiConfigFromRow(await readSettings(db, LOCAL_USER.id), readKey);
+}
+
+/** Like the server's messages, plus why a model server on this computer couldn't be reached. */
+async function providerError(error: unknown, baseUrl: string | null, model: string | null): Promise<string> {
+  if (isUnreachable(error) && baseUrl && isLocalUrl(baseUrl)) return explainLocalFailure(baseUrl);
+  if (isUnreachable(error)) return "Couldn't reach the provider. Check your connection and the base URL.";
+  const message = aiErrorMessage(error, "Something went wrong.");
+  if (baseUrl && model && isOllamaUrl(baseUrl) && /wasn't found/.test(message)) return `${message} Run \`ollama pull ${model}\` first.`;
+  return message;
+}
 
 /* Profile ------------------------------------------------------------------- */
 
@@ -38,12 +65,10 @@ export async function importCv(formData: FormData): Promise<Result<CvImport>> {
   if (!read.ok) return read;
   const { fileName, text } = read.data;
 
-  await writeCv(await getBrowserDb(), LOCAL_USER.id, fileName, text);
+  const db = await getBrowserDb();
+  await writeCv(db, LOCAL_USER.id, fileName, text);
   await invalidate("profile");
-
-  // Until AI runs in the browser (phase 4), detected skills only.
-  const skills = detectSkills(text).map((name) => ({ name, level: "secondary" as const }));
-  return { ok: true, data: { fileName, draft: { skills }, usedAi: false } };
+  return { ok: true, data: await draftFromCv(fileName, text, await savedAiConfig(db)) };
 }
 
 /* Jobs and pipeline --------------------------------------------------------- */
@@ -58,22 +83,38 @@ export async function setApplicationStatus(applicationId: string, status: Applic
   if (await setStatus(await getBrowserDb(), LOCAL_USER.id, applicationId, status)) await invalidate("application");
 }
 
-export async function evaluateJob(): Promise<EvaluateResult> {
-  return { ok: false, error: NO_AI_YET };
+/** Reloading here is a quick local query, so every evaluation refreshes the list (unlike the server's refreshPage). */
+export async function evaluateJob(jobId: string): Promise<EvaluateResult> {
+  const db = await getBrowserDb();
+  const config = await savedAiConfig(db);
+  if (!config) return { ok: false, error: new AiUnavailableError().message, needsSetup: true };
+  try {
+    const match = await evaluateStoredJob(db, await me(db), jobId, config);
+    await invalidate("job_match");
+    return { ok: true, score: match.overallScore, veto: vetoReason(match) };
+  } catch (error) {
+    console.error("[evaluate] failed", error);
+    const baseUrl = config.provider === "openai_compatible" ? config.baseUrl : null;
+    if (isUnreachable(error) && baseUrl && isLocalUrl(baseUrl)) return { ok: false, error: await explainLocalFailure(baseUrl) };
+    return { ok: false, error: aiErrorMessage(error, "The evaluation failed. Please try again.") };
+  }
 }
 
 /* Settings ------------------------------------------------------------------ */
+
+/** Form input → provider config, reusing the saved key. Local addresses are fine: it's the user's own machine. */
+async function resolve(input: AiSettingsInput) {
+  const saved = await readSettings(await getBrowserDb(), LOCAL_USER.id);
+  return resolveAiInput(input, readKey(saved?.aiApiKeyEnc), true);
+}
 
 export async function saveAiSettings(raw: AiSettingsInput): Promise<Result> {
   const parsed = aiInput.safeParse(raw);
   if (!parsed.success) return { ok: false, error: "Some settings are invalid." };
   try {
-    const db = await getBrowserDb();
-    const saved = await readSettings(db, LOCAL_USER.id);
-    // Local addresses are fine: they're the user's own machine, called from their own browser.
-    const { config, apiKey } = resolveAiInput(parsed.data, readKey(saved?.aiApiKeyEnc), true);
+    const { config, apiKey } = await resolve(parsed.data);
     if (!config.model) return { ok: false, error: "Choose a model." };
-    await writeSettings(db, LOCAL_USER.id, aiSettingsValues(parsed.data.preset, config, apiKey ? storeKey(apiKey) : null));
+    await writeSettings(await getBrowserDb(), LOCAL_USER.id, aiSettingsValues(parsed.data.preset, config, apiKey ? storeKey(apiKey) : null));
     await invalidate("user_settings");
     return { ok: true, data: undefined };
   } catch (error) {
@@ -87,12 +128,38 @@ export async function turnOffAi(): Promise<Result> {
   return { ok: true, data: undefined };
 }
 
-export async function testAiConnection(): Promise<Result<{ ms: number; reply: string }>> {
-  return { ok: false, error: NO_AI_YET };
+export async function testAiConnection(raw: AiSettingsInput): Promise<Result<{ ms: number; reply: string }>> {
+  const parsed = aiInput.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: "Some settings are invalid." };
+  let config: AiConfig;
+  try {
+    config = (await resolve(parsed.data)).config;
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Some settings are invalid." };
+  }
+  if (!config.model) return { ok: false, error: "Choose a model first." };
+  try {
+    const started = Date.now();
+    const result = await generateStructured({ ...CONNECTION_TEST, config });
+    return { ok: true, data: { ms: Date.now() - started, reply: result.reply } };
+  } catch (error) {
+    return { ok: false, error: await providerError(error, config.provider === "openai_compatible" ? config.baseUrl : null, config.model) };
+  }
 }
 
-export async function fetchModels(): Promise<Result<string[]>> {
-  return { ok: false, error: NO_AI_YET };
+export async function fetchModels(raw: AiSettingsInput): Promise<Result<string[]>> {
+  const parsed = aiInput.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: "Some settings are invalid." };
+  const preset = AI_PRESETS[parsed.data.preset as keyof typeof AI_PRESETS];
+  let baseUrl: string | null = null;
+  try {
+    const saved = await readSettings(await getBrowserDb(), LOCAL_USER.id);
+    const apiKey = parsed.data.clearApiKey ? null : parsed.data.apiKey || readKey(saved?.aiApiKeyEnc);
+    baseUrl = preset.provider === "openai_compatible" ? checkBaseUrl(parsed.data.baseUrl || preset.baseUrl, true) : null;
+    return { ok: true, data: await listModels({ provider: preset.provider, baseUrl, apiKey }) };
+  } catch (error) {
+    return { ok: false, error: await providerError(error, baseUrl, null) };
+  }
 }
 
 export async function saveRapidApiKey(raw: { apiKey: string | null; clear: boolean }): Promise<Result> {

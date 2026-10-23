@@ -116,6 +116,14 @@ export function resolveAiInput(
   };
 }
 
+/** The small call "Test connection" makes, on the server and in the lite edition. */
+export const CONNECTION_TEST = {
+  system: "You are a connection check for a job search app.",
+  prompt: 'Say hello to a job seeker in the Philippines in at most six words. Put it in the "reply" field.',
+  schema: z.object({ reply: z.string() }),
+  effort: "low" as const,
+};
+
 /** The `user_settings` columns for a resolved provider. `storedKey` is the key as stored: encrypted (server) or encoded (lite). */
 export function aiSettingsValues(preset: string, config: AiConfig, storedKey: string | null) {
   return {

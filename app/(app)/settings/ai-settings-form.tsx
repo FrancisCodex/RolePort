@@ -9,6 +9,7 @@ import { AI_PRESET_IDS, AI_PRESETS, type AiPresetId } from "@/lib/ai/presets";
 import type { AiSettingsInput } from "@/lib/ai/settings";
 import { fetchModels, saveAiSettings, testAiConnection, turnOffAi } from "@/lib/client/mutations";
 import { cn } from "@/lib/utils";
+import { OllamaSetup } from "./ollama-setup";
 
 export type AiSettingsView = {
   preset: AiPresetId | null;
@@ -23,7 +24,11 @@ export type AiSettingsView = {
 
 type Status = { tone: "success" | "error" | "info"; text: string } | null;
 
-export function AiSettingsForm({ initial, localMode }: { initial: AiSettingsView; localMode: boolean }) {
+/**
+ * `aiInBrowser`: the lite edition, where AI calls go from this browser to the provider, so
+ * Ollama needs to allow this site (setup steps instead of the self-hosted Docker hint).
+ */
+export function AiSettingsForm({ initial, localMode, aiInBrowser = false }: { initial: AiSettingsView; localMode: boolean; aiInBrowser?: boolean }) {
   const [preset, setPreset] = useState<AiPresetId>(initial.preset ?? (localMode ? "ollama" : "anthropic"));
   const config = AI_PRESETS[preset];
   const samePreset = preset === initial.preset;
@@ -130,13 +135,15 @@ export function AiSettingsForm({ initial, localMode }: { initial: AiSettingsView
           <div className="flex flex-col gap-1.5 sm:col-span-2">
             <Label htmlFor="baseUrl">Base URL</Label>
             <Input id="baseUrl" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="http://localhost:11434/v1" />
-            {preset === "ollama" && (
+            {preset === "ollama" && !aiInBrowser && (
               <p className="text-xs text-subtle">
                 Running HireMe in Docker? Use http://host.docker.internal:11434/v1.
               </p>
             )}
           </div>
         )}
+
+        {preset === "ollama" && aiInBrowser && <OllamaSetup model={model} />}
 
         {showKey && (
           <div className="flex flex-col gap-1.5 sm:col-span-2">

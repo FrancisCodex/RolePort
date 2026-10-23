@@ -22,23 +22,26 @@ import { readKey } from "./lite-keys";
  * so PGlite stays out of the first bundle. Each returns the props its page's view takes.
  */
 
-/** AI runs from the browser in phase 4 (docs/LITE-IMPLEMENTATION.md); until then AI features stay off. */
-const AI_IN_BROWSER = false;
+/** Whether an AI provider is set up in this browser (AI calls run from the browser in lite). */
+async function aiEnabled(db: BrowserDb): Promise<boolean> {
+  return aiConfigFromRow(await readSettings(db, LOCAL_USER.id), readKey) !== null;
+}
 
-async function me(db: BrowserDb) {
+export async function me(db: BrowserDb) {
   const [user] = await db.select({ id: schema.user.id, name: schema.user.name }).from(schema.user).where(eq(schema.user.id, LOCAL_USER.id));
   return user ?? LOCAL_USER;
 }
 
-export async function loadProfile(): Promise<ProfileView> {
+export async function loadProfile(): Promise<ProfileView & { aiEnabled: boolean }> {
   const db = await getBrowserDb();
-  return readProfile(db, await me(db));
+  const [view, ai] = await Promise.all([readProfile(db, await me(db)), aiEnabled(db)]);
+  return { ...view, aiEnabled: ai };
 }
 
 export async function loadHome(): Promise<ProfileView & { saved: number; aiEnabled: boolean }> {
   const db = await getBrowserDb();
-  const [view, saved] = await Promise.all([readProfile(db, await me(db)), countApplications(db, LOCAL_USER.id)]);
-  return { ...view, saved, aiEnabled: AI_IN_BROWSER };
+  const [view, saved, ai] = await Promise.all([readProfile(db, await me(db)), countApplications(db, LOCAL_USER.id), aiEnabled(db)]);
+  return { ...view, saved, aiEnabled: ai };
 }
 
 export async function loadPipeline(): Promise<BoardCard[]> {
@@ -50,10 +53,11 @@ export async function loadPipeline(): Promise<BoardCard[]> {
 export async function loadJobList(ids: string[], sort: JobSort): Promise<Omit<ResultsData, "statuses">> {
   const db = await getBrowserDb();
   const { profile } = await readProfile(db, await me(db));
-  const [rows, saved, fits] = await Promise.all([
+  const [rows, saved, fits, ai] = await Promise.all([
     readJobsByIds(db, ids),
     readSavedJobIds(db, LOCAL_USER.id),
     readFitMatches(db, LOCAL_USER.id, ids),
+    aiEnabled(db),
   ]);
   return {
     jobs: sortJobs(
@@ -61,7 +65,7 @@ export async function loadJobList(ids: string[], sort: JobSort): Promise<Omit<Re
       sort,
     ),
     hasSkills: profile.skills.length > 0,
-    aiEnabled: AI_IN_BROWSER,
+    aiEnabled: ai,
   };
 }
 
@@ -70,8 +74,8 @@ export async function loadJob(
 ): Promise<{ job: JobListItem; aiEnabled: boolean; source: { name: string; url: string } | null } | null> {
   const db = await getBrowserDb();
   const { profile } = await readProfile(db, await me(db));
-  const job = await readJob(db, LOCAL_USER.id, id, profile);
-  return job && { job, aiEnabled: AI_IN_BROWSER, source: sourceCredit(job.source) };
+  const [job, ai] = await Promise.all([readJob(db, LOCAL_USER.id, id, profile), aiEnabled(db)]);
+  return job && { job, aiEnabled: ai, source: sourceCredit(job.source) };
 }
 
 export async function loadSettings(): Promise<{ ai: AiSettingsView; rapidApiKeyHint: string | null }> {

@@ -13,7 +13,7 @@ export function LiteJob() {
     <LiteData
       key={id} // a different job is a fresh load
       load={(q) => q.loadJob(id)}
-      tables={["job", "application", "job_match", "profile"]}
+      tables={["job", "application", "job_match", "profile", "user_settings"]}
       fallback={<div className="h-96 animate-pulse rounded-3xl bg-surface-3" />}
     >
       {(data) =>

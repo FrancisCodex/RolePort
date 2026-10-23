@@ -1,9 +1,9 @@
-import "server-only";
 import { z } from "zod";
 import { findCountry } from "@/lib/geo/countries";
 import { normalizeProfileDates } from "@/lib/profile/dates";
 import { WORK_SETUPS, SKILL_LEVELS, type ProfileInput } from "@/lib/profile/schema";
-import { generateStructured } from "./client";
+import type { AiConfig } from "./settings";
+import { generateStructured } from "./structured";
 
 // Structured outputs: keep the schema to plain types (no length/range limits); the
 // result is re-validated by profileSchema when the user saves the form.
@@ -49,8 +49,10 @@ Rules:
 - workSetups: only if the CV states a preference; otherwise an empty list.
 - languages: as stated, e.g. {"name": "English", "level": "Fluent"}, {"name": "Filipino", "level": "Native"}.`;
 
-export async function extractProfileFromCv(cvText: string): Promise<Partial<ProfileInput>> {
+/** Profile fields read from a CV on the given provider. Runs on the server and in the lite edition's browser. */
+export async function extractProfileFromCv(cvText: string, config: AiConfig): Promise<Partial<ProfileInput>> {
   const result = await generateStructured({
+    config,
     system: SYSTEM,
     prompt: `<cv>\n${cvText}\n</cv>`,
     schema: extractedProfileSchema,

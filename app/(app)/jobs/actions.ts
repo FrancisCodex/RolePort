@@ -2,6 +2,7 @@
 
 import { refresh } from "next/cache";
 import { AiUnavailableError } from "@/lib/ai/client";
+import { aiErrorMessage } from "@/lib/ai/errors";
 import { getDb } from "@/lib/db";
 import { setStatus, toggleSaved, type ApplicationStatus } from "@/lib/jobs/applications";
 import { runFitEvaluation } from "@/lib/jobs/evaluation";
@@ -36,15 +37,6 @@ export async function evaluateJob(jobId: string, refreshPage = true): Promise<Ev
   } catch (error) {
     if (error instanceof AiUnavailableError) return { ok: false, error: error.message, needsSetup: true };
     console.error("[evaluate] failed", error);
-    const message = error instanceof Error ? error.message : "";
-    const timedOut = error instanceof Error && (error.name === "TimeoutError" || error.name === "AbortError");
-    return {
-      ok: false,
-      error: timedOut
-        ? "The model took too long to answer. Try again, or pick a faster model in Settings."
-        : /fetch failed|ECONNREFUSED/i.test(message)
-          ? "Couldn't reach your AI provider. Is it running? Check Settings."
-          : message || "The evaluation failed. Please try again.",
-    };
+    return { ok: false, error: aiErrorMessage(error, "The evaluation failed. Please try again.") };
   }
 }

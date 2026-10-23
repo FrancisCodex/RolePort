@@ -53,7 +53,7 @@ function LiteResults({ params, sort }: { params: JobSearchParams; sort: JobSort 
   return (
     <LiteData
       load={(q) => q.loadJobList(found.ids, sort)}
-      tables={["application", "job_match", "profile"]}
+      tables={["application", "job_match", "profile", "user_settings"]}
       fallback={<ResultsSkeleton />}
     >
       {(data) => <ResultsView {...data} statuses={found.statuses} />}
