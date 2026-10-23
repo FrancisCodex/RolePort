@@ -1,16 +1,16 @@
 "use server";
 
-import { eq } from "drizzle-orm";
 import { refresh } from "next/cache";
-import { extractText, getDocumentProxy } from "unpdf";
-import { extractProfileFromCv } from "@/lib/ai/extract-profile";
-import { getDb, schema } from "@/lib/db";
-import { isAiConfigured } from "@/lib/ai/config";
-import { detectSkills } from "@/lib/profile/detect-skills";
+import { getAiConfig } from "@/lib/ai/config";
+import { getDb } from "@/lib/db";
+import { readCvFile, type CvImport } from "@/lib/profile/cv-file";
+import { draftFromCv } from "@/lib/profile/cv-import";
+import { ONBOARDING_DONE, writeCv, writeOnboardingStep, writeProfile } from "@/lib/profile/queries";
 import { profileSchema, type ProfileInput } from "@/lib/profile/schema";
+import type { Result } from "@/lib/result";
 import { getCurrentUser } from "@/lib/session";
 
-type Result<T = undefined> = { ok: true; data: T } | { ok: false; error: string };
+export type { CvImport };
 
 export async function saveProfile(input: ProfileInput): Promise<Result> {
   const user = await getCurrentUser();
@@ -19,79 +19,25 @@ export async function saveProfile(input: ProfileInput): Promise<Result> {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Some fields are invalid." };
   }
 
-  const { name, ...profile } = parsed.data;
-  const values = {
-    ...profile,
-    experience: profile.experience.map((e) => ({ ...e, end: e.end ?? undefined, location: e.location ?? undefined })),
-    education: profile.education.map((e) => ({ ...e, field: e.field ?? undefined, year: e.year ?? undefined })),
-  };
-
-  const db = await getDb();
-  await db.update(schema.user).set({ name }).where(eq(schema.user.id, user.id));
-  await db
-    .insert(schema.profile)
-    .values({ userId: user.id, ...values, onboardedAt: new Date() })
-    .onConflictDoUpdate({ target: schema.profile.userId, set: values });
-
+  await writeProfile(await getDb(), user.id, parsed.data);
   refresh();
   return { ok: true, data: undefined };
 }
 
-const MAX_CV_BYTES = 5 * 1024 * 1024;
-
-export type CvImport = {
-  fileName: string;
-  /** AI-extracted fields, or only detected skills when AI is off. Not saved until the user saves the form. */
-  draft: Partial<ProfileInput>;
-  usedAi: boolean;
-  /** Why AI extraction failed, when it was expected to run. */
-  aiError?: string;
-};
-
 export async function importCv(formData: FormData): Promise<Result<CvImport>> {
   const user = await getCurrentUser();
-  const file = formData.get("cv");
-  if (!(file instanceof File) || file.size === 0) return { ok: false, error: "Choose a PDF or .txt file." };
-  if (file.size > MAX_CV_BYTES) return { ok: false, error: "That file is over 5 MB." };
+  const read = await readCvFile(formData.get("cv"));
+  if (!read.ok) return read;
+  const { fileName, text } = read.data;
 
-  let text: string;
-  try {
-    const bytes = new Uint8Array(await file.arrayBuffer());
-    if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
-      const pdf = await getDocumentProxy(bytes);
-      text = (await extractText(pdf, { mergePages: true })).text;
-    } else if (file.type.startsWith("text/") || file.name.toLowerCase().endsWith(".txt")) {
-      text = new TextDecoder().decode(bytes);
-    } else {
-      return { ok: false, error: "Only PDF and .txt files are supported for now." };
-    }
-  } catch {
-    return { ok: false, error: "We couldn't read that file. Is it a text-based PDF (not a scan)?" };
-  }
+  await writeCv(await getDb(), user.id, fileName, text);
+  return { ok: true, data: await draftFromCv(fileName, text, await getAiConfig()) };
+}
 
-  text = text.replace(/\u0000/g, "").trim();
-  if (text.length < 50) {
-    return { ok: false, error: "We couldn't find any text in that file. Scanned PDFs aren't supported yet." };
-  }
-
-  const db = await getDb();
-  await db
-    .insert(schema.profile)
-    .values({ userId: user.id, cvText: text, cvFileName: file.name })
-    .onConflictDoUpdate({ target: schema.profile.userId, set: { cvText: text, cvFileName: file.name } });
-
-  let aiError: string | undefined;
-  if (await isAiConfigured()) {
-    try {
-      const draft = await extractProfileFromCv(text);
-      return { ok: true, data: { fileName: file.name, draft, usedAi: true } };
-    } catch (error) {
-      console.error("CV extraction failed", error);
-      aiError = error instanceof Error ? error.message : "AI extraction failed.";
-      // Fall through to the free path so the import still helps.
-    }
-  }
-
-  const skills = detectSkills(text).map((name) => ({ name, level: "secondary" as const }));
-  return { ok: true, data: { fileName: file.name, draft: { skills }, usedAi: false, aiError } };
+/** Remember where the welcome guide is (1-5), or that it's finished or skipped (ONBOARDING_DONE). */
+export async function setOnboardingStep(step: number): Promise<Result> {
+  const user = await getCurrentUser();
+  if (!Number.isInteger(step) || step < 0 || step > ONBOARDING_DONE) return { ok: false, error: "Invalid step." };
+  await writeOnboardingStep(await getDb(), user.id, step);
+  return { ok: true, data: undefined };
 }

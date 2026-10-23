@@ -6,7 +6,9 @@ import { Suspense } from "react";
 import { JobDetailView } from "@/components/jobs/job-detail";
 import { isAiConfigured } from "@/lib/ai/config";
 import { getJob } from "@/lib/jobs/data";
-import { sourceCredit } from "@/lib/jobs/search";
+import { sourceCredit } from "@/lib/jobs/sources/credits";
+import { isLite } from "@/lib/mode";
+import { LiteJob } from "./lite-job";
 
 export const metadata: Metadata = { title: "Job" };
 
@@ -18,7 +20,8 @@ export default function JobPage(props: PageProps<"/jobs/[id]">) {
         <ArrowLeft className="size-4" /> Back to jobs
       </Link>
       <Suspense fallback={<div className="h-96 animate-pulse rounded-3xl bg-surface-3" />}>
-        <JobDetail params={props.params} />
+        {/* Lite reads the id in the browser (useParams), so the page shell still prerenders. */}
+        {isLite ? <LiteJob /> : <JobDetail params={props.params} />}
       </Suspense>
     </>
   );

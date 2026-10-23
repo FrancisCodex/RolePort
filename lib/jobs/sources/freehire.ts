@@ -3,6 +3,7 @@ import { countryOrDefault } from "@/lib/geo/countries";
 import { findLocation } from "@/lib/ph-locations";
 import { cleanDescription } from "../html";
 import type { EmploymentType, JobSearchParams, JobSource, NormalizedJob, SalaryPeriod, WorkSetup } from "../types";
+import { SOURCE_CREDITS } from "./credits";
 
 const BASE_URL = process.env.FREEHIRE_API_URL ?? "https://freehire.me";
 const PAGE_SIZE = 30;
@@ -106,7 +107,7 @@ function normalize(job: FreehireJob, fallbackCurrency: string): NormalizedJob {
 export const freehireSource: JobSource = {
   id: "freehire",
   label: "freehire",
-  attribution: { name: "freehire.me", url: "https://freehire.me" },
+  attribution: SOURCE_CREDITS.freehire,
   enabled: () => true,
   covers: () => true,
   async search(params) {

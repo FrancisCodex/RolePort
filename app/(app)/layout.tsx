@@ -1,13 +1,17 @@
 import { Suspense } from "react";
 import { SidebarNav, SidebarNavFallback, TabBar, TabBarFallback } from "@/components/app/app-nav";
-import { UserChip, UserChipSkeleton } from "@/components/app/user-chip";
+import { BackupReminder } from "@/components/app/backup-reminder";
+import { OpenBrowserDb } from "@/components/app/open-browser-db";
+import { LiteUserChip, UserChip, UserChipSkeleton } from "@/components/app/user-chip";
 import { SettingsLink } from "@/components/app/settings-link";
 import { Logo } from "@/components/brand/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { isLite } from "@/lib/mode";
 
 export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex min-h-dvh">
+      {isLite && <OpenBrowserDb />}
       <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col border-r border-border bg-surface px-4 py-5 lg:flex">
         <div className="flex items-center justify-between px-2">
           <Logo href="/home" />
@@ -18,9 +22,13 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
             <SidebarNav />
           </Suspense>
         </div>
-        <Suspense fallback={<UserChipSkeleton />}>
-          <UserChip />
-        </Suspense>
+        {isLite ? (
+          <LiteUserChip />
+        ) : (
+          <Suspense fallback={<UserChipSkeleton />}>
+            <UserChip />
+          </Suspense>
+        )}
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -32,7 +40,10 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
           </div>
         </header>
         {/* Pages that need room (the jobs split view) mark themselves with data-wide. */}
-        <main className="mx-auto w-full max-w-5xl flex-1 has-[[data-wide]]:max-w-7xl px-4 pt-6 pb-28 sm:px-8 lg:pt-10 lg:pb-12">{children}</main>
+        <main className="mx-auto w-full max-w-5xl flex-1 has-[[data-wide]]:max-w-7xl px-4 pt-6 pb-28 sm:px-8 lg:pt-10 lg:pb-12">
+          {isLite && <BackupReminder />}
+          {children}
+        </main>
       </div>
 
       <Suspense fallback={<TabBarFallback />}>

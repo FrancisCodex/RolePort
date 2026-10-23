@@ -3,6 +3,7 @@
 A free, open-source job search app you run yourself. Find jobs in the Philippines or abroad, see how well each one fits you, and track every application, with your CV and data staying on your own machine.
 
 Bring your own AI: Claude, OpenAI, OpenRouter, Groq, or a free local model through [Ollama](https://ollama.com).
+Don't want to install anything? [HireMe Lite](#hireme-lite-in-your-browser) runs the same app in your browser.
 Inspired by [ai-job-search](https://github.com/MadsLorentzen/ai-job-search). See [docs/PLAN.md](docs/PLAN.md) for the roadmap.
 
 ## Quick start
@@ -71,6 +72,27 @@ To add JobSpy:
 
 `npm run jobspy:logs` shows what the service is doing, and `npm run jobspy:stop` stops it. After restarting your computer, start Docker Desktop and run `npm run jobspy` again.
 
+## HireMe Lite (in your browser)
+
+HireMe Lite is the same app as a website: nothing to install, no account. Everything you add (profile, CV text, saved jobs, evaluations, settings and API keys) is stored in your browser, on your device. HireMe's server only relays job searches and keeps nothing. [docs/LITE.md](docs/LITE.md) explains how it works and its Privacy page (`/privacy`) says exactly what goes where.
+
+| | Self-hosted | Lite |
+| --- | --- | --- |
+| Install | Docker or Node.js | None |
+| Where your data lives | A database on your computer | Your browser, on that device |
+| AI | From your server | From your browser, with your own key or Ollama |
+| JobSpy (LinkedIn, Indeed…) | Included with Docker | Runs on your computer, the browser connects to it |
+| Several devices | Any browser that reaches your install | One browser; move with a backup file |
+
+Using Lite:
+
+- **AI with Ollama:** Ollama only answers sites you allow. Settings shows the command for your system (`OLLAMA_ORIGINS=<the Lite address>`, then restart Ollama). Hosted providers (Claude, OpenAI, OpenRouter, Groq) work with just your key.
+- **JobSpy:** start the service with `JOBSPY_ALLOWED_ORIGINS` set to the Lite address ([details](#in-hireme-lite)).
+- **Keep a backup:** clearing the site's data in your browser deletes everything. **Settings → Your data → Download backup** makes one file that also imports into a self-hosted install. Installing Lite as an app (the install icon in Chrome's address bar, or Add to Home Screen on iPhone) makes the browser less likely to clear it.
+- **Browsers:** Chrome, Edge and Firefox. Safari can't always reach Ollama on your computer.
+
+Run Lite yourself with `npm run dev:lite` (port 3100), or build it with `npm run build:lite` and `npm run start:lite`. Hosting it is covered [below](#hosting-hireme-lite).
+
 ## What you get
 
 | Feature | Needs |
@@ -78,6 +100,8 @@ To add JobSpy:
 | Job search in your country or abroad: jobs from [freehire](https://freehire.me), remote roles from [Jobicy](https://jobicy.com). Set where you live and which countries you'd move to in your profile | Nothing |
 | Quick match score from your skills on every job | Nothing |
 | Pipeline: save jobs, track Saved → Applied → Interview → Offer | Nothing |
+| Dashboard: applications sent, response rate, interviews and offers, how far applications get, weekly pace, follow-ups due | Nothing |
+| Setup guide (`/welcome`): name, roles and CV in a few steps, then pointers to AI, JobSpy and more. New users start there in HireMe Lite; set `NEXT_PUBLIC_HIREME_ONBOARDING=on` to do the same on a self-hosted install | Nothing |
 | CV import with automatic skill detection | Nothing |
 | AI fills in your whole profile from your CV | An AI provider |
 | AI fit evaluation: eligibility, language and location gates, four scored dimensions, strengths, gaps and a recommendation. Evaluate one job or the top 10 results | An AI provider |
@@ -112,20 +136,47 @@ Keys are encrypted before they're saved and never sent back to the browser.
 
 It needs no key, but these sites' terms don't allow automated access, so HireMe treats it as a personal tool:
 
-- It only works on a self-hosted install (`HIREME_LOCAL_MODE=true`), runs from your own network, and stays off until you turn it on in **Settings**.
+- It runs on your own computer and stays off until you turn it on in **Settings**. A self-hosted install (`HIREME_LOCAL_MODE=true`) calls it from its server; HireMe Lite calls it from your browser ([below](#in-hireme-lite)).
 - Results are cached for a few hours, so repeating a search doesn't hit the boards again. The first search takes 30-60 seconds.
 - Boards change often and may rate-limit you. When one fails, the others still return results.
 - Don't turn it on for a server that hosts HireMe for other people.
+
+### In HireMe Lite
+
+HireMe Lite runs in your browser, so the browser talks to JobSpy on your computer directly. JobSpy only answers the sites you list in `JOBSPY_ALLOWED_ORIGINS`. **Settings → Job sources → LinkedIn, Indeed and more via JobSpy** shows the exact commands with the right address. With Docker:
+
+```bash
+docker build -t hireme-jobspy https://github.com/FrancisCodex/HireMe.git#main:services/jobspy
+```
+
+```bash
+docker run -d --name hireme-jobspy -p 127.0.0.1:8765:8000 -e JOBSPY_ALLOWED_ORIGINS=https://<lite address> hireme-jobspy
+```
+
+Then click **Test** in Settings and turn it on. Results go from JobSpy straight to your browser; HireMe's server never sees them.
 
 ### Troubleshooting
 
 | You see | What to do |
 | --- | --- |
+| Lite: "JobSpy is running but doesn't allow this site" | Restart JobSpy with `JOBSPY_ALLOWED_ORIGINS` set to the address in your browser's address bar (no trailing slash). |
+| Lite: "Couldn't reach JobSpy" | Start it (see above) and check the address in Settings. If the browser asked to let the site access devices on your local network, allow it. |
 | Settings has no JobSpy section | Option B: set `JOBSPY_URL` in `.env.local` and check `HIREME_LOCAL_MODE=true`, then restart `npm run dev`. |
 | "The JobSpy service isn't responding" | Start it: `npm run jobspy` (Option B) or `docker compose up -d` (Option A). Check `npm run jobspy:logs`. |
 | A board shows **unavailable** in search results | The board blocked or rate-limited you, or changed its pages. Wait a while and try again; the other sources still work. |
 | Google Jobs is always **unavailable** | Known: JobSpy's Google scraper is broken at the moment. |
 | `port is already allocated` from Docker | Something else uses port 3000 or 8765, such as `npm run dev`. Stop it, or change the left-hand port in `docker-compose.yml`. |
+
+## Hosting HireMe Lite
+
+Lite is a static site plus one stateless route (`POST /api/lite/search`), so any host that runs Next.js route handlers works (Vercel, Netlify, Cloudflare). There's no database and nothing to configure for users.
+
+- **Build:** use `npm run build:lite` as the build command. It sets `NEXT_PUBLIC_HIREME_MODE=lite` and builds the starter database into `public/pglite/` first. Also set `NEXT_PUBLIC_HIREME_MODE=lite` in the host's environment, so anything that runs `next` directly builds Lite too. The output goes to `.next-lite` (the `distDir` in `next.config.ts`); hosts that read the config, such as Vercel, pick it up, and others need their output directory set to it.
+- **Optional:** `FREEHIRE_API_URL` for a different freehire instance. Don't set any AI keys or `RAPIDAPI_KEY`: users bring their own. On a self-hosted install, `NEXT_PUBLIC_HIREME_LITE_URL` adds a "Try it in your browser" link to its landing page.
+- **Security headers:** production Lite builds send a Content Security Policy (`lib/security-headers.ts`) that only lets the page talk to HireMe, the supported AI providers and `localhost`. To support another hosted AI provider, add it there.
+- **Rate limiting:** the search route allows about 20 searches a minute per address, keyed on `X-Forwarded-For`. Each server instance counts on its own, so keep the host's own rate limiting or firewall on as well.
+- **Caching:** `/_next/static/*` and the PGlite files are content-hashed and can be cached for a year. `/pglite/seed.tar.gz` keeps its name between builds, so leave it on revalidation. Serving with Brotli cuts the first visit's download noticeably (the PGlite runtime and the starter database are about 10 MB gzipped together).
+- **Logs:** turn off request-body logging if your host offers it. The route itself logs nothing about users.
 
 ## Hosting for others
 

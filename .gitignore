@@ -15,6 +15,9 @@
 
 # next.js
 /.next/
+/.next-lite/
+# lite starter database, rebuilt by scripts/build-seed-db.mjs
+/public/pglite/
 /out/
 
 # production

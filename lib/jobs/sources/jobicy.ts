@@ -2,6 +2,7 @@ import { cacheLife } from "next/cache";
 import { findCountry } from "@/lib/geo/countries";
 import { cleanDescription } from "../html";
 import type { EmploymentType, JobSource, NormalizedJob, SalaryPeriod } from "../types";
+import { SOURCE_CREDITS } from "./credits";
 
 // Jobicy's terms: credit Jobicy with a link, and send applicants to the original job URL.
 type JobicyJob = {
@@ -79,7 +80,7 @@ function normalize(job: JobicyJob): NormalizedJob {
 export const jobicySource: JobSource = {
   id: "jobicy",
   label: "Jobicy",
-  attribution: { name: "Jobicy", url: "https://jobicy.com" },
+  attribution: SOURCE_CREDITS.jobicy,
   enabled: () => true,
   // Jobicy only lists remote roles, filtered by where the applicant lives.
   covers: (params) =>

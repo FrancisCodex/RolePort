@@ -1,7 +1,9 @@
+import { createHash } from "node:crypto";
 import { countryOrDefault } from "@/lib/geo/countries";
 import { findLocation } from "@/lib/ph-locations";
 import { cleanDescription } from "../html";
 import type { EmploymentType, JobSource, NormalizedJob, SalaryPeriod } from "../types";
+import { SOURCE_CREDITS } from "./credits";
 
 // JSearch (RapidAPI) returns Google for Jobs listings: JobStreet, Indeed, LinkedIn, Kalibrr and company sites.
 // Not yet verified against a live key — field names follow JSearch's public docs.
@@ -42,7 +44,9 @@ function datePosted(days?: number) {
   return "month";
 }
 
-// The API key must not become part of a "use cache" key, so cache results in memory instead.
+// The API key must not become part of a "use cache" key, so cache results in memory instead,
+// keyed by a hash of the key: on a shared server (the lite search route) one user's paid
+// results must not answer another user's search.
 const CACHE_TTL_MS = 60 * 60_000;
 const memo = new Map<string, { at: number; jobs: JSearchJob[] }>();
 
@@ -53,7 +57,8 @@ async function fetchJSearch(
   remoteOnly: boolean,
   posted: string,
 ): Promise<JSearchJob[]> {
-  const cacheKey = JSON.stringify([country, query, remoteOnly, posted]);
+  const keyHash = createHash("sha256").update(apiKey).digest("hex").slice(0, 16);
+  const cacheKey = JSON.stringify([keyHash, country, query, remoteOnly, posted]);
   const hit = memo.get(cacheKey);
   if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.jobs;
 
@@ -109,7 +114,7 @@ function normalize(job: JSearchJob, fallbackCurrency: string): NormalizedJob {
 export const jsearchSource: JobSource = {
   id: "jsearch",
   label: "JSearch",
-  attribution: { name: "Google for Jobs via JSearch", url: "https://rapidapi.com/letscrunch/api/jsearch" },
+  attribution: SOURCE_CREDITS.jsearch,
   enabled: (ctx) => Boolean(ctx.rapidApiKey),
   disabledNote: "Add a RapidAPI key in Settings to include JobStreet, Indeed, LinkedIn and Kalibrr listings",
   covers: () => true,

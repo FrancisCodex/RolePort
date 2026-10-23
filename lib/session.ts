@@ -6,6 +6,7 @@ import { connection } from "next/server";
 import { cache } from "react";
 import { getAuth } from "@/lib/auth";
 import { getDb, schema } from "@/lib/db";
+import { LOCAL_USER } from "@/lib/db/local-user";
 import { isLocalMode } from "@/lib/env";
 
 export type CurrentUser = {
@@ -14,9 +15,6 @@ export type CurrentUser = {
   email: string;
   image: string | null;
 };
-
-// Empty name until the user sets one on their profile.
-const LOCAL_USER = { id: "local-user", name: "", email: "me@hireme.local" };
 
 /** In local mode there is no sign-in: one built-in user owns all the data. */
 async function getLocalUser(): Promise<CurrentUser> {

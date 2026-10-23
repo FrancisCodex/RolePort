@@ -1,11 +1,10 @@
-import "server-only";
 import { z } from "zod";
 import { commuteCheck } from "@/lib/jobs/commute";
 import { countryName } from "@/lib/geo/countries";
 import { formatMoney, formatSalary } from "@/lib/jobs/format";
 import type { ProfileInput } from "@/lib/profile/schema";
-import type { AiConfig } from "./config";
-import { generateStructured } from "./client";
+import type { AiConfig } from "./settings";
+import { generateStructured } from "./structured";
 
 /*
  * AI fit evaluation, ported from ai-job-search's evaluation framework
@@ -308,10 +307,10 @@ export function applyGuardrails(raw: FitEvaluation, input: { profile: ProfileInp
 }
 const bullets = (items: string[]) => items.map(tidy).filter(Boolean).slice(0, 3);
 
-/** Run the evaluation on the user's provider and normalize the output. */
+/** Run the evaluation on the given provider and normalize the output. Runs on the server and in the lite edition's browser. */
 export async function evaluateJobFit(
   input: { profile: ProfileInput; cvText: string | null; job: EvaluationJob; today: string },
-  config?: AiConfig,
+  config: AiConfig,
 ): Promise<FitEvaluation> {
   const raw = await generateStructured({
     system: SYSTEM,

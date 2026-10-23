@@ -5,6 +5,7 @@ import { drizzle as drizzlePglite } from "drizzle-orm/pglite";
 import { migrate } from "drizzle-orm/pglite/migrator";
 import { drizzle as drizzlePostgres, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import { isLite } from "@/lib/mode";
 import * as schema from "./schema";
 
 /**
@@ -20,6 +21,9 @@ export type Db = PostgresJsDatabase<typeof schema>;
 type DbState = { db: Db; ready: Promise<unknown> };
 
 function createDb(): DbState {
+  // The hosted lite edition keeps no user data on the server (docs/LITE.md); its data lives in the browser.
+  if (isLite) throw new Error("The lite build has no server database. Read data through lib/db/browser instead.");
+
   const url = process.env.DATABASE_URL;
   if (url) {
     return { db: drizzlePostgres(postgres(url, { prepare: false }), { schema }), ready: Promise.resolve() };

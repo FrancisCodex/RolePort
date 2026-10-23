@@ -1,6 +1,6 @@
 # HireMe Lite: a hosted web version with no user data on the server
 
-Status: plan only. Nothing here is built yet.
+Status: built on the `feat/liveweb-update` branch, not deployed yet. [LITE-IMPLEMENTATION.md](LITE-IMPLEMENTATION.md) has the build plan, what each phase delivered and how it was verified, and what's still open.
 
 ## 1. Goal
 
@@ -11,7 +11,7 @@ The rule: **no user data on the server**. The profile, CV, saved jobs, evaluatio
 | | Self-hosted (today) | Lite (hosted) |
 | --- | --- | --- |
 | Install | Docker or Node.js | None, open the website |
-| Where data lives | `.data/pglite` or Postgres on the user's machine | IndexedDB in the user's browser |
+| Where data lives | `.data/pglite` or Postgres on the user's machine | Browser storage (OPFS, or IndexedDB as a fallback) |
 | AI calls | From the server | From the browser, with the user's own key |
 | Ollama | Server → Ollama | Browser → Ollama on the user's machine |
 | JobSpy | Bundled sidecar | Optional: user runs it locally, browser connects to it |
@@ -21,7 +21,7 @@ The rule: **no user data on the server**. The profile, CV, saved jobs, evaluatio
 
 ## 2. Data: PGlite in the browser
 
-HireMe already runs on PGlite (`lib/db/index.ts`). PGlite also runs in the browser and saves to IndexedDB (`new PGlite("idb://hireme")`), so the lite version keeps the same Drizzle schema (`lib/db/schema.ts`) and the migrations in `drizzle/`. They run in the browser on first load and after each update.
+HireMe already runs on PGlite (`lib/db/index.ts`). PGlite also runs in the browser, so the lite version keeps the same Drizzle schema (`lib/db/schema.ts`) and the migrations in `drizzle/`. They run in the browser on first load and after each update. Data is saved to OPFS (`opfs-ahp://hireme`) where the browser supports it, and to IndexedDB (`idb://hireme`) otherwise; [LITE-IMPLEMENTATION.md §1.5](LITE-IMPLEMENTATION.md) has the measurements.
 
 Run PGlite in a Web Worker (PGlite's `PGliteWorker`) so queries don't block the UI and several open tabs share one database.
 
@@ -129,7 +129,7 @@ Today the database is read in server components and server actions:
 ## 10. Open questions
 
 - Which providers allow browser requests today (verify before phase 4)?
-- Do freehire and Jobicy allow browser requests? If so, the proxy is only needed for JSearch.
+- ~~Do freehire and Jobicy allow browser requests?~~ Answered in LITE-IMPLEMENTATION.md phase 3: Jobicy does, freehire doesn't, so every source goes through the route.
 - Hosting: any platform with route handlers works (Vercel, Netlify, Cloudflare). Pick one with a free tier and edge caching.
 - Is a lite → self-hosted migration (export, then import) enough, or do we want a "Move to my install" button?
 - Bundle size: PGlite's WASM is a few MB; load it only on app pages, never on the landing page.
