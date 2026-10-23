@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { findCountry } from "@/lib/geo/countries";
+import { normalizeProfileDates } from "@/lib/profile/dates";
 import { WORK_SETUPS, SKILL_LEVELS, type ProfileInput } from "@/lib/profile/schema";
 import { generateStructured } from "./client";
 
@@ -57,7 +58,8 @@ export async function extractProfileFromCv(cvText: string): Promise<Partial<Prof
   const { country, ...rest } = result;
   const known = findCountry(country);
   return {
-    ...rest,
+    // Models don't always follow the date format they're asked for ("Mar 2022", "Present").
+    ...normalizeProfileDates(rest),
     ...(known ? { country: known.code, salaryCurrency: known.currency } : {}),
     yearsExperience: result.yearsExperience == null ? null : Math.max(0, Math.floor(result.yearsExperience)),
   };

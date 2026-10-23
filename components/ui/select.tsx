@@ -1,25 +1,15 @@
 "use client";
 
 import { Check, ChevronDown, Search } from "lucide-react";
-import {
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-  type KeyboardEvent,
-} from "react";
+import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
+import { useAnchoredPanel, useDismiss } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 export type SelectOption = { value: string; label: string; disabled?: boolean };
 
 /** Lists longer than this get a filter box at the top of the menu. */
 const SEARCH_THRESHOLD = 12;
-const MENU_MAX_HEIGHT = 320;
-const MENU_GAP = 6;
 
 const triggerSize = {
   md: "h-12 rounded-2xl border-2 px-4 text-[15px]",
@@ -64,7 +54,6 @@ export function Select({
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(-1);
-  const [menuStyle, setMenuStyle] = useState<CSSProperties | null>(null);
 
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -171,44 +160,8 @@ export function Select({
     }
   }
 
-  // Fixed positioning in a portal so scrolling columns and cards never clip the menu.
-  useLayoutEffect(() => {
-    if (!open) return;
-    function place() {
-      const trigger = triggerRef.current;
-      if (!trigger) return;
-      const r = trigger.getBoundingClientRect();
-      const below = window.innerHeight - r.bottom - MENU_GAP;
-      const above = r.top - MENU_GAP;
-      const up = below < 240 && above > below;
-      const width = Math.max(r.width, size === "sm" ? 176 : 0);
-      setMenuStyle({
-        position: "fixed",
-        left: Math.max(8, Math.min(r.left, window.innerWidth - width - 8)),
-        width,
-        maxHeight: Math.min(MENU_MAX_HEIGHT, (up ? above : below) - 8),
-        transformOrigin: up ? "bottom" : "top",
-        ...(up ? { bottom: window.innerHeight - r.top + MENU_GAP } : { top: r.bottom + MENU_GAP }),
-      });
-    }
-    place();
-    window.addEventListener("resize", place);
-    window.addEventListener("scroll", place, true);
-    return () => {
-      window.removeEventListener("resize", place);
-      window.removeEventListener("scroll", place, true);
-    };
-  }, [open, size]);
-
-  useEffect(() => {
-    if (!open) return;
-    function onPointerDown(e: PointerEvent) {
-      const target = e.target as Node;
-      if (!triggerRef.current?.contains(target) && !menuRef.current?.contains(target)) close(false);
-    }
-    document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
-  }, [open]);
+  const menuStyle = useAnchoredPanel(open, triggerRef, { minWidth: size === "sm" ? 176 : 0 });
+  useDismiss(open, [triggerRef, menuRef], () => close(false));
 
   useEffect(() => {
     if (open) listRef.current?.querySelector(`[data-index="${active}"]`)?.scrollIntoView({ block: "nearest" });
