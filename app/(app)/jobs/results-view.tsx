@@ -71,12 +71,8 @@ export function ResultsView({ jobs, statuses, hasSkills, aiEnabled }: ResultsDat
         {jobs.length === 0 ? (
           <EmptyState icon={SearchX} title="No jobs found" body="Try a broader title, another location, or a longer date range." />
         ) : (
-          // Split view: the results, and the selected job beside them (a drawer on small screens).
-          <JobBrowser jobs={jobs} aiEnabled={aiEnabled} sources={sources}>
-            {jobs.map((job) => (
-              <JobCard key={job.id} job={job} />
-            ))}
-          </JobBrowser>
+          // Split view: a page of results, and the selected job beside them (a drawer on small screens).
+          <JobBrowser jobs={jobs} aiEnabled={aiEnabled} sources={sources} cards={jobs.map((job) => <JobCard key={job.id} job={job} />)} />
         )}
       </div>
     </AnalyzeProvider>

@@ -6,7 +6,7 @@ import type { ProfileInput } from "@/lib/profile/schema";
 import { overallFitScore, vetoReason } from "./fit";
 import { toPlainText } from "./html";
 import { quickMatch, type QuickMatch } from "./quick-match";
-import type { NormalizedJob } from "./types";
+import type { JobLink, NormalizedJob } from "./types";
 
 /*
  * Job and fit-evaluation storage, shared by the server (lib/jobs/data.ts, evaluation.ts)
@@ -17,6 +17,8 @@ export type JobExtras = {
   summary: string | null;
   requirements: { text: string; priority: "required" | "preferred" }[];
   possiblyStale: boolean;
+  /** The same opening on other boards. */
+  alsoOn: JobLink[];
 };
 
 export type JobRow = typeof schema.job.$inferSelect;
@@ -62,7 +64,7 @@ const toInsert = (j: KeyedJob) => ({
   description: j.description,
   skills: j.skills,
   postedAt: j.postedAt ? new Date(j.postedAt) : null,
-  raw: { summary: j.summary, requirements: j.requirements, possiblyStale: j.possiblyStale } satisfies JobExtras,
+  raw: { summary: j.summary, requirements: j.requirements, possiblyStale: j.possiblyStale, alsoOn: j.alsoOn ?? [] } satisfies JobExtras,
   fetchedAt: new Date(),
 });
 
@@ -154,7 +156,12 @@ export async function readFitMatches(db: AnyDb, userId: string, jobIds: string[]
 
 export function extrasOf(row: JobRow): JobExtras {
   const raw = (row.raw ?? {}) as Partial<JobExtras>;
-  return { summary: raw.summary ?? null, requirements: raw.requirements ?? [], possiblyStale: Boolean(raw.possiblyStale) };
+  return {
+    summary: raw.summary ?? null,
+    requirements: raw.requirements ?? [],
+    possiblyStale: Boolean(raw.possiblyStale),
+    alsoOn: raw.alsoOn ?? [],
+  };
 }
 
 /** A stored job with what the list and detail views show next to it. */

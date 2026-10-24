@@ -1,5 +1,6 @@
 import { getBrowserDb, type BrowserDb } from "@/lib/db/browser";
 import { LOCAL_USER } from "@/lib/db/local-user";
+import { mergeDuplicates } from "@/lib/jobs/dedupe";
 import { storeJobs, type KeyedJob } from "@/lib/jobs/queries";
 import type { JobSearchParams, SourceStatus } from "@/lib/jobs/types";
 import { readSettings } from "@/lib/settings/queries";
@@ -55,8 +56,7 @@ async function run(db: BrowserDb, params: JobSearchParams, rapidApiKey: string |
   // Same precedence as the server (lib/jobs/search.ts): JSearch, then the JobSpy boards, then the rest.
   const first = (s: { source?: string; id?: string }) => (s.source ?? s.id) === "jsearch";
   const ordered = [...hosted.jobs.filter(first), ...local.jobs, ...hosted.jobs.filter((j) => !first(j))];
-  const seen = new Set<string>();
-  const jobs = ordered.filter((j) => !seen.has(j.jobKey) && seen.add(j.jobKey));
+  const jobs = mergeDuplicates(ordered);
 
   // Counts after merging, so a posting found twice is counted once, where it's shown.
   const statuses = [...hosted.statuses.filter(first), ...local.statuses, ...hosted.statuses.filter((s) => !first(s))].map((s) =>

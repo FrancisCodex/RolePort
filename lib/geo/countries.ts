@@ -20,7 +20,8 @@ const GD: JobSpyBoard[] = ["glassdoor"];
 const BAYT: JobSpyBoard[] = ["bayt"];
 
 export const COUNTRIES: Country[] = [
-  { code: "PH", name: "Philippines", currency: "PHP", jobicy: "philippines", jobspy: { indeed: "philippines" } },
+  // Glassdoor via glassdoor.com (services/jobspy/server.py adds the Philippines to its sites).
+  { code: "PH", name: "Philippines", currency: "PHP", jobicy: "philippines", jobspy: { indeed: "philippines", boards: GD } },
   { code: "AR", name: "Argentina", currency: "ARS", jobicy: "argentina", jobspy: { indeed: "argentina", boards: GD } },
   { code: "AU", name: "Australia", currency: "AUD", jobicy: "australia", jobspy: { indeed: "australia", boards: GD } },
   { code: "AT", name: "Austria", currency: "EUR", jobicy: "austria", jobspy: { indeed: "austria", boards: GD } },

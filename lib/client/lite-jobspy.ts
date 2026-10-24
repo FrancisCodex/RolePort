@@ -1,3 +1,4 @@
+import { mergeDuplicates } from "@/lib/jobs/dedupe";
 import { jobKey } from "@/lib/jobs/job-key";
 import type { KeyedJob } from "@/lib/jobs/queries";
 import {
@@ -78,8 +79,7 @@ export async function searchJobSpy(baseUrl: string, params: JobSearchParams): Pr
     }),
   );
 
-  const seen = new Set<string>();
-  const jobs: KeyedJob[] = [];
+  const found: KeyedJob[] = [];
   const statuses: SourceStatus[] = [];
   boards.forEach(({ board, label }, i) => {
     const result = settled[i];
@@ -88,15 +88,9 @@ export async function searchJobSpy(baseUrl: string, params: JobSearchParams): Pr
       statuses.push({ id: board, label, count: 0, failed: true, note: "Couldn't reach this board through JobSpy" });
       return;
     }
-    let count = 0;
-    for (const job of result.value) {
-      const key = jobKey(job.company, job.title, `${job.source}-${job.sourceId}`);
-      if (seen.has(key)) continue;
-      seen.add(key);
-      jobs.push({ ...job, jobKey: key });
-      count++;
-    }
-    statuses.push({ id: board, label, count });
+    for (const job of result.value) found.push({ ...job, jobKey: jobKey(job.company, job.title, `${job.source}-${job.sourceId}`) });
+    // Recounted by the caller once these are merged with the hosted results.
+    statuses.push({ id: board, label, count: result.value.length });
   });
-  return { jobs, statuses };
+  return { jobs: mergeDuplicates(found), statuses };
 }

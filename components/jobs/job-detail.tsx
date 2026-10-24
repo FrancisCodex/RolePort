@@ -1,4 +1,4 @@
-import { Check, Clock, ExternalLink, MapPin, Sparkles, TriangleAlert, X } from "lucide-react";
+import { Check, Clock, ExternalLink, Layers, MapPin, Sparkles, TriangleAlert, X } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ApplyButton } from "@/components/jobs/apply-button";
@@ -11,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MatchRing } from "@/components/ui/match-ring";
 import type { JobListItem } from "@/lib/jobs/data";
 import { EMPLOYMENT_LABEL, formatSalary, timeAgo, WORK_SETUP_LABEL } from "@/lib/jobs/format";
+import { sourceCredit } from "@/lib/jobs/sources/credits";
 import { cn } from "@/lib/utils";
 
 /**
@@ -90,6 +91,19 @@ export function JobDetailView({
                 </>
               )}
             </div>
+            {job.extras.alsoOn.length > 0 && (
+              <p className="-mt-2 flex flex-wrap items-center gap-x-1.5 text-xs text-subtle">
+                <Layers className="size-3.5" /> Also posted on
+                {job.extras.alsoOn.map((link, i) => (
+                  <span key={link.source}>
+                    <a href={link.url} target="_blank" rel="noopener noreferrer nofollow" className="font-medium text-muted underline-offset-2 hover:text-fg hover:underline">
+                      {sourceCredit(link.source)?.name ?? link.source}
+                    </a>
+                    {i < job.extras.alsoOn.length - 1 && ","}
+                  </span>
+                ))}
+              </p>
+            )}
           </CardContent>
         </Card>
 
