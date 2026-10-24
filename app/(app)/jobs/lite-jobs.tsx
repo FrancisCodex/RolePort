@@ -48,7 +48,7 @@ function LiteResults({ params, sort }: { params: JobSearchParams; sort: JobSort 
 
   if (!found) return <ResultsSkeleton />;
   if ("error" in found) {
-    return <p className="rounded-2xl bg-danger-soft px-4 py-3 text-sm font-medium text-danger">{found.error}</p>;
+    return <p className="rounded-lg bg-danger-soft px-4 py-3 text-sm font-medium text-danger">{found.error}</p>;
   }
   return (
     <LiteData

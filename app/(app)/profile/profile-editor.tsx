@@ -35,12 +35,12 @@ export function CountryPicker({ id, value, onChange, exclude }: { id: string; va
       {value.length > 0 && (
         <div className="flex flex-wrap gap-2">
           {value.map((code) => (
-            <span key={code} className="inline-flex items-center gap-1 rounded-full bg-brand-soft py-1 pr-1.5 pl-3 text-sm font-medium text-brand-ink">
+            <span key={code} className="inline-flex items-center gap-1 rounded-md border border-border bg-surface-2 py-0.5 pr-1 pl-2 text-[13px] font-medium">
               {countryName(code)}
               <button
                 type="button"
                 onClick={() => onChange(value.filter((c) => c !== code))}
-                className="grid size-5 place-items-center rounded-full hover:bg-brand/15"
+                className="grid size-4 place-items-center rounded-sm text-subtle hover:bg-surface-3 hover:text-fg"
                 aria-label={`Remove ${countryName(code)}`}
               >
                 <X className="size-3.5" />
@@ -159,10 +159,10 @@ export function ProfileEditor({
     ]);
 
   return (
-    <div className="flex flex-col gap-4 pb-24">
+    <div className="flex flex-col gap-3 pb-24">
       {/* CV import */}
       <Card
-        className={cn("transition-colors", dragging && "border-brand bg-brand-soft/40")}
+        className={cn("transition-colors", dragging && "border-dashed border-brand bg-brand-soft/40")}
         onDragOver={(e) => {
           e.preventDefault();
           setDragging(true);
@@ -176,14 +176,14 @@ export function ProfileEditor({
         }}
       >
         <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-brand-soft text-brand-ink">
-            {importing ? <Loader2 className="size-6 animate-spin" /> : <FileUp className="size-6" />}
+          <span className="grid size-10 shrink-0 place-items-center rounded-lg border border-dashed border-border-strong text-muted">
+            {importing ? <Loader2 className="size-[18px] animate-spin" /> : <FileUp className="size-[18px]" strokeWidth={1.75} />}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="font-display text-lg font-semibold">
+            <p className="text-sm font-semibold">
               {importing ? "Reading your CV…" : cvFileName ? "Import a newer CV" : "Start from your CV"}
             </p>
-            <p className="text-sm text-muted">
+            <p className="text-[13px] text-muted">
               {cvFileName ? (
                 <>
                   Last imported: <span className="font-medium text-fg">{cvFileName}</span>.{" "}
@@ -221,10 +221,10 @@ export function ProfileEditor({
         <p
           role="status"
           className={cn(
-            "rounded-2xl px-4 py-3 text-sm font-medium",
-            status.tone === "success" && "bg-success-soft text-success",
-            status.tone === "error" && "bg-danger-soft text-danger",
-            status.tone === "info" && "bg-brand-soft text-brand-ink",
+            "rounded-md px-3 py-2 text-[13px] font-medium",
+            status.tone === "success" && "border border-success/20 bg-success-soft text-success",
+            status.tone === "error" && "border border-danger/20 bg-danger-soft text-danger",
+            status.tone === "info" && "border border-brand/20 bg-brand-soft text-brand-ink",
           )}
         >
           {status.text}
@@ -232,7 +232,7 @@ export function ProfileEditor({
       )}
 
       <Section title="The basics" description="How employers will see you.">
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Full name" htmlFor="name">
             <Input id="name" value={profile.name} onChange={(e) => update("name", e.target.value)} />
           </Field>
@@ -341,7 +341,7 @@ export function ProfileEditor({
             exclude={profile.country}
           />
         </Field>
-        <div className="grid gap-4 sm:grid-cols-[8rem_1fr_1fr]">
+        <div className="grid gap-3 sm:grid-cols-[8rem_1fr_1fr]">
           <Field label="Currency" htmlFor="salcur">
             <Select
               id="salcur"
@@ -406,7 +406,7 @@ export function ProfileEditor({
           const set = (patch: Partial<typeof exp>) =>
             update("experience", profile.experience.map((e, j) => (j === i ? { ...e, ...patch } : e)));
           return (
-            <div key={i} className="flex flex-col gap-3 rounded-2xl border border-border p-4">
+            <div key={i} className="flex flex-col gap-3 rounded-lg border border-border p-4">
               <div className="grid gap-3 sm:grid-cols-2">
                 <Input placeholder="Job title" value={exp.role} onChange={(e) => set({ role: e.target.value })} />
                 <Input placeholder="Company" value={exp.company} onChange={(e) => set({ company: e.target.value })} />
@@ -441,7 +441,7 @@ export function ProfileEditor({
           const set = (patch: Partial<typeof edu>) =>
             update("education", profile.education.map((e, j) => (j === i ? { ...e, ...patch } : e)));
           return (
-            <div key={i} className="flex flex-col gap-3 rounded-2xl border border-border p-4">
+            <div key={i} className="flex flex-col gap-3 rounded-lg border border-border p-4">
               <div className="grid gap-3 sm:grid-cols-2">
                 <Input placeholder="School" value={edu.school} onChange={(e) => set({ school: e.target.value })} />
                 <Input placeholder="Degree (e.g. BS)" value={edu.degree} onChange={(e) => set({ degree: e.target.value })} />
@@ -509,10 +509,13 @@ export function ProfileEditor({
       </Section>
 
       {/* Sticky save bar */}
-      <div className="fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 px-4 lg:bottom-6 lg:left-64">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 rounded-3xl border border-border bg-surface/95 px-5 py-3 shadow-[var(--shadow-lift)] backdrop-blur sm:px-8 lg:mx-8 xl:mx-auto">
-          <p className="text-sm text-muted">{dirty ? "You have unsaved changes." : "All changes saved."}</p>
-          <Button onClick={onSave} disabled={saving || !dirty}>
+      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 px-4 lg:bottom-5 lg:left-56">
+        <div className="pointer-events-auto mx-auto flex max-w-md items-center justify-between gap-4 rounded-lg border border-border bg-surface/95 py-1.5 pr-1.5 pl-3.5 shadow-[var(--shadow-lift)] backdrop-blur">
+          <p className="flex items-center gap-2 text-[13px] text-muted">
+            <span className={cn("size-1.5 rounded-full", dirty ? "bg-warning" : "bg-success")} />
+            {dirty ? "Unsaved changes" : "All changes saved"}
+          </p>
+          <Button size="sm" onClick={onSave} disabled={saving || !dirty}>
             {saving ? <Loader2 className="animate-spin" /> : <Check />}
             Save profile
           </Button>
@@ -535,7 +538,7 @@ function Section({
 }) {
   return (
     <Card>
-      <CardHeader className="flex-row items-start justify-between gap-4">
+      <CardHeader className="flex-row items-center justify-between gap-4">
         <div>
           <CardTitle>{title}</CardTitle>
           {description && <CardDescription>{description}</CardDescription>}
@@ -558,12 +561,12 @@ function Field({ label, htmlFor, hint, children }: { label: string; htmlFor?: st
 }
 
 function Empty({ children }: { children: ReactNode }) {
-  return <p className="rounded-2xl bg-surface-2 px-4 py-3 text-sm text-subtle">{children}</p>;
+  return <p className="rounded-md border border-dashed border-border px-3 py-2.5 text-[13px] text-subtle">{children}</p>;
 }
 
 function RemoveButton({ onClick }: { onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} className="self-end text-sm font-medium text-subtle hover:text-danger">
+    <button type="button" onClick={onClick} className="self-end text-xs font-medium text-subtle hover:text-danger">
       Remove
     </button>
   );

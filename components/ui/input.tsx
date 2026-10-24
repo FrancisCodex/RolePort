@@ -5,7 +5,7 @@ export function Input({ className, ...props }: ComponentProps<"input">) {
   return (
     <input
       className={cn(
-        "h-12 w-full rounded-2xl border-2 border-border bg-surface-2 px-4 text-[15px] text-fg outline-none transition-colors placeholder:text-subtle focus:border-brand focus:bg-surface",
+        "h-9 w-full rounded-md border border-border bg-surface px-3 text-sm text-fg shadow-[var(--shadow-soft)] outline-none transition-[border-color,box-shadow] placeholder:text-subtle hover:border-border-strong focus:border-brand focus:ring-3 focus:ring-brand/15",
         className,
       )}
       {...props}
@@ -14,5 +14,5 @@ export function Input({ className, ...props }: ComponentProps<"input">) {
 }
 
 export function Label({ className, ...props }: ComponentProps<"label">) {
-  return <label className={cn("text-sm font-medium text-fg", className)} {...props} />;
+  return <label className={cn("text-[13px] font-medium text-fg", className)} {...props} />;
 }

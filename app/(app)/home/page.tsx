@@ -14,7 +14,7 @@ import { LiteHome } from "./lite-home";
 
 export const metadata: Metadata = { title: "Home" };
 
-const skeleton = <div className="h-96 animate-pulse rounded-3xl bg-surface-3" />;
+const skeleton = <div className="h-96 animate-pulse rounded-xl bg-surface-3" />;
 
 export default function HomePage() {
   if (isLite) return <LiteHome />;

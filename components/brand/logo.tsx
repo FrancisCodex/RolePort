@@ -1,18 +1,18 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
+/** A monochrome "H" tile: inverts with the theme, so it reads as ink on paper in both modes. */
 export function LogoMark({ className }: { className?: string }) {
   return (
     <span
       className={cn(
-        "inline-grid size-8 place-items-center rounded-[10px] bg-brand text-brand-fg shadow-[0_2px_0_0_var(--brand-ink)]",
+        "inline-grid size-6 place-items-center rounded-md bg-fg text-bg shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)]",
         className,
       )}
       aria-hidden
     >
-      <svg viewBox="0 0 24 24" className="size-[62%]" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M6 5v14M18 5v14M6 12h12" />
-        <circle cx="18" cy="5" r="1.4" fill="var(--sun)" stroke="none" />
+      <svg viewBox="0 0 24 24" className="size-[62%]" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M7 5v14M17 5v14M7 12h10" />
       </svg>
     </span>
   );
@@ -20,7 +20,7 @@ export function LogoMark({ className }: { className?: string }) {
 
 export function Logo({ href = "/", className }: { href?: string; className?: string }) {
   return (
-    <Link href={href} className={cn("inline-flex items-center gap-2 font-display text-xl font-bold tracking-tight", className)}>
+    <Link href={href} className={cn("inline-flex items-center gap-2 text-[15px] font-semibold tracking-tight", className)}>
       <LogoMark />
       HireMe
     </Link>

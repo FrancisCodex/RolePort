@@ -13,7 +13,7 @@ export function MatchRing({
   muted?: boolean;
   className?: string;
 }) {
-  const stroke = Math.max(4, Math.round(size / 11));
+  const stroke = Math.max(2.5, Math.round(size / 16));
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
   const tone = muted ? "var(--subtle)" : score >= 75 ? "var(--success)" : score >= 50 ? "var(--brand)" : "var(--warning)";
@@ -21,7 +21,7 @@ export function MatchRing({
   return (
     <div className={cn("relative inline-grid place-items-center", className)} style={{ width: size, height: size }}>
       <svg width={size} height={size} className="-rotate-90" aria-hidden>
-        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--surface-3)" strokeWidth={stroke} />
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--border)" strokeWidth={stroke} />
         <circle
           cx={size / 2}
           cy={size / 2}
@@ -32,9 +32,10 @@ export function MatchRing({
           strokeLinecap="round"
           strokeDasharray={c}
           strokeDashoffset={c * (1 - score / 100)}
+          className="transition-[stroke-dashoffset,stroke] duration-500 ease-[var(--ease-snappy)]"
         />
       </svg>
-      <span className={cn("absolute font-display text-sm font-bold tabular-nums", muted && "text-subtle")} style={{ fontSize: size / 4 }}>
+      <span className={cn("absolute font-semibold tracking-tight tabular-nums", muted && "text-subtle")} style={{ fontSize: Math.max(11, size / 4.2) }}>
         {score}
         <span className="sr-only">% match</span>
       </span>

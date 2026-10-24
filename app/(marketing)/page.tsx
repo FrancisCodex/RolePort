@@ -1,24 +1,17 @@
-import {
-  ArrowRight,
-  BarChart3,
-  Bot,
-  FileText,
-  Globe,
-  KanbanSquare,
-  Lock,
-  MessagesSquare,
-  Search,
-  Target,
-  UserRound,
-} from "lucide-react";
+import { ArrowRight, BarChart3, Bot, FileText, Globe, Lock, MessagesSquare, Search, UserRound, KanbanSquare } from "lucide-react";
 import Link from "next/link";
-import { HeroCards } from "@/components/marketing/hero-cards";
+import type { CSSProperties, ReactNode } from "react";
+import { CommandHint } from "@/components/marketing/command-menu";
+import { FeatureTabs } from "@/components/marketing/feature-demos";
+import { DotBackground } from "@/components/marketing/dot-background";
+import { Reveal } from "@/components/marketing/landing-motion";
+import { ProductDemo } from "@/components/marketing/product-demo";
 import { GitHubMark, REPO_URL, SetupGuide } from "@/components/marketing/setup-guide";
 import { buttonVariants } from "@/components/ui/button";
 import { isLite, liteUrl } from "@/lib/mode";
 import { cn } from "@/lib/utils";
 
-const places = ["Philippines", "Singapore", "Australia", "United Kingdom", "United States", "Canada", "UAE", "India", "Remote"];
+const places = ["Philippines", "Singapore", "Australia", "United Kingdom", "United States", "Canada", "UAE", "India", "Japan", "Germany", "Remote"];
 
 const steps = [
   {
@@ -38,22 +31,20 @@ const steps = [
   },
 ];
 
-const features = [
-  { icon: Target, title: "Honest match scores", body: "See why a job fits, and what's missing, before you spend time applying.", tone: "bg-brand-soft text-brand-ink" },
-  { icon: Globe, title: "Search anywhere", body: "Jobs from freehire, Jobicy, JSearch and JobSpy, filtered by the country you choose.", tone: "bg-success-soft text-success" },
-  { icon: Bot, title: "Bring your own AI", body: "Claude, OpenAI, OpenRouter, Groq, or a free local model through Ollama.", tone: "bg-warning-soft text-warning" },
+/** The features the interactive tabs don't already show. */
+const moreFeatures = [
+  { icon: Globe, title: "Search anywhere", body: "Jobs from freehire, Jobicy, JSearch and JobSpy, filtered by the country you choose." },
+  { icon: Bot, title: "Bring your own AI", body: "Claude, OpenAI, OpenRouter, Groq, or a free local model through Ollama." },
+  { icon: FileText, title: "Tailored CV & cover letter", body: "Coming next: ATS-friendly documents written from your real experience.", soon: true },
+  { icon: MessagesSquare, title: "Interview coach", body: "Coming next: prep packs and mock interviews built from the job you applied to.", soon: true },
+  { icon: BarChart3, title: "Skill gap insights", body: "Planned: the skills employers keep asking for, and a plan to learn them.", soon: true },
   {
     icon: Lock,
     title: "Private by default",
     body: isLite
       ? "Your CV, profile and keys stay in your browser, on your device. No account needed."
       : "Your CV, profile and keys live in a database on your machine. No account needed.",
-    tone: "bg-brand-soft text-brand-ink",
   },
-  { icon: KanbanSquare, title: "Application pipeline", body: "A drag-and-drop board for every job you save, from first look to offer.", tone: "bg-success-soft text-success" },
-  { icon: FileText, title: "Tailored CV & cover letter", body: "Coming next: ATS-friendly documents written from your real experience.", tone: "bg-warning-soft text-warning", soon: true },
-  { icon: MessagesSquare, title: "Interview coach", body: "Coming next: prep packs and mock interviews built from the job you applied to.", tone: "bg-brand-soft text-brand-ink", soon: true },
-  { icon: BarChart3, title: "Skill gap insights", body: "Planned: the skills employers keep asking for, and a plan to learn them.", tone: "bg-success-soft text-success", soon: true },
 ];
 
 const afterInstall = [
@@ -62,156 +53,202 @@ const afterInstall = [
   "Optional: in Settings, pick an AI provider and turn on more job sources.",
 ];
 
+/** Small monospace section label, the way developer tools title their sections. */
+function Eyebrow({ children }: { children: ReactNode }) {
+  return <p className="font-mono text-xs text-subtle">{children}</p>;
+}
+
+/** Headline words that rise into place one after another (pure CSS, so it plays before hydration). */
+function RiseWords({ text, from = 0 }: { text: string; from?: number }) {
+  return text.split(" ").map((word, i) => (
+    <span
+      key={`${word}-${i}`}
+      className="inline-block animate-[rise_0.8s_var(--ease-snappy)_both] whitespace-pre"
+      style={{ animationDelay: `${(from + i) * 70}ms` } as CSSProperties}
+    >
+      {word}{" "}
+    </span>
+  ));
+}
+
 export default function LandingPage() {
+  const lead = "Your job search,";
+  const tail = isLite ? "right in your browser." : "on your own machine.";
+
   return (
     <>
-      {/* Hero */}
-      <section className="relative overflow-hidden">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 -top-40 h-[36rem] bg-[radial-gradient(ellipse_at_top,var(--brand-soft),transparent_65%)]"
-        />
-        <div className="relative mx-auto grid max-w-6xl grid-cols-1 items-center gap-14 px-4 pt-14 pb-20 sm:px-6 md:pt-24 lg:grid-cols-[1.1fr_1fr]">
-          <div className="flex min-w-0 flex-col items-start">
-            <a
-              href={REPO_URL}
-              className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-3 py-1 text-xs font-semibold text-muted shadow-[var(--shadow-soft)] hover:text-fg"
-            >
-              <span className="size-1.5 rounded-full bg-success" />
-              Free and open source · MIT licence
-            </a>
-            <h1 className="mt-6 font-display text-[2.6rem] leading-[1.05] font-bold tracking-tight text-balance sm:text-6xl">
-              Your job search, <span className="text-brand">{isLite ? "right in your browser." : "on your own machine."}</span>
+      {/* Hero: pitch, then the product itself, live. */}
+      <DotBackground variant="hero" className="-mt-14 overflow-hidden border-b border-border pt-14">
+        <section className="mx-auto flex max-w-6xl flex-col items-center px-4 pt-16 text-center sm:px-6 md:pt-24">
+          <a
+            href={REPO_URL}
+            className="inline-flex animate-[rise_0.6s_var(--ease-snappy)_both] items-center gap-2 rounded-full border border-border bg-surface py-1 pr-3 pl-2 text-xs font-medium text-muted shadow-[var(--shadow-soft)] hover:text-fg"
+          >
+            <span className="size-1.5 rounded-full bg-brand" />
+            Free and open source · MIT licence
+            <ArrowRight className="size-3" />
+          </a>
+          {/* The dotted background stays clear in a soft oval round the headline and copy. */}
+          <div data-dots-clear className="flex flex-col items-center">
+            <h1 className="mt-6 max-w-3xl text-[2.6rem] leading-[1.03] font-semibold tracking-[-0.04em] text-balance sm:text-6xl md:text-[4.25rem]">
+              <RiseWords text={lead} />
+              <span className="text-muted">
+                <RiseWords text={tail} from={lead.split(" ").length} />
+              </span>
             </h1>
-            <p className="mt-5 max-w-lg text-lg text-muted text-pretty">
-              HireMe finds jobs in your country or abroad, scores how well each one fits you, and tracks every
-              application.{" "}
-              {isLite
-                ? "Nothing to install: your CV and data stay in your browser, on your device."
-                : "Your CV and data never leave your computer."}
-            </p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              {isLite ? (
-                <>
-                  <Link href="/home" className={buttonVariants({ size: "lg" })}>
-                    Try it in your browser
-                    <ArrowRight />
-                  </Link>
-                  <a href="#get-started" className={buttonVariants({ size: "lg", variant: "secondary" })}>
-                    Install on your computer
-                  </a>
-                </>
-              ) : (
-                <>
-                  <a href="#get-started" className={buttonVariants({ size: "lg" })}>
-                    Get started
-                    <ArrowRight />
-                  </a>
-                  {liteUrl && (
-                    <a href={`${liteUrl}/home`} className={buttonVariants({ size: "lg", variant: "secondary" })}>
-                      Try it in your browser
-                    </a>
-                  )}
-                  <a href={REPO_URL} className={buttonVariants({ size: "lg", variant: liteUrl ? "ghost" : "secondary" })}>
-                    <GitHubMark />
-                    View on GitHub
-                  </a>
-                </>
-              )}
-            </div>
-            <p className="mt-5 flex items-center gap-2 text-sm text-subtle">
-              <Lock className="size-4" />
-              No account, no subscription. Bring your own AI, or none at all.
+            <p
+              className="mt-5 max-w-xl animate-[rise_0.8s_var(--ease-snappy)_both] text-base text-muted text-pretty [animation-delay:400ms] sm:text-[17px] sm:leading-relaxed"
+            >
+              HireMe finds jobs in your country or abroad, scores how well each one fits you, and tracks every application.{" "}
+              {isLite ? "Nothing to install: your data stays in your browser." : "Your CV and data never leave your computer."}
             </p>
           </div>
-          <HeroCards />
-        </div>
-      </section>
+          <div className="mt-8 flex animate-[rise_0.8s_var(--ease-snappy)_both] flex-wrap justify-center gap-2 [animation-delay:500ms]">
+            {isLite ? (
+              <>
+                <Link href="/home" className={buttonVariants({ size: "lg" })}>
+                  Try it in your browser
+                  <ArrowRight />
+                </Link>
+                <a href="#get-started" className={buttonVariants({ size: "lg", variant: "secondary" })}>
+                  Install on your computer
+                </a>
+              </>
+            ) : (
+              <>
+                <a href="#get-started" className={buttonVariants({ size: "lg" })}>
+                  Get started
+                  <ArrowRight />
+                </a>
+                {liteUrl && (
+                  <a href={`${liteUrl}/home`} className={buttonVariants({ size: "lg", variant: "secondary" })}>
+                    Try it in your browser
+                  </a>
+                )}
+                <a href={REPO_URL} className={buttonVariants({ size: "lg", variant: liteUrl ? "ghost" : "secondary" })}>
+                  <GitHubMark />
+                  View on GitHub
+                </a>
+              </>
+            )}
+          </div>
+          <CommandHint className="mt-5 animate-[rise_0.8s_var(--ease-snappy)_both] [animation-delay:600ms]" />
+        </section>
 
-      {/* Countries strip */}
-      <section className="border-y border-border bg-surface">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-8 gap-y-3 px-4 py-6 text-sm font-semibold text-subtle sm:px-6">
-          {places.map((p) => (
-            <span key={p}>{p}</span>
-          ))}
+        <div className="relative mx-auto mt-14 max-w-5xl px-4 pb-16 sm:px-6 md:mt-16 md:pb-24">
+          <p className="mb-3 text-center text-xs text-subtle">
+            This is a live demo with sample jobs. Search, filter, open a job and save it.
+          </p>
+          <Reveal delay={0.35}>
+            <ProductDemo />
+          </Reveal>
         </div>
-      </section>
+      </DotBackground>
 
-      {/* How it works */}
-      <section id="how" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-24 sm:px-6">
-        <p className="text-sm font-semibold tracking-wider text-brand uppercase">How it works</p>
-        <h2 className="mt-2 max-w-xl font-display text-4xl font-bold tracking-tight text-balance">
-          From CV to offer in three steps
-        </h2>
-        <div className="mt-12 grid gap-4 md:grid-cols-3">
-          {steps.map((step, i) => (
-            <div key={step.title} className="rounded-3xl border border-border bg-surface p-7 shadow-[var(--shadow-soft)]">
-              <div className="flex items-center justify-between">
-                <span className="grid size-12 place-items-center rounded-2xl bg-brand text-brand-fg shadow-[var(--shadow-press)]">
-                  <step.icon className="size-5" />
-                </span>
-                <span className="font-display text-5xl font-bold text-surface-3">{i + 1}</span>
-              </div>
-              <h3 className="mt-6 font-display text-xl font-semibold">{step.title}</h3>
-              <p className="mt-2 text-muted">{step.body}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Features */}
-      <section id="features" className="scroll-mt-20 bg-surface-2/60 py-24">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <p className="text-sm font-semibold tracking-wider text-brand uppercase">Features</p>
-          <h2 className="mt-2 max-w-xl font-display text-4xl font-bold tracking-tight text-balance">
-            Everything your job hunt needs, in one calm place
-          </h2>
-          <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {features.map((f) => (
-              <div
-                key={f.title}
-                className="group rounded-3xl border border-border bg-surface p-7 transition-[transform,box-shadow] duration-300 ease-[var(--ease-spring)] hover:-translate-y-1 hover:shadow-[var(--shadow-lift)]"
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <span className={cn("grid size-11 place-items-center rounded-2xl", f.tone)}>
-                    <f.icon className="size-5" />
-                  </span>
-                  {f.soon && (
-                    <span className="rounded-full bg-surface-2 px-2.5 py-1 text-xs font-semibold text-subtle">Soon</span>
-                  )}
-                </div>
-                <h3 className="mt-5 font-semibold">{f.title}</h3>
-                <p className="mt-1.5 text-sm text-muted">{f.body}</p>
-              </div>
+      {/* Countries marquee */}
+      <section className="border-b border-border py-5" aria-label="Countries you can search">
+        <div className="relative overflow-hidden [mask-image:linear-gradient(90deg,transparent,black_12%,black_88%,transparent)]">
+          <div className="flex w-max animate-[marquee_45s_linear_infinite] gap-10 pr-10 text-[13px] text-subtle hover:[animation-play-state:paused] motion-reduce:animate-none">
+            {[...places, ...places].map((p, i) => (
+              <span key={i} aria-hidden={i >= places.length || undefined} className="flex items-center gap-10 whitespace-nowrap">
+                {p}
+                <span className="size-1 rounded-full bg-border-strong" />
+              </span>
             ))}
           </div>
         </div>
       </section>
 
+      {/* Interactive features */}
+      <section id="features" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-24 sm:px-6">
+        <Reveal>
+          <Eyebrow>01 · Try it here</Eyebrow>
+          <h2 className="mt-3 max-w-2xl text-3xl font-semibold tracking-[-0.03em] text-balance sm:text-[2.6rem] sm:leading-[1.1]">
+            See how it works before you install anything
+          </h2>
+          <p className="mt-3 max-w-xl text-muted">Everything below is interactive. Click around.</p>
+        </Reveal>
+        <Reveal className="mt-10" delay={0.1}>
+          <FeatureTabs />
+        </Reveal>
+      </section>
+
+      {/* How it works */}
+      <section id="how" className="scroll-mt-20 border-y border-border bg-sidebar py-24">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <Reveal>
+            <Eyebrow>02 · How it works</Eyebrow>
+            <h2 className="mt-3 max-w-xl text-3xl font-semibold tracking-[-0.03em] text-balance sm:text-[2.6rem] sm:leading-[1.1]">
+              From CV to offer in three steps
+            </h2>
+          </Reveal>
+          <div className="mt-12 grid gap-3 md:grid-cols-3">
+            {steps.map((step, i) => (
+              <Reveal key={step.title} delay={i * 0.08}>
+                <div className="group relative h-full overflow-hidden rounded-xl border border-border bg-surface p-6 transition-colors hover:border-border-strong">
+                  <span className="absolute top-4 right-5 font-mono text-5xl font-semibold text-surface-3 transition-colors group-hover:text-brand/25">
+                    {i + 1}
+                  </span>
+                  <span className="grid size-8 place-items-center rounded-md border border-border bg-surface-2 text-muted transition-colors group-hover:border-brand/40 group-hover:text-brand">
+                    <step.icon className="size-4" strokeWidth={1.75} />
+                  </span>
+                  <h3 className="mt-5 text-[15px] font-semibold">{step.title}</h3>
+                  <p className="mt-1.5 text-sm text-muted">{step.body}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Everything else */}
+      <section className="mx-auto max-w-6xl px-4 py-24 sm:px-6">
+        <Reveal>
+          <Eyebrow>03 · And more</Eyebrow>
+          <h2 className="mt-3 max-w-xl text-3xl font-semibold tracking-[-0.03em] text-balance sm:text-[2.6rem] sm:leading-[1.1]">
+            Built for a calm, thorough job hunt
+          </h2>
+        </Reveal>
+        <Reveal className="mt-12" delay={0.1}>
+          <div className="grid overflow-hidden rounded-xl border border-border bg-border sm:grid-cols-2 sm:gap-px lg:grid-cols-3">
+            {moreFeatures.map((f) => (
+              <div key={f.title} className="border-b border-border bg-surface p-5 transition-colors last:border-b-0 hover:bg-surface-2 sm:border-b-0">
+                <div className="flex items-start justify-between gap-2">
+                  <f.icon className={cn("size-[18px]", f.soon ? "text-subtle" : "text-brand")} strokeWidth={1.75} />
+                  {f.soon && <span className="rounded-md border border-border px-1.5 py-px text-[11px] font-medium text-subtle">Soon</span>}
+                </div>
+                <h3 className="mt-4 text-sm font-semibold">{f.title}</h3>
+                <p className="mt-1 text-[13px] text-muted">{f.body}</p>
+              </div>
+            ))}
+          </div>
+        </Reveal>
+      </section>
+
       {/* Get started: self-hosting */}
-      <section id="get-started" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-24 sm:px-6">
-        <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
-          <div className="min-w-0">
-            <p className="text-sm font-semibold tracking-wider text-brand uppercase">{isLite ? "Install" : "Get started"}</p>
-            <h2 className="mt-2 font-display text-4xl font-bold tracking-tight text-balance">
+      <section id="get-started" className="scroll-mt-20 border-t border-border">
+        <div className="mx-auto grid max-w-6xl gap-12 px-4 py-24 sm:px-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-start">
+          <Reveal className="min-w-0">
+            <Eyebrow>04 · {isLite ? "Install" : "Get started"}</Eyebrow>
+            <h2 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-balance sm:text-[2.6rem] sm:leading-[1.1]">
               {isLite ? "Prefer your own install?" : "Run HireMe on your computer"}
             </h2>
-            <p className="mt-4 text-lg text-muted text-pretty">
+            <p className="mt-4 text-muted text-pretty sm:text-base">
               {isLite
                 ? "The installed version keeps your data in a database on your computer, so it's not tied to one browser. Move over any time with a backup from Settings. It takes a few commands and about five minutes."
                 : "Every feature works on your own install, with no sign-in. It takes a few commands and about five minutes."}
             </p>
-            <ol className="mt-8 flex flex-col gap-4">
+            <ol className="mt-8 flex flex-col gap-3">
               {afterInstall.map((step, i) => (
-                <li key={step} className="flex gap-4">
-                  <span className="grid size-8 shrink-0 place-items-center rounded-xl bg-brand-soft text-sm font-bold text-brand-ink">
+                <li key={step} className="flex gap-3">
+                  <span className="grid size-6 shrink-0 place-items-center rounded-md border border-border font-mono text-xs text-muted">
                     {i + 1}
                   </span>
-                  <p className="pt-1 text-muted">{step}</p>
+                  <p className="pt-0.5 text-muted">{step}</p>
                 </li>
               ))}
             </ol>
-            <div className="mt-8 flex flex-wrap gap-3">
+            <div className="mt-8 flex flex-wrap gap-2">
               <a href={`${REPO_URL}#quick-start`} className={buttonVariants({ variant: "secondary" })}>
                 <GitHubMark />
                 Full setup guide
@@ -221,33 +258,36 @@ export default function LandingPage() {
                 <ArrowRight />
               </Link>
             </div>
-          </div>
-          <SetupGuide />
+          </Reveal>
+          <Reveal className="min-w-0" delay={0.1}>
+            <SetupGuide />
+          </Reveal>
         </div>
       </section>
 
       {/* CTA */}
       <section className="mx-auto max-w-6xl px-4 pb-24 sm:px-6">
-        <div className="relative overflow-hidden rounded-[2rem] bg-brand px-6 py-16 text-center text-brand-fg sm:px-16">
-          <div aria-hidden className="absolute -top-24 -left-24 size-72 rounded-full bg-white/10" />
-          <div aria-hidden className="absolute -right-16 -bottom-28 size-80 rounded-full bg-white/10" />
-          <h2 className="relative font-display text-4xl font-bold tracking-tight text-balance sm:text-5xl">
-            Built in the open
-          </h2>
-          <p className="relative mx-auto mt-4 max-w-md text-lg text-white/80">
-            Add a job source for your country, improve a provider, or polish the UI. Contributions are welcome.
-          </p>
-          <a
-            href={REPO_URL}
-            className={cn(
-              buttonVariants({ size: "lg" }),
-              "relative mt-8 bg-white text-brand-ink shadow-[0_4px_0_0_rgb(0_0_0/0.2)] hover:bg-white/90",
-            )}
-          >
-            <GitHubMark />
-            Contribute on GitHub
-          </a>
-        </div>
+        <Reveal>
+          <DotBackground variant="calm" className="overflow-hidden rounded-xl border border-border bg-surface px-6 py-20 text-center sm:px-16">
+            <div data-dots-clear>
+              <h2 className="text-3xl font-semibold tracking-[-0.03em] text-balance sm:text-5xl">Your next job, found your way</h2>
+              <p className="mx-auto mt-4 max-w-md text-muted">
+                Free, open source and private. Start in your browser in seconds, or install it in five minutes.
+              </p>
+            </div>
+            <div className="mt-8 flex flex-wrap justify-center gap-2">
+              <Link href="/home" className={buttonVariants({ size: "lg" })}>
+                Open HireMe
+                <ArrowRight />
+              </Link>
+              <a href={REPO_URL} className={buttonVariants({ size: "lg", variant: "secondary" })}>
+                <GitHubMark />
+                Contribute on GitHub
+              </a>
+            </div>
+            <CommandHint className="mt-5" />
+          </DotBackground>
+        </Reveal>
       </section>
     </>
   );

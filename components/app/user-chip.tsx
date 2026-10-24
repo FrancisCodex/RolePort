@@ -2,7 +2,7 @@ import { isLocalMode } from "@/lib/env";
 import { getCurrentUser } from "@/lib/session";
 import { SignOutButton } from "./sign-out-button";
 
-export function Avatar({ name, image, className = "size-9" }: { name: string; image: string | null; className?: string }) {
+export function Avatar({ name, image, className = "size-7" }: { name: string; image: string | null; className?: string }) {
   const initials = name
     .split(/\s+/)
     .filter(Boolean)
@@ -13,7 +13,7 @@ export function Avatar({ name, image, className = "size-9" }: { name: string; im
     // eslint-disable-next-line @next/next/no-img-element -- remote avatar from the auth provider
     <img src={image} alt="" className={`${className} rounded-full object-cover`} />
   ) : (
-    <span className={`${className} grid place-items-center rounded-full bg-brand-soft text-sm font-bold text-brand-ink`}>
+    <span className={`${className} grid place-items-center rounded-full bg-surface-3 text-[11px] font-semibold text-fg`}>
       {initials || "?"}
     </span>
   );
@@ -22,11 +22,11 @@ export function Avatar({ name, image, className = "size-9" }: { name: string; im
 export async function UserChip() {
   const user = await getCurrentUser();
   return (
-    <div className="flex items-center gap-3 rounded-2xl p-2">
+    <div className="flex items-center gap-2.5 rounded-md p-1.5">
       <Avatar name={user.name} image={user.image} />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold">{user.name || "You"}</p>
-        <p className="truncate text-xs text-muted">{isLocalMode ? "Local mode · no sign-in" : user.email}</p>
+        <p className="truncate text-[13px] font-medium">{user.name || "You"}</p>
+        <p className="truncate text-[11px] text-subtle">{isLocalMode ? "Local mode · no sign-in" : user.email}</p>
       </div>
       {!isLocalMode && <SignOutButton />}
     </div>
@@ -36,11 +36,11 @@ export async function UserChip() {
 /** The lite edition has no accounts and no server-side user: say where the data lives instead. */
 export function LiteUserChip() {
   return (
-    <div className="flex items-center gap-3 rounded-2xl p-2">
+    <div className="flex items-center gap-2.5 rounded-md p-1.5">
       <Avatar name="" image={null} />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-semibold">You</p>
-        <p className="truncate text-xs text-muted">Lite · saved in this browser</p>
+        <p className="truncate text-[13px] font-medium">You</p>
+        <p className="truncate text-[11px] text-subtle">Lite · saved in this browser</p>
       </div>
     </div>
   );
@@ -48,8 +48,8 @@ export function LiteUserChip() {
 
 export function UserChipSkeleton() {
   return (
-    <div className="flex items-center gap-3 p-2">
-      <span className="size-9 animate-pulse rounded-full bg-surface-3" />
+    <div className="flex items-center gap-2.5 p-1.5">
+      <span className="size-7 animate-pulse rounded-full bg-surface-3" />
       <span className="h-3 flex-1 animate-pulse rounded-full bg-surface-3" />
     </div>
   );

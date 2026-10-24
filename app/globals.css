@@ -2,9 +2,10 @@
 
 /*
  * HireMe design tokens.
- * Colors are defined once on :root and redefined for dark mode. Components use
- * the Tailwind aliases from @theme (bg-surface, text-muted, bg-brand, ...), never
- * raw hex values.
+ * A quiet, neutral workspace in the spirit of Linear, Notion and Raycast: hairline borders,
+ * small radii, one green accent (HireMe's brand), Inter for UI text. Colors are defined once on
+ * :root and redefined for dark mode. Components use the Tailwind aliases from @theme
+ * (bg-surface, text-muted, bg-brand, ...), never raw hex values.
  */
 
 @custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
@@ -12,47 +13,47 @@
 :root {
   color-scheme: light;
 
-  --bg: #f7f7f5;
+  --bg: #fbfbfa;
+  --sidebar: #f5f5f4;
   --surface: #ffffff;
-  --surface-2: #f1f1ee;
-  --surface-3: #e8e8e4;
-  --border: #e4e4df;
-  --border-strong: #d2d2cb;
-  --fg: #1a1a19;
-  --muted: #6b6b66;
-  --subtle: #9a9a93;
+  --surface-2: #f4f4f3;
+  --surface-3: #ebebe9;
+  --border: #e8e8e5;
+  --border-strong: #d9d9d5;
+  --fg: #1b1b1d;
+  --muted: #6b6b70;
+  --subtle: #9c9ca1;
 
   --brand: #22c55e;
   --brand-hover: #1fb556;
   --brand-soft: #e3f8ea;
   --brand-fg: #ffffff;
   --brand-ink: #126a32;
-  --brand-ledge: #126a32;
 
-  --success: #16a34a;
-  --success-soft: #e7f7ec;
-  --warning: #e8900c;
-  --warning-soft: #fff4e0;
-  --danger: #e5484d;
-  --danger-soft: #fdecec;
-  --sun: #ffc83d;
+  --success: #2e9e6a;
+  --success-soft: #e8f6ef;
+  --warning: #c27612;
+  --warning-soft: #fcf2e3;
+  --danger: #d9434b;
+  --danger-soft: #fcebec;
 
-  --ring: color-mix(in oklab, var(--brand) 45%, transparent);
-  --shadow-color: 30 20% 20%;
+  --ring: color-mix(in oklab, var(--brand) 40%, transparent);
+  --shadow-color: 240 6% 20%;
 }
 
 [data-theme="dark"] {
   color-scheme: dark;
 
-  --bg: #0e0e10;
-  --surface: #17171a;
-  --surface-2: #1e1e22;
-  --surface-3: #27272c;
-  --border: #2a2a2f;
-  --border-strong: #3a3a41;
-  --fg: #f2f2f0;
-  --muted: #a1a19b;
-  --subtle: #6f6f69;
+  --bg: #0c0c0e;
+  --sidebar: #0f0f11;
+  --surface: #141416;
+  --surface-2: #1a1a1d;
+  --surface-3: #232327;
+  --border: #222226;
+  --border-strong: #303035;
+  --fg: #ededef;
+  --muted: #9a9aa2;
+  --subtle: #66666e;
 
   /* Same green as light mode; only the text-on-soft ink lightens for contrast. */
   --brand: #22c55e;
@@ -60,20 +61,20 @@
   --brand-soft: #112a1b;
   --brand-fg: #ffffff;
   --brand-ink: #4ade80;
-  --brand-ledge: #126a32;
 
-  --success: #3ccf6e;
-  --success-soft: #12291a;
-  --warning: #f5a524;
-  --warning-soft: #2e2210;
-  --danger: #ff6369;
-  --danger-soft: #331517;
+  --success: #4cb782;
+  --success-soft: #13261c;
+  --warning: #e5a03d;
+  --warning-soft: #2a2010;
+  --danger: #eb5f66;
+  --danger-soft: #2d1416;
 
   --shadow-color: 0 0% 0%;
 }
 
 @theme inline {
   --color-bg: var(--bg);
+  --color-sidebar: var(--sidebar);
   --color-surface: var(--surface);
   --color-surface-2: var(--surface-2);
   --color-surface-3: var(--surface-3);
@@ -87,29 +88,27 @@
   --color-brand-soft: var(--brand-soft);
   --color-brand-fg: var(--brand-fg);
   --color-brand-ink: var(--brand-ink);
-  --color-brand-ledge: var(--brand-ledge);
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
   --color-warning: var(--warning);
   --color-warning-soft: var(--warning-soft);
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
-  --color-sun: var(--sun);
   --color-ring: var(--ring);
 
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-display), var(--font-geist-sans), ui-sans-serif, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
 
-  --radius-xl: 1rem;
-  --radius-2xl: 1.25rem;
-  --radius-3xl: 1.75rem;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
 
-  --shadow-soft: 0 1px 2px hsl(var(--shadow-color) / 0.04), 0 4px 16px -4px hsl(var(--shadow-color) / 0.08);
-  --shadow-lift: 0 2px 4px hsl(var(--shadow-color) / 0.05), 0 16px 40px -12px hsl(var(--shadow-color) / 0.18);
-  --shadow-press: 0 4px 0 0 var(--brand-ledge);
+  --shadow-soft: 0 1px 2px hsl(var(--shadow-color) / 0.04);
+  --shadow-lift: 0 0 0 1px hsl(var(--shadow-color) / 0.04), 0 4px 8px -2px hsl(var(--shadow-color) / 0.08),
+    0 16px 32px -8px hsl(var(--shadow-color) / 0.18);
 
-  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-snappy: cubic-bezier(0.2, 0, 0, 1);
 }
 
 @layer base {
@@ -119,13 +118,24 @@
 
   html {
     -webkit-tap-highlight-color: transparent;
+    /* Section links (#features, #how) glide instead of jumping. */
+    scroll-behavior: smooth;
   }
 
   body {
     background: var(--bg);
     color: var(--fg);
     font-family: var(--font-sans);
-    font-feature-settings: "ss01", "cv11";
+    font-size: 14px;
+    line-height: 1.5;
+    /* Inter: open digits and a disambiguated l / I. */
+    font-feature-settings: "cv01", "cv11", "ss03", "calt";
+  }
+
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.015em;
   }
 
   :focus-visible {
@@ -134,12 +144,15 @@
   }
 
   ::selection {
-    background: var(--brand-soft);
-    color: var(--brand-ink);
+    background: color-mix(in oklab, var(--brand) 22%, transparent);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
   *,
   *::before,
   *::after {
@@ -151,8 +164,8 @@
 /* Third-party job descriptions (sanitized in lib/jobs/html.ts). */
 .job-description {
   color: var(--fg);
-  font-size: 15px;
-  line-height: 1.7;
+  font-size: 14px;
+  line-height: 1.65;
   overflow-wrap: anywhere;
 }
 .job-description > * + * {
@@ -161,9 +174,8 @@
 .job-description h3,
 .job-description h4 {
   margin-top: 1.4em;
-  font-family: var(--font-display);
   font-weight: 600;
-  font-size: 1.05em;
+  font-size: 1em;
 }
 .job-description ul,
 .job-description ol {
@@ -182,8 +194,10 @@
   margin: 0;
 }
 .job-description a {
-  color: var(--brand);
+  color: var(--brand-ink);
   text-decoration: underline;
+  text-decoration-color: color-mix(in oklab, var(--brand) 40%, transparent);
+  text-underline-offset: 2px;
 }
 .job-description strong,
 .job-description b {
@@ -193,7 +207,7 @@
 /* A fresh score popping into place on a job card. */
 @keyframes pop {
   0% {
-    transform: scale(0.6);
+    transform: scale(0.85);
     opacity: 0;
   }
   100% {
@@ -205,7 +219,7 @@
 /* A select menu opening beside its trigger. */
 @keyframes menu-in {
   0% {
-    transform: scale(0.97);
+    transform: scale(0.98) translateY(-2px);
     opacity: 0;
   }
   100% {
@@ -217,11 +231,39 @@
 /* A job sliding into the details panel beside the results. */
 @keyframes pane-in {
   0% {
-    transform: translateY(6px);
+    transform: translateY(4px);
     opacity: 0;
   }
   100% {
     transform: translateY(0);
     opacity: 1;
+  }
+}
+
+/* Landing page: headline words rising into place. */
+@keyframes rise {
+  0% {
+    transform: translateY(0.35em);
+    opacity: 0;
+    filter: blur(6px);
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+/* Landing page: an endless strip (the content is rendered twice, so -50% loops seamlessly). */
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Landing page: data flowing along a dashed connector. */
+@keyframes dash {
+  to {
+    stroke-dashoffset: -16;
   }
 }

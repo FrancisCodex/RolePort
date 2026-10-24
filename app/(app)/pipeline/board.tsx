@@ -65,8 +65,8 @@ export function PipelineBoard({ cards }: { cards: BoardCard[] }) {
   });
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="-mx-4 flex snap-x gap-4 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:px-0 lg:grid-cols-4">
+    <div className="flex flex-col gap-6">
+      <div className="-mx-4 flex snap-x gap-2.5 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-2 sm:px-0 lg:grid-cols-4">
         {COLUMNS.map((col) => {
           const colCards = items.filter((c) => col.statuses.includes(c.status));
           const canDrop = !!dragged && !col.statuses.includes(dragged.status);
@@ -90,24 +90,24 @@ export function PipelineBoard({ cards }: { cards: BoardCard[] }) {
                 endDrag();
               }}
               className={cn(
-                "flex w-72 shrink-0 snap-start flex-col rounded-3xl bg-surface-2 p-3 transition-[background-color,outline-color] duration-150 sm:w-auto",
-                canDrop && "outline-2 -outline-offset-2 outline-border-strong outline-dashed",
-                isOver && "bg-brand-soft outline-brand outline-solid",
+                "flex w-72 shrink-0 snap-start flex-col rounded-xl border border-border bg-surface-2/60 p-1.5 transition-[background-color,border-color] duration-150 sm:w-auto",
+                canDrop && "border-dashed border-border-strong",
+                isOver && "border-solid border-brand/50 bg-brand-soft/60",
               )}
             >
-              <h2 className="flex items-center gap-2 px-2 py-1.5 text-sm font-semibold">
+              <h2 className="flex items-center gap-2 px-2 pt-1 pb-0.5 text-[13px] font-medium">
                 <span className={cn("size-2 rounded-full", col.dot)} />
                 {col.title}
                 <span className="ml-auto text-xs text-subtle tabular-nums">{colCards.length}</span>
               </h2>
-              <div className="mt-2 flex flex-1 flex-col gap-2">
+              <div className="mt-1.5 flex flex-1 flex-col gap-1.5">
                 {colCards.map((card) => (
                   <PipelineCard key={card.id} {...cardProps(card)} />
                 ))}
                 {canDrop ? (
                   <div
                     className={cn(
-                      "grid min-h-20 place-items-center rounded-2xl border-2 border-dashed p-4 text-center text-sm font-semibold transition-colors",
+                      "grid min-h-20 place-items-center rounded-lg border border-dashed p-4 text-center text-xs font-medium transition-colors",
                       isOver ? "border-brand text-brand-ink" : "border-border-strong text-subtle",
                     )}
                   >
@@ -115,11 +115,11 @@ export function PipelineBoard({ cards }: { cards: BoardCard[] }) {
                   </div>
                 ) : (
                   colCards.length === 0 && (
-                    <div className="grid min-h-32 place-items-center rounded-2xl border-2 border-dashed border-border-strong p-4 text-center text-sm text-subtle">
+                    <div className="grid min-h-28 place-items-center rounded-lg border border-dashed border-border p-4 text-center text-xs text-subtle">
                       {col.title === "Saved" ? (
                         <span>
                           Save jobs from{" "}
-                          <Link href="/jobs" className="font-semibold text-brand">
+                          <Link href="/jobs" className="font-medium text-brand-ink hover:underline">
                             Jobs
                           </Link>
                         </span>
@@ -137,8 +137,10 @@ export function PipelineBoard({ cards }: { cards: BoardCard[] }) {
 
       {closed.length > 0 && (
         <section>
-          <h2 className="mb-3 text-sm font-semibold text-muted">Closed ({closed.length})</h2>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          <h2 className="mb-2 flex items-center gap-2 px-2 text-[13px] font-medium text-muted">
+            Closed <span className="text-xs text-subtle tabular-nums">{closed.length}</span>
+          </h2>
+          <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-4">
             {closed.map((card) => (
               <PipelineCard key={card.id} {...cardProps(card)} />
             ))}
@@ -170,22 +172,22 @@ function PipelineCard({
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       className={cn(
-        "group flex cursor-grab flex-col gap-3 rounded-2xl border border-border bg-surface p-3.5 shadow-[var(--shadow-soft)] transition-[opacity,transform,box-shadow] duration-150 hover:shadow-[var(--shadow-lift)] active:cursor-grabbing",
+        "group flex cursor-grab flex-col gap-2.5 rounded-lg border border-border bg-surface p-3 shadow-[var(--shadow-soft)] transition-[opacity,transform,border-color] duration-150 hover:border-border-strong active:cursor-grabbing",
         dragging && "scale-[0.98] opacity-40",
-        justMoved && "animate-[pane-in_220ms_var(--ease-spring)]",
+        justMoved && "animate-[pane-in_220ms_var(--ease-snappy)]",
       )}
     >
       <div className="flex gap-1.5">
         <div className="min-w-0 flex-1">
           {card.jobId ? (
-            <Link href={`/jobs/${card.jobId}`} draggable={false} className="font-semibold leading-snug hover:text-brand">
+            <Link href={`/jobs/${card.jobId}`} draggable={false} className="text-[13px] leading-snug font-medium hover:underline">
               {card.role}
             </Link>
           ) : (
-            <p className="font-semibold leading-snug">{card.role}</p>
+            <p className="text-[13px] leading-snug font-medium">{card.role}</p>
           )}
-          <p className="truncate text-sm text-muted">{card.company}</p>
-          {card.updated && <p className="mt-1 text-xs text-subtle">Updated {card.updated.toLowerCase()}</p>}
+          <p className="truncate text-xs text-muted">{card.company}</p>
+          {card.updated && <p className="mt-1 text-[11px] text-subtle">Updated {card.updated.toLowerCase()}</p>}
         </div>
         <GripVertical aria-hidden className="-mr-1 size-4 shrink-0 text-subtle opacity-40 transition-opacity group-hover:opacity-100" />
       </div>

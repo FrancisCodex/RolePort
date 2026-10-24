@@ -12,7 +12,7 @@ import { OnboardingFlow } from "./onboarding-flow";
 
 export const metadata: Metadata = { title: "Welcome" };
 
-const skeleton = <div className="h-[28rem] animate-pulse rounded-3xl bg-surface-3" />;
+const skeleton = <div className="h-[28rem] animate-pulse rounded-xl bg-surface-3" />;
 
 /** The welcome guide. New users land here when onboarding is on; anyone can come back from Home. */
 export default function WelcomePage() {

@@ -114,9 +114,9 @@ export function AnalyzePanel({ jobs, topIds, aiEnabled }: { jobs: JobRef[]; topI
     return (
       <Link
         href="/settings"
-        className="flex items-center gap-3 rounded-2xl bg-brand-soft px-4 py-3 text-sm font-medium text-brand-ink hover:opacity-90"
+        className="flex items-center gap-2.5 rounded-lg border border-brand/20 bg-brand-soft px-3 py-2 text-[13px] font-medium text-brand-ink hover:border-brand/40"
       >
-        <Sparkles className="size-4 shrink-0" />
+        <Sparkles className="size-3.5 shrink-0" />
         <span className="flex-1">Choose an AI provider to analyze how well each job fits you.</span>
         <ChevronRight className="size-4" />
       </Link>
@@ -128,10 +128,10 @@ export function AnalyzePanel({ jobs, topIds, aiEnabled }: { jobs: JobRef[]; topI
 
   if (phase === "selecting") {
     return (
-      <div className="sticky top-16 z-20 flex flex-wrap items-center gap-3 rounded-2xl border-2 border-brand bg-surface px-4 py-3 shadow-[var(--shadow-lift)] lg:top-4">
-        <ListChecks className="size-5 shrink-0 text-brand" />
-        <p className="min-w-0 flex-1 text-sm">
-          <span className="font-semibold">
+      <div className="sticky top-14 z-20 flex flex-wrap items-center gap-3 rounded-lg border border-border bg-surface px-3 py-2 shadow-[var(--shadow-lift)] lg:top-4">
+        <ListChecks className="size-4 shrink-0 text-brand" />
+        <p className="min-w-0 flex-1 text-[13px]">
+          <span className="font-medium">
             {selected.length} of {MAX_PER_RUN} selected
           </span>
           <span className="text-muted"> · tap jobs to pick them</span>
@@ -161,17 +161,17 @@ export function AnalyzePanel({ jobs, topIds, aiEnabled }: { jobs: JobRef[]; topI
     const running = entries.find(([, v]) => v.status === "running");
     const pct = entries.length ? Math.round((finished / entries.length) * 100) : 0;
     return (
-      <div className="flex flex-col gap-3 rounded-3xl border border-border bg-surface p-4 shadow-[var(--shadow-soft)]" aria-live="polite">
+      <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-3.5" aria-live="polite">
         <div className="flex items-center gap-3">
           {phase === "running" ? (
-            <Loader2 className="size-5 shrink-0 animate-spin text-brand" />
+            <Loader2 className="size-4 shrink-0 animate-spin text-brand" />
           ) : (
-            <span className="grid size-6 shrink-0 place-items-center rounded-full bg-success-soft text-success">
-              <Check className="size-3.5" strokeWidth={3} />
+            <span className="grid size-4 shrink-0 place-items-center rounded-full bg-success text-white">
+              <Check className="size-2.5" strokeWidth={3.5} />
             </span>
           )}
-          <p className="min-w-0 flex-1 truncate text-sm">
-            <span className="font-semibold">
+          <p className="min-w-0 flex-1 truncate text-[13px]">
+            <span className="font-medium">
               {phase === "running" ? `Analyzing ${Math.min(finished + 1, entries.length)} of ${entries.length}` : `Analyzed ${succeeded} job${succeeded === 1 ? "" : "s"}${finished > succeeded ? `, ${finished - succeeded} failed` : ""}`}
             </span>
             {running && <span className="text-muted"> · {title(running[0])}</span>}
@@ -187,7 +187,7 @@ export function AnalyzePanel({ jobs, topIds, aiEnabled }: { jobs: JobRef[]; topI
           )}
         </div>
         {phase === "running" && (
-          <div className="h-1.5 overflow-hidden rounded-full bg-surface-3">
+          <div className="h-1 overflow-hidden rounded-full bg-surface-3">
             <div className="h-full rounded-full bg-brand transition-[width] duration-500" style={{ width: `${pct}%` }} />
           </div>
         )}
@@ -206,12 +206,12 @@ export function AnalyzePanel({ jobs, topIds, aiEnabled }: { jobs: JobRef[]; topI
   }
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl bg-brand-soft px-4 py-3 text-brand-ink sm:flex-row sm:items-center">
-      <div className="flex min-w-0 flex-1 items-center gap-3">
-        <Sparkles className="size-4 shrink-0" />
-        <p className="text-sm font-medium">Analyze how well jobs fit you. They run one at a time, up to {MAX_PER_RUN} per run.</p>
+    <div className="flex flex-col gap-2.5 rounded-lg border border-border bg-surface px-3 py-2 sm:flex-row sm:items-center">
+      <div className="flex min-w-0 flex-1 items-center gap-2.5">
+        <Sparkles className="size-3.5 shrink-0 text-brand" />
+        <p className="text-[13px] text-muted">Analyze how well jobs fit you. They run one at a time, up to {MAX_PER_RUN} per run.</p>
       </div>
-      <div className="flex shrink-0 gap-2">
+      <div className="flex shrink-0 gap-1.5">
         <Button variant="secondary" size="sm" onClick={() => controls.setPhase("selecting")}>
           <ListChecks /> Choose jobs
         </Button>
@@ -247,7 +247,7 @@ function ResultRow({ id, title, state }: { id: string; title: string; state: Liv
         return (
           <span className="flex items-center gap-2">
             {state.veto ? <Badge tone="danger">Excluded</Badge> : <Badge tone={FIT_BANDS[fitBand(score)].tone}>{FIT_BANDS[fitBand(score)].label}</Badge>}
-            <MatchRing score={score} size={32} muted={Boolean(state.veto)} />
+            <MatchRing score={score} size={28} muted={Boolean(state.veto)} />
           </span>
         );
       }
@@ -256,17 +256,17 @@ function ResultRow({ id, title, state }: { id: string; title: string; state: Liv
 
   const body = (
     <>
-      <span className={cn("min-w-0 flex-1 truncate text-sm", state.status === "queued" ? "text-muted" : "font-medium")}>{title}</span>
+      <span className={cn("min-w-0 flex-1 truncate text-[13px]", state.status === "queued" ? "text-muted" : "font-medium")}>{title}</span>
       {right}
     </>
   );
 
   return state.status === "done" ? (
-    <Link href={`/jobs/${id}`} className="-mx-2 flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-surface-2">
+    <Link href={`/jobs/${id}`} className="-mx-2 flex items-center gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-surface-2">
       {body}
     </Link>
   ) : (
-    <div className="flex items-center gap-3 py-2">
+    <div className="flex items-center gap-3 py-1.5">
       {body}
       {state.status === "error" && <span className="sr-only">{state.error}</span>}
     </div>
@@ -308,10 +308,10 @@ export function SelectableJob({ id, children }: { id: string; children: ReactNod
     <div
       onClickCapture={onClickCapture}
       className={cn(
-        "relative rounded-3xl transition-[box-shadow,opacity] duration-200",
+        "relative rounded-lg transition-[box-shadow,opacity] duration-150",
         // The open job, on wide screens where the panel sits beside the list.
-        active && "xl:[&>a]:border-brand xl:[&>a]:bg-brand-soft/40 xl:[&>a]:shadow-none",
-        selecting && isSelected && "ring-2 ring-brand ring-offset-2 ring-offset-bg",
+        active && "xl:[&>a]:border-brand/50 xl:[&>a]:bg-brand-soft/50 xl:[&>a]:shadow-[inset_2px_0_0_var(--brand)]",
+        selecting && isSelected && "ring-2 ring-brand ring-offset-1 ring-offset-bg",
         selecting && full && "opacity-50",
       )}
     >
@@ -321,11 +321,11 @@ export function SelectableJob({ id, children }: { id: string; children: ReactNod
           aria-checked={isSelected}
           aria-label="Select job"
           className={cn(
-            "pointer-events-none absolute top-3 left-3 z-10 grid size-6 place-items-center rounded-full border-2 transition-colors",
+            "pointer-events-none absolute top-2 left-2 z-10 grid size-4 place-items-center rounded-sm border transition-colors",
             isSelected ? "border-brand bg-brand text-brand-fg" : "border-border-strong bg-surface",
           )}
         >
-          {isSelected && <Check className="size-3.5" strokeWidth={3} />}
+          {isSelected && <Check className="size-3" strokeWidth={3} />}
         </span>
       )}
       {children}
@@ -340,17 +340,17 @@ export function ScoreSlot({ id, children }: { id: string; children: ReactNode })
   if (!state || state.status === "error") return <>{children}</>;
   if (state.status === "queued") {
     return (
-      <span className="grid size-12 place-items-center rounded-full border-2 border-dashed border-border-strong text-subtle" title="Queued">
-        <Clock className="size-4" />
+      <span className="grid size-10 place-items-center rounded-full border border-dashed border-border-strong text-subtle" title="Queued">
+        <Clock className="size-3.5" />
       </span>
     );
   }
   if (state.status === "running") {
     return (
-      <span className="grid size-12 place-items-center rounded-full bg-brand-soft text-brand" title="Analyzing…">
-        <Loader2 className="size-5 animate-spin" />
+      <span className="grid size-10 place-items-center rounded-full border border-brand/30 text-brand" title="Analyzing…">
+        <Loader2 className="size-4 animate-spin" />
       </span>
     );
   }
-  return <AiScore score={state.score ?? 0} veto={state.veto} className="animate-[pop_400ms_var(--ease-spring)]" />;
+  return <AiScore score={state.score ?? 0} veto={state.veto} className="animate-[pop_400ms_var(--ease-snappy)]" />;
 }

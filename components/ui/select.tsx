@@ -12,8 +12,8 @@ export type SelectOption = { value: string; label: string; disabled?: boolean };
 const SEARCH_THRESHOLD = 12;
 
 const triggerSize = {
-  md: "h-12 rounded-2xl border-2 px-4 text-[15px]",
-  sm: "h-8 rounded-xl border px-2.5 text-xs font-semibold",
+  md: "h-9 rounded-md border px-3 text-sm shadow-[var(--shadow-soft)]",
+  sm: "h-7 rounded-md border px-2 text-xs font-medium",
 };
 
 /**
@@ -185,19 +185,19 @@ export function Select({
         onClick={() => (open ? close() : openMenu())}
         onKeyDown={onKeyDown}
         className={cn(
-          "flex w-full min-w-0 items-center justify-between gap-2 border-border bg-surface-2 text-left text-fg outline-none transition-colors hover:border-border-strong focus-visible:border-brand focus-visible:bg-surface disabled:pointer-events-none disabled:opacity-60",
+          "flex w-full min-w-0 items-center justify-between gap-2 border-border bg-surface text-left text-fg outline-none transition-[border-color,box-shadow] hover:border-border-strong focus-visible:border-brand focus-visible:ring-3 focus-visible:ring-brand/15 disabled:pointer-events-none disabled:opacity-60",
           triggerSize[size],
           size === "sm" && "text-muted",
-          open && "border-brand bg-surface hover:border-brand",
+          open && "border-brand ring-3 ring-brand/15 hover:border-brand",
           className,
         )}
       >
         <span className={cn("truncate", !selected && "text-subtle")}>{selected?.label ?? placeholder}</span>
         <ChevronDown
           className={cn(
-            "shrink-0 text-subtle transition-transform duration-200 ease-[var(--ease-spring)]",
+            "shrink-0 text-subtle transition-transform duration-200 ease-[var(--ease-snappy)]",
             size === "sm" ? "size-3.5" : "size-4",
-            open && "rotate-180 text-brand",
+            open && "rotate-180",
           )}
         />
       </button>
@@ -213,11 +213,11 @@ export function Select({
               // Keep focus on the trigger (or search box) while clicking options.
               if (!(e.target instanceof HTMLInputElement)) e.preventDefault();
             }}
-            className="z-50 flex animate-[menu-in_160ms_var(--ease-spring)] flex-col overflow-hidden rounded-2xl border border-border bg-surface p-1.5 shadow-[var(--shadow-lift)]"
+            className="z-50 flex animate-[menu-in_120ms_var(--ease-snappy)] flex-col overflow-hidden rounded-lg border border-border bg-surface p-1 shadow-[var(--shadow-lift)]"
           >
             {withSearch && (
-              <div className="relative mb-1.5 shrink-0">
-                <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle" />
+              <div className="relative -mx-1 -mt-1 mb-1 shrink-0 border-b border-border">
+                <Search className="pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-subtle" />
                 <input
                   autoFocus
                   value={query}
@@ -230,7 +230,7 @@ export function Select({
                   aria-label="Filter options"
                   aria-controls={listId}
                   aria-activedescendant={filtered[active] ? optionId(active) : undefined}
-                  className="h-10 w-full rounded-xl bg-surface-2 pr-3 pl-9 text-sm text-fg outline-none placeholder:text-subtle"
+                  className="h-9 w-full bg-transparent pr-3 pl-8 text-[13px] text-fg outline-none placeholder:text-subtle"
                 />
               </div>
             )}
@@ -248,19 +248,19 @@ export function Select({
                     onPointerMove={() => !opt.disabled && active !== i && setActive(i)}
                     onClick={() => choose(opt)}
                     className={cn(
-                      "flex cursor-pointer items-center justify-between gap-3 rounded-xl px-3 py-2 text-sm transition-colors",
-                      size === "sm" && "py-1.5 text-xs font-semibold",
-                      isSelected ? "bg-brand-soft font-semibold text-brand-ink" : i === active ? "bg-surface-3 text-fg" : "text-fg",
-                      isSelected && i === active && "ring-2 ring-brand/30 ring-inset",
+                      "flex cursor-pointer items-center justify-between gap-3 rounded-md px-2 py-1.5 text-[13px] text-fg",
+                      size === "sm" && "py-1 text-xs",
+                      i === active && "bg-surface-2",
+                      isSelected && "font-medium",
                       opt.disabled && "cursor-not-allowed opacity-50",
                     )}
                   >
                     <span className="truncate">{opt.label}</span>
-                    {isSelected && <Check className="size-4 shrink-0 text-brand" strokeWidth={3} />}
+                    {isSelected && <Check className="size-3.5 shrink-0 text-brand" strokeWidth={2.5} />}
                   </li>
                 );
               })}
-              {filtered.length === 0 && <li className="px-3 py-6 text-center text-sm text-subtle">No matches</li>}
+              {filtered.length === 0 && <li className="px-3 py-5 text-center text-[13px] text-subtle">No matches</li>}
             </ul>
           </div>,
           document.body,

@@ -19,7 +19,7 @@ export default function JobPage(props: PageProps<"/jobs/[id]">) {
       <Link href="/jobs" className="mb-6 inline-flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-fg">
         <ArrowLeft className="size-4" /> Back to jobs
       </Link>
-      <Suspense fallback={<div className="h-96 animate-pulse rounded-3xl bg-surface-3" />}>
+      <Suspense fallback={<div className="h-96 animate-pulse rounded-xl bg-surface-3" />}>
         {/* Lite reads the id in the browser (useParams), so the page shell still prerenders. */}
         {isLite ? <LiteJob /> : <JobDetail params={props.params} />}
       </Suspense>

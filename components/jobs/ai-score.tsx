@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils";
 export function AiScore({ score, veto, className }: { score: number; veto: string | null; className?: string }) {
   return (
     <span className={cn("relative", className)} title={veto ?? "AI fit evaluation"}>
-      <MatchRing score={score} size={48} muted={Boolean(veto)} />
-      <span className="absolute -right-1.5 -bottom-1 flex items-center gap-0.5 rounded-full bg-brand px-1.5 py-px text-[10px] font-bold text-brand-fg ring-2 ring-surface">
+      <MatchRing score={score} size={40} muted={Boolean(veto)} />
+      <span className="absolute -right-2 -bottom-1 flex items-center gap-0.5 rounded-sm bg-brand px-1 text-[9px] leading-[14px] font-semibold text-brand-fg ring-2 ring-surface">
         <Sparkles className="size-2.5" /> AI
       </span>
     </span>

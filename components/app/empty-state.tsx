@@ -16,18 +16,14 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center rounded-3xl border-2 border-dashed border-border-strong px-6 py-16 text-center">
-      <span className="grid size-16 place-items-center rounded-3xl bg-brand-soft text-brand-ink">
-        <Icon className="size-7" />
+    <div className="flex flex-col items-center rounded-xl border border-dashed border-border-strong px-6 py-14 text-center">
+      <span className="grid size-10 place-items-center rounded-lg border border-border bg-surface text-muted shadow-[var(--shadow-soft)]">
+        <Icon className="size-[18px]" strokeWidth={1.75} />
       </span>
-      <h2 className="mt-5 font-display text-xl font-semibold">{title}</h2>
-      <p className="mt-2 max-w-sm text-muted">{body}</p>
-      {phase && (
-        <Badge tone="brand" className="mt-4">
-          {phase}
-        </Badge>
-      )}
-      {action && <div className="mt-6">{action}</div>}
+      <h2 className="mt-4 text-[15px] font-semibold">{title}</h2>
+      <p className="mt-1 max-w-sm text-[13px] text-muted">{body}</p>
+      {phase && <Badge className="mt-3">{phase}</Badge>}
+      {action && <div className="mt-5">{action}</div>}
     </div>
   );
 }

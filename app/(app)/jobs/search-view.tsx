@@ -46,24 +46,24 @@ export function JobSearchView({
   const country = params.country;
 
   return (
-    <div className="flex flex-col gap-6">
-      <Form action="/jobs" className="flex flex-col gap-3 rounded-3xl border border-border bg-surface p-3 shadow-[var(--shadow-soft)] sm:p-4">
-        <div className="flex gap-2">
+    <div className="flex flex-col gap-5">
+      <Form action="/jobs" className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-2 shadow-[var(--shadow-soft)]">
+        <div className="flex gap-1.5">
           <label className="relative flex-1">
             <span className="sr-only">Job title, skill or company</span>
-            <Search className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-subtle" />
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-subtle" />
             <input
               name="q"
               defaultValue={query}
               placeholder="Job title, skill or company"
-              className="h-12 w-full rounded-2xl border-2 border-border bg-surface-2 pr-4 pl-12 text-[15px] outline-none transition-colors placeholder:text-subtle focus:border-brand focus:bg-surface"
+              className="h-10 w-full rounded-lg border border-transparent bg-surface-2 pr-3 pl-9 text-sm outline-none transition-[border-color,background-color,box-shadow] placeholder:text-subtle focus:border-brand focus:bg-surface focus:ring-3 focus:ring-brand/15"
             />
           </label>
-          <Button type="submit" className="h-12">
+          <Button type="submit" className="h-10 px-4">
             Search
           </Button>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-[1fr_1.6fr_1fr_1fr_1fr]">
+        <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 xl:grid-cols-[1fr_1.6fr_1fr_1fr_1fr]">
           <LocationFields
             key={country}
             countries={orderedCountries(profile.country, profile.targetCountries).map(({ code, name }) => ({ code, name }))}
@@ -84,17 +84,17 @@ export function JobSearchView({
       </Form>
 
       {profile.targetCountries.length > 0 && (
-        <div className="-mt-2 flex flex-wrap items-center gap-2 text-sm">
+        <div className="-mt-2 flex flex-wrap items-center gap-1.5 text-xs">
           <span className="text-subtle">Your countries:</span>
           {[profile.country, ...profile.targetCountries.filter((c) => c !== profile.country)].map((code) => (
             <Link
               key={code}
               href={`/jobs?q=${encodeURIComponent(query)}&country=${code}`}
               className={cn(
-                "rounded-full border px-3 py-1 font-medium transition-colors",
+                "rounded-md border px-2 py-0.5 text-xs font-medium transition-colors",
                 code === country && params.locationId !== "remote"
-                  ? "border-brand bg-brand-soft text-brand-ink"
-                  : "border-border text-muted hover:border-border-strong",
+                  ? "border-brand/40 bg-brand-soft text-brand-ink"
+                  : "border-border text-muted hover:border-border-strong hover:text-fg",
               )}
             >
               {findCountry(code)?.name ?? code}
@@ -103,8 +103,8 @@ export function JobSearchView({
           <Link
             href={`/jobs?q=${encodeURIComponent(query)}&country=${profile.country}&loc=remote`}
             className={cn(
-              "rounded-full border px-3 py-1 font-medium transition-colors",
-              params.locationId === "remote" ? "border-brand bg-brand-soft text-brand-ink" : "border-border text-muted hover:border-border-strong",
+              "rounded-md border px-2 py-0.5 text-xs font-medium transition-colors",
+              params.locationId === "remote" ? "border-brand/40 bg-brand-soft text-brand-ink" : "border-border text-muted hover:border-border-strong hover:text-fg",
             )}
           >
             Remote
@@ -113,15 +113,15 @@ export function JobSearchView({
       )}
 
       {profile.desiredRoles.length > 1 && (
-        <div className="-mt-2 flex flex-wrap items-center gap-2 text-sm">
+        <div className="-mt-2 flex flex-wrap items-center gap-1.5 text-xs">
           <span className="text-subtle">Your roles:</span>
           {profile.desiredRoles.map((role) => (
             <Link
               key={role}
               href={`/jobs?q=${encodeURIComponent(role)}&country=${country}`}
               className={cn(
-                "rounded-full border px-3 py-1 font-medium transition-colors",
-                role === query ? "border-brand bg-brand-soft text-brand-ink" : "border-border text-muted hover:border-border-strong",
+                "rounded-md border px-2 py-0.5 text-xs font-medium transition-colors",
+                role === query ? "border-brand/40 bg-brand-soft text-brand-ink" : "border-border text-muted hover:border-border-strong hover:text-fg",
               )}
             >
               {role}
@@ -138,7 +138,7 @@ export function JobSearchView({
           title="What kind of job are you looking for?"
           body="Search by job title, skill or company. Add your target roles to your profile and we'll search for them automatically."
           action={
-            <Link href="/profile" className="font-semibold text-brand hover:underline">
+            <Link href="/profile" className="font-medium text-brand-ink hover:underline">
               Set up your profile
             </Link>
           }

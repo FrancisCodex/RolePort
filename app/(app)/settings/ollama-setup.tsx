@@ -41,7 +41,7 @@ function steps(os: Os, origin: string): { text: string; code?: string }[] {
 export function CopyBlock({ code }: { code: string }) {
   const [copied, setCopied] = useState(false);
   return (
-    <div className="flex items-start gap-2 rounded-xl bg-surface-2 px-3 py-2">
+    <div className="flex items-start gap-2 rounded-md border border-border bg-surface-2 px-3 py-2">
       <pre className="min-w-0 flex-1 overflow-x-auto font-mono text-xs leading-relaxed whitespace-pre text-fg">{code}</pre>
       <button
         type="button"
@@ -54,7 +54,7 @@ export function CopyBlock({ code }: { code: string }) {
         aria-label={copied ? "Copied" : "Copy command"}
         className="grid size-7 shrink-0 place-items-center rounded-lg text-muted hover:bg-surface-3 hover:text-fg"
       >
-        {copied ? <Check className="size-4 text-success" /> : <Copy className="size-4" />}
+        {copied ? <Check className="size-3.5 text-success" /> : <Copy className="size-3.5" />}
       </button>
     </div>
   );
@@ -70,9 +70,9 @@ export function OllamaSetup({ model }: { model: string }) {
   const allowedByDefault = isLocalUrl(origin);
 
   return (
-    <div className="flex flex-col gap-3 rounded-2xl border border-border p-4 text-sm sm:col-span-2">
+    <div className="flex flex-col gap-3 rounded-lg border border-border p-4 text-sm sm:col-span-2">
       <div>
-        <p className="font-semibold">Let this site use Ollama</p>
+        <p className="font-medium">Let this site use Ollama</p>
         <p className="mt-1 text-muted">
           HireMe Lite runs in your browser and talks to Ollama on this computer directly. Nothing goes through HireMe&apos;s servers.
         </p>
@@ -91,8 +91,8 @@ export function OllamaSetup({ model }: { model: string }) {
                 onClick={() => setOs(id)}
                 aria-pressed={os === id}
                 className={cn(
-                  "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-                  os === id ? "border-brand bg-brand-soft text-brand-ink" : "border-border text-muted hover:border-border-strong",
+                  "rounded-md border px-2 py-0.5 text-xs font-medium transition-colors",
+                  os === id ? "border-brand/40 bg-brand-soft text-brand-ink" : "border-border text-muted hover:border-border-strong hover:text-fg",
                 )}
               >
                 {OS_LABEL[id]}

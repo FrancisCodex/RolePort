@@ -38,21 +38,21 @@ export function JobDetailView({
   const quickMatch = <QuickMatchCard job={job} aiEnabled={aiEnabled} />;
 
   return (
-    <div className={cn("grid gap-4", !panel && "lg:grid-cols-[1fr_20rem]")}>
-      <div className="flex min-w-0 flex-col gap-4">
+    <div className={cn("grid gap-3", !panel && "lg:grid-cols-[1fr_20rem]")}>
+      <div className="flex min-w-0 flex-col gap-3">
         <Card>
           <CardContent className="flex flex-col gap-5">
-            <div className="flex items-start gap-4">
-              <CompanyLogo src={job.companyLogo} company={job.company} size="size-14" />
+            <div className="flex items-start gap-3">
+              <CompanyLogo src={job.companyLogo} company={job.company} size="size-11" />
               <div className="min-w-0 flex-1">
-                <h1 className="font-display text-2xl font-bold tracking-tight text-balance">{job.title}</h1>
-                <p className="text-muted">{job.company}</p>
+                <h1 className="text-xl font-semibold tracking-tight text-balance">{job.title}</h1>
+                <p className="text-[13px] text-muted">{job.company}</p>
               </div>
             </div>
-            <div className="flex flex-wrap items-center gap-2 text-sm">
+            <div className="flex flex-wrap items-center gap-2 text-[13px]">
               {job.location && (
                 <span className="flex items-center gap-1 text-muted">
-                  <MapPin className="size-4" /> {job.location}
+                  <MapPin className="size-3.5" /> {job.location}
                 </span>
               )}
               {job.workSetup && <Badge tone="brand">{WORK_SETUP_LABEL[job.workSetup]}</Badge>}
@@ -60,17 +60,17 @@ export function JobDetailView({
               {salary && <Badge tone="success">{salary}</Badge>}
               {posted && (
                 <span className="flex items-center gap-1 text-subtle">
-                  <Clock className="size-4" /> {posted}
+                  <Clock className="size-3.5" /> {posted}
                 </span>
               )}
             </div>
             {job.extras.possiblyStale && (
-              <p className="flex items-start gap-2 rounded-2xl bg-warning-soft px-4 py-3 text-sm font-medium text-warning">
-                <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+              <p className="flex items-start gap-2 rounded-lg border border-warning/20 bg-warning-soft px-3 py-2.5 text-[13px] font-medium text-warning">
+                <TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
                 This posting may be old or reposted. Check that it&apos;s still open before applying.
               </p>
             )}
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               <a href={job.url} target="_blank" rel="noopener noreferrer nofollow" className={buttonVariants()}>
                 Apply on company site <ExternalLink />
               </a>
@@ -86,8 +86,8 @@ export function JobDetailView({
         {job.extras.summary && (
           <Card>
             <CardContent>
-              <p className="text-xs font-semibold tracking-wider text-subtle uppercase">In short</p>
-              <p className="mt-2 leading-relaxed">{job.extras.summary}</p>
+              <p className="text-xs font-medium text-muted">In short</p>
+              <p className="mt-1.5 leading-relaxed">{job.extras.summary}</p>
             </CardContent>
           </Card>
         )}
@@ -101,7 +101,7 @@ export function JobDetailView({
               <RequirementList items={required.map((r) => r.text)} />
               {preferred.length > 0 && (
                 <>
-                  <p className="text-sm font-semibold text-muted">Nice to have</p>
+                  <p className="text-xs font-medium text-muted">Nice to have</p>
                   <RequirementList items={preferred.map((r) => r.text)} muted />
                 </>
               )}
@@ -141,23 +141,23 @@ function QuickMatchCard({ job, aiEnabled }: { job: JobListItem; aiEnabled: boole
     <Card>
       <CardContent className="flex flex-col gap-4">
         <div className="flex items-center gap-4">
-          {job.match ? <MatchRing score={job.match.score} size={64} /> : null}
+          {job.match ? <MatchRing score={job.match.score} size={52} /> : null}
           <div>
-            <p className="font-display text-lg font-semibold">Quick match</p>
-            <p className="text-sm text-muted">
+            <p className="text-sm font-semibold">Quick match</p>
+            <p className="text-[13px] text-muted">
               {job.match ? "Based on skill overlap with your profile." : "Add skills to your profile to see your match."}
             </p>
           </div>
         </div>
         {job.match && job.match.matched.length > 0 && <SkillList title="You have" skills={job.match.matched} tone="success" />}
         {job.match && job.match.missing.length > 0 && <SkillList title="They also want" skills={job.match.missing} />}
-        <div className="flex items-start gap-2 rounded-2xl bg-surface-2 px-4 py-3 text-xs text-muted">
+        <div className="flex items-start gap-2 rounded-lg border border-border bg-surface-2 px-3 py-2.5 text-xs text-muted">
           <Sparkles className="mt-0.5 size-3.5 shrink-0 text-brand" />
           {aiEnabled ? (
             "A free estimate from skill overlap. The AI fit evaluation also weighs gates, experience and career fit. A tailored CV is coming next."
           ) : (
             <span>
-              <Link href="/settings" className="font-semibold text-brand hover:underline">
+              <Link href="/settings" className="font-medium text-brand-ink hover:underline">
                 Choose an AI provider
               </Link>{" "}
               (Claude, OpenAI or a free local model) to get a full fit evaluation.
@@ -173,8 +173,8 @@ function RequirementList({ items, muted = false }: { items: string[]; muted?: bo
   return (
     <ul className="flex flex-col gap-2">
       {items.map((text) => (
-        <li key={text} className={`flex gap-2.5 text-[15px] ${muted ? "text-muted" : ""}`}>
-          <span className="mt-2 size-1.5 shrink-0 rounded-full bg-brand" />
+        <li key={text} className={`flex gap-2.5 text-[13px] ${muted ? "text-muted" : ""}`}>
+          <span className="mt-[7px] size-1 shrink-0 rounded-full bg-subtle" />
           {text}
         </li>
       ))}
@@ -186,7 +186,7 @@ function SkillList({ title, skills, tone }: { title: string; skills: string[]; t
   const Icon = tone === "success" ? Check : X;
   return (
     <div>
-      <p className="mb-2 text-xs font-semibold tracking-wider text-subtle uppercase">{title}</p>
+      <p className="mb-2 text-xs font-medium text-muted">{title}</p>
       <div className="flex flex-wrap gap-1.5">
         {skills.map((s) => (
           <Badge key={s} tone={tone ?? "neutral"} className="capitalize">

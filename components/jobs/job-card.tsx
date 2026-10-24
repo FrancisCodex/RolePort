@@ -9,13 +9,13 @@ import { AiScore } from "./ai-score";
 import { ScoreSlot, SelectableJob } from "./analyze-jobs";
 import { SaveButton } from "./save-button";
 
-export function CompanyLogo({ src, company, size = "size-12" }: { src: string | null; company: string; size?: string }) {
+export function CompanyLogo({ src, company, size = "size-9" }: { src: string | null; company: string; size?: string }) {
   return src ? (
     // eslint-disable-next-line @next/next/no-img-element -- logos come from many third-party hosts
-    <img src={src} alt="" className={`${size} shrink-0 rounded-2xl border border-border bg-white object-contain p-1`} />
+    <img src={src} alt="" className={`${size} shrink-0 rounded-md border border-border bg-white object-contain p-0.5`} />
   ) : (
-    <span className={`${size} grid shrink-0 place-items-center rounded-2xl bg-surface-2 font-display text-lg font-bold text-muted`}>
-      {company.trim()[0]?.toUpperCase() ?? <Briefcase className="size-5" />}
+    <span className={`${size} grid shrink-0 place-items-center rounded-md border border-border bg-surface-2 text-sm font-semibold text-muted`}>
+      {company.trim()[0]?.toUpperCase() ?? <Briefcase className="size-4" />}
     </span>
   );
 }
@@ -32,20 +32,20 @@ export function JobCard({ job }: { job: JobListItem }) {
     <SelectableJob id={job.id}>
       <Link
         href={`/jobs/${job.id}`}
-        className="group flex gap-4 rounded-3xl border border-border bg-surface p-4 shadow-[var(--shadow-soft)] transition-[transform,box-shadow] duration-200 ease-[var(--ease-spring)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-lift)] sm:p-5"
+        className="group flex gap-3 rounded-lg border border-border bg-surface p-3.5 transition-[border-color,background-color,box-shadow] duration-150 hover:border-border-strong hover:shadow-[var(--shadow-soft)]"
       >
         <CompanyLogo src={job.companyLogo} company={job.company} />
         <div className="min-w-0 flex-1">
-          <h3 className="font-semibold leading-snug group-hover:text-brand">{job.title}</h3>
-          <p className="truncate text-sm text-muted">{job.company}</p>
-          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-xs text-subtle">
+          <h3 className="text-sm leading-snug font-medium">{job.title}</h3>
+          <p className="truncate text-[13px] text-muted">{job.company}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-x-2.5 gap-y-1.5 text-xs text-subtle">
             {job.location && (
               <span className="flex min-w-0 items-center gap-1">
-                <MapPin className="size-3.5 shrink-0" />
+                <MapPin className="size-3 shrink-0" />
                 <span className="truncate">{job.location}</span>
               </span>
             )}
-            {job.workSetup && <Badge tone="brand">{WORK_SETUP_LABEL[job.workSetup]}</Badge>}
+            {job.workSetup && <Badge>{WORK_SETUP_LABEL[job.workSetup]}</Badge>}
             {salary && <Badge tone="success">{salary}</Badge>}
             {posted && <span>{posted}</span>}
             {job.extras.possiblyStale && <Badge tone="warning">May be old</Badge>}
@@ -67,9 +67,9 @@ export function JobCard({ job }: { job: JobListItem }) {
             {fit ? (
               <AiScore score={fit.overallScore ?? 0} veto={veto} />
             ) : job.match ? (
-              <MatchRing score={job.match.score} size={48} />
+              <MatchRing score={job.match.score} size={40} />
             ) : (
-              <span className="size-12" />
+              <span className="size-10" />
             )}
           </ScoreSlot>
           <SaveButton jobId={job.id} saved={job.saved} />

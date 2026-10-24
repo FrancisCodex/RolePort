@@ -38,13 +38,13 @@ export function FitEvaluation({
   if (!fit) {
     return (
       <Card className="@container overflow-hidden">
-        <CardContent className="flex flex-col gap-4 bg-gradient-to-br from-brand-soft/70 to-transparent @xl:flex-row @xl:items-center">
-          <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-brand text-brand-fg shadow-[var(--shadow-press)]">
-            <Sparkles className="size-6" />
+        <CardContent className="flex flex-col gap-4 @xl:flex-row @xl:items-center">
+          <span className="grid size-9 shrink-0 place-items-center rounded-lg border border-brand/20 bg-brand-soft text-brand-ink">
+            <Sparkles className="size-4" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="font-display text-lg font-semibold">AI fit evaluation</p>
-            <p className="text-sm text-muted">
+            <p className="text-sm font-semibold">AI fit evaluation</p>
+            <p className="text-[13px] text-muted">
               Checks eligibility, language and location first, then scores skills, experience, culture and career fit, with an
               honest list of gaps.
             </p>
@@ -56,7 +56,7 @@ export function FitEvaluation({
           ) : (
             <Link
               href="/settings"
-              className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-2xl bg-brand px-5 text-[15px] font-semibold text-brand-fg shadow-[var(--shadow-press)] hover:bg-brand-hover"
+              className="inline-flex h-8 shrink-0 items-center justify-center gap-1.5 rounded-md bg-brand px-3 text-[13px] font-medium text-brand-fg shadow-[inset_0_1px_0_rgb(255_255_255/0.14)] hover:bg-brand-hover"
             >
               Choose an AI provider
             </Link>
@@ -75,18 +75,18 @@ export function FitEvaluation({
 
   return (
     <Card className="@container">
-      <CardContent className="flex flex-col gap-6">
+      <CardContent className="flex flex-col gap-5">
         {/* Verdict */}
         <div className="flex flex-wrap items-center gap-4">
-          <MatchRing score={overall} size={76} muted={Boolean(veto)} />
+          <MatchRing score={overall} size={64} muted={Boolean(veto)} />
           <div className="min-w-44 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="font-display text-xl font-bold tracking-tight">{veto ? "Not a match" : band.label}</p>
+              <p className="text-base font-semibold tracking-tight">{veto ? "Not a match" : band.label}</p>
               <Badge tone="brand">
                 <Sparkles /> AI
               </Badge>
             </div>
-            <p className="text-sm text-muted">{veto ? "A gate or deal-breaker rules this one out." : band.advice}</p>
+            <p className="text-[13px] text-muted">{veto ? "A gate or deal-breaker rules this one out." : band.advice}</p>
             <p className="mt-1 text-xs text-subtle">
               {fit.model}
               {scored ? ` · ${scored.toLowerCase()}` : ""}
@@ -153,12 +153,12 @@ export function FitEvaluation({
         )}
 
         {(fit.summary || fit.recommendation) && (
-          <div className="rounded-2xl bg-brand-soft px-4 py-3.5 text-brand-ink">
-            <p className="flex items-center gap-1.5 text-xs font-semibold tracking-wider uppercase">
-              <Sparkles className="size-3.5" /> Recommendation
+          <div className="rounded-lg border border-brand/20 bg-brand-soft px-4 py-3 text-fg">
+            <p className="flex items-center gap-1.5 text-xs font-medium">
+              <Sparkles className="size-3.5 text-brand" /> Recommendation
             </p>
-            {fit.summary && <p className="mt-1.5 text-[15px] font-medium">{fit.summary}</p>}
-            {fit.recommendation && <p className="mt-1 text-sm opacity-90">{fit.recommendation}</p>}
+            {fit.summary && <p className="mt-1.5 text-[13px] font-medium">{fit.summary}</p>}
+            {fit.recommendation && <p className="mt-1 text-[13px] text-muted">{fit.recommendation}</p>}
           </div>
         )}
 
@@ -172,19 +172,19 @@ export function FitEvaluation({
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
-  return <p className="mb-2.5 text-xs font-semibold tracking-wider text-subtle uppercase">{children}</p>;
+  return <p className="mb-2 text-xs font-medium text-muted">{children}</p>;
 }
 
 function Gate({ label, verdict, note }: { label: string; verdict: GateVerdict; note: string | null }) {
   const style = GATE_STYLE[verdict];
   const Icon = style.icon;
   return (
-    <div className="flex flex-col gap-1.5 rounded-2xl border border-border bg-surface-2/60 p-3">
+    <div className="flex flex-col gap-1.5 rounded-lg border border-border p-3">
       <div className="flex items-center gap-2">
-        <span className={cn("grid size-6 shrink-0 place-items-center rounded-lg", style.tile)}>
-          <Icon className="size-3.5" strokeWidth={3} />
+        <span className={cn("grid size-5 shrink-0 place-items-center rounded-md", style.tile)}>
+          <Icon className="size-3" strokeWidth={3} />
         </span>
-        <span className="text-sm font-semibold">{label}</span>
+        <span className="text-[13px] font-medium">{label}</span>
         <Badge tone={style.tone} className="ml-auto">
           {style.label}
         </Badge>
@@ -198,13 +198,13 @@ function ScoreBar({ label, weight, score }: { label: string; weight: number; sco
   const color = score >= 75 ? "bg-success" : score >= 50 ? "bg-brand" : "bg-warning";
   return (
     <div>
-      <div className="mb-1.5 flex items-baseline justify-between gap-2 text-sm">
-        <span className="font-medium">
+      <div className="mb-1.5 flex items-baseline justify-between gap-2 text-[13px]">
+        <span>
           {label} <span className="text-xs text-subtle">· {Math.round(weight * 100)}%</span>
         </span>
-        <span className="font-display font-bold tabular-nums">{score}</span>
+        <span className="font-medium tabular-nums">{score}</span>
       </div>
-      <div className="h-2.5 overflow-hidden rounded-full bg-surface-3" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={score} aria-label={label}>
+      <div className="h-1.5 overflow-hidden rounded-full bg-surface-3" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={score} aria-label={label}>
         <div className={cn("h-full rounded-full", color)} style={{ width: `${score}%` }} />
       </div>
     </div>
@@ -218,14 +218,14 @@ function BulletList({ title, items, icon: Icon, tone }: { title: string; items: 
       <SectionLabel>{title}</SectionLabel>
       <ul className="flex flex-col gap-2">
         {items.map((item) => (
-          <li key={item} className="flex gap-2.5 text-[15px] leading-snug">
+          <li key={item} className="flex gap-2 text-[13px] leading-snug">
             <span
               className={cn(
-                "mt-0.5 grid size-5 shrink-0 place-items-center rounded-full",
-                tone === "success" ? "bg-success-soft text-success" : "bg-danger-soft text-danger",
+                "mt-px grid size-4 shrink-0 place-items-center rounded-full",
+                tone === "success" ? "border border-success/20 bg-success-soft text-success" : "border border-danger/20 bg-danger-soft text-danger",
               )}
             >
-              <Icon className="size-3" strokeWidth={3} />
+              <Icon className="size-2.5" strokeWidth={3.5} />
             </span>
             {item}
           </li>
@@ -239,11 +239,11 @@ function Notice({ tone, icon: Icon, children }: { tone: "warning" | "danger"; ic
   return (
     <p
       className={cn(
-        "flex items-start gap-2 rounded-2xl px-4 py-3 text-sm font-medium",
-        tone === "danger" ? "bg-danger-soft text-danger" : "bg-warning-soft text-warning",
+        "flex items-start gap-2 rounded-lg border px-3 py-2.5 text-[13px] font-medium",
+        tone === "danger" ? "border-danger/20 bg-danger-soft text-danger" : "border-warning/20 bg-warning-soft text-warning",
       )}
     >
-      <Icon className="mt-0.5 size-4 shrink-0" />
+      <Icon className="mt-0.5 size-3.5 shrink-0" />
       <span>{children}</span>
     </p>
   );

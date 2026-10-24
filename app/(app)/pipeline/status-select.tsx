@@ -8,7 +8,7 @@ export const STATUS_LABEL = {
   screening: "Screening",
   interview: "Interview",
   offer: "Offer",
-  hired: "Hired 🎉",
+  hired: "Hired",
   rejected: "Rejected",
   withdrawn: "Withdrawn",
   offer_declined: "Offer declined",

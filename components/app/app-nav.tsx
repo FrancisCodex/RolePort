@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { navItems, settingsItem } from "./nav-items";
 
@@ -24,27 +25,33 @@ export function SidebarNavFallback() {
 
 function SidebarLinks({ isActive }: { isActive: IsActive }) {
   return (
-    <nav className="flex flex-col gap-1">
-      {[...navItems, settingsItem].map(({ href, label, icon: Icon }) => {
-        const active = isActive(href);
-        return (
-          <Link
-            key={href}
-            href={href}
-            aria-current={active ? "page" : undefined}
-            className={cn(
-              "flex items-center gap-3 rounded-2xl border-2 px-3.5 py-2.5 text-[15px] font-semibold transition-colors",
-              active
-                ? "border-brand/30 bg-brand-soft text-brand-ink"
-                : "border-transparent text-muted hover:bg-surface-2 hover:text-fg",
-            )}
-          >
-            <Icon className="size-5" strokeWidth={active ? 2.4 : 2} />
-            {label}
-          </Link>
-        );
-      })}
+    <nav className="flex h-full flex-col">
+      <p className="px-2 pb-1 text-[11px] font-medium text-subtle">Workspace</p>
+      <div className="flex flex-col gap-px">
+        {navItems.map((item) => (
+          <SidebarLink key={item.href} {...item} active={isActive(item.href)} />
+        ))}
+      </div>
+      <div className="mt-auto flex flex-col gap-px pt-4">
+        <SidebarLink {...settingsItem} active={isActive(settingsItem.href)} />
+      </div>
     </nav>
+  );
+}
+
+function SidebarLink({ href, label, icon: Icon, active }: { href: string; label: string; icon: LucideIcon; active: boolean }) {
+  return (
+    <Link
+      href={href}
+      aria-current={active ? "page" : undefined}
+      className={cn(
+        "flex h-8 items-center gap-2.5 rounded-md px-2 text-[13px] font-medium transition-colors",
+        active ? "bg-surface-3 text-fg" : "text-muted hover:bg-surface-2 hover:text-fg",
+      )}
+    >
+      <Icon className={cn("size-4", active ? "text-fg" : "text-subtle")} strokeWidth={1.75} />
+      {label}
+    </Link>
   );
 }
 
@@ -58,7 +65,7 @@ export function TabBarFallback() {
 
 function TabBarLinks({ isActive }: { isActive: IsActive }) {
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
       <div className="mx-auto flex max-w-md items-stretch justify-around px-2">
         {navItems.map(({ href, label, icon: Icon }) => {
           const active = isActive(href);
@@ -68,13 +75,11 @@ function TabBarLinks({ isActive }: { isActive: IsActive }) {
               href={href}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "flex flex-1 flex-col items-center gap-0.5 py-2.5 text-[11px] font-semibold transition-colors",
-                active ? "text-brand" : "text-subtle",
+                "flex flex-1 flex-col items-center gap-1 pt-2.5 pb-2 text-[10px] font-medium transition-colors",
+                active ? "text-fg" : "text-subtle",
               )}
             >
-              <span className={cn("grid h-8 w-12 place-items-center rounded-full transition-colors", active && "bg-brand-soft")}>
-                <Icon className="size-5" strokeWidth={active ? 2.4 : 2} />
-              </span>
+              <Icon className="size-5" strokeWidth={active ? 2 : 1.75} />
               {label}
             </Link>
           );

@@ -16,7 +16,7 @@ export default function ProfilePage() {
       {isLite ? (
         <LiteProfile />
       ) : (
-        <Suspense fallback={<div className="h-96 animate-pulse rounded-3xl bg-surface-3" />}>
+        <Suspense fallback={<div className="h-96 animate-pulse rounded-xl bg-surface-3" />}>
           <Editor />
         </Suspense>
       )}
