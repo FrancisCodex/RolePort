@@ -21,8 +21,19 @@ export type JobExtras = {
 
 export type JobRow = typeof schema.job.$inferSelect;
 export type FitMatch = typeof schema.jobMatch.$inferSelect;
-/** `fit` is the saved AI evaluation, when the user has run one; `match` is the free skill-overlap estimate. */
-export type JobListItem = JobRow & { extras: JobExtras; match: QuickMatch | null; fit: FitMatch | null; saved: boolean };
+/** The user's application for a job: saved, applied or further along. */
+export type TrackedJob = { id: string; status: (typeof schema.applicationStatus.enumValues)[number] };
+/**
+ * `fit` is the saved AI evaluation, when the user has run one; `match` is the free skill-overlap estimate.
+ * `saved` means the job is on the user's list in any status; `application` says which one.
+ */
+export type JobListItem = JobRow & {
+  extras: JobExtras;
+  match: QuickMatch | null;
+  fit: FitMatch | null;
+  saved: boolean;
+  application: TrackedJob | null;
+};
 /** A search result with its dedupe key (lib/jobs/job-key.ts). */
 export type KeyedJob = NormalizedJob & { jobKey: string };
 
@@ -122,12 +133,13 @@ export function sortJobs(items: JobListItem[], sort: "match" | "date"): JobListI
   return items.sort((a, b) => (b.postedAt?.getTime() ?? 0) - (a.postedAt?.getTime() ?? 0));
 }
 
-export async function readSavedJobIds(db: AnyDb, userId: string): Promise<Set<string>> {
+/** The user's applications (saved jobs included), keyed by job id. */
+export async function readTrackedJobs(db: AnyDb, userId: string): Promise<Map<string, TrackedJob>> {
   const rows = await db
-    .select({ jobId: schema.application.jobId })
+    .select({ id: schema.application.id, jobId: schema.application.jobId, status: schema.application.status })
     .from(schema.application)
     .where(eq(schema.application.userId, userId));
-  return new Set(rows.map((r) => r.jobId).filter((id): id is string => Boolean(id)));
+  return new Map(rows.flatMap((r) => (r.jobId ? [[r.jobId, { id: r.id, status: r.status }] as const] : [])));
 }
 
 /** The user's saved evaluations for these jobs, keyed by job id. */
@@ -146,13 +158,14 @@ export function extrasOf(row: JobRow): JobExtras {
 }
 
 /** A stored job with what the list and detail views show next to it. */
-export function toListItem(row: JobRow, profile: ProfileInput, saved: Set<string>, fits: Map<string, FitMatch>): JobListItem {
+export function toListItem(row: JobRow, profile: ProfileInput, tracked: Map<string, TrackedJob>, fits: Map<string, FitMatch>): JobListItem {
   const extras = extrasOf(row);
   const text = [toPlainText(row.description), extras.requirements.map((r) => r.text).join(" ")].join(" ");
   return {
     ...row,
     extras,
-    saved: saved.has(row.id),
+    saved: tracked.has(row.id),
+    application: tracked.get(row.id) ?? null,
     match: quickMatch({ title: row.title, skills: row.skills, text }, profile),
     fit: fits.get(row.id) ?? null,
   };
@@ -161,8 +174,8 @@ export function toListItem(row: JobRow, profile: ProfileInput, saved: Set<string
 export async function readJob(db: AnyDb, userId: string, id: string, profile: ProfileInput): Promise<JobListItem | null> {
   const [row] = await db.select().from(schema.job).where(eq(schema.job.id, id));
   if (!row) return null;
-  const [saved, fits] = await Promise.all([readSavedJobIds(db, userId), readFitMatches(db, userId, [row.id])]);
-  return toListItem(row, profile, saved, fits);
+  const [tracked, fits] = await Promise.all([readTrackedJobs(db, userId), readFitMatches(db, userId, [row.id])]);
+  return toListItem(row, profile, tracked, fits);
 }
 
 export async function readJobRow(db: AnyDb, id: string): Promise<JobRow | null> {

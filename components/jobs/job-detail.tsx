@@ -1,5 +1,7 @@
 import { Check, Clock, ExternalLink, MapPin, Sparkles, TriangleAlert, X } from "lucide-react";
 import Link from "next/link";
+import type { ReactNode } from "react";
+import { ApplyButton } from "@/components/jobs/apply-button";
 import { FitEvaluation } from "@/components/jobs/fit-evaluation";
 import { CompanyLogo } from "@/components/jobs/job-card";
 import { SaveButton } from "@/components/jobs/save-button";
@@ -22,12 +24,18 @@ export function JobDetailView({
   aiEnabled,
   variant = "page",
   source,
+  actions,
+  aside,
 }: {
   job: JobListItem;
   aiEnabled: boolean;
   variant?: "page" | "panel";
   /** Credit line for the job source. Passed in (not looked up) so this also renders in the browser. */
   source: SourceCredit | null;
+  /** Replaces the Apply and Save buttons under the title. */
+  actions?: ReactNode;
+  /** Page variant: shown above the quick match in the side column. */
+  aside?: ReactNode;
 }) {
   const panel = variant === "panel";
   const salary = formatSalary(job.salaryMin, job.salaryMax, job.salaryCurrency, job.salaryPeriod);
@@ -39,8 +47,9 @@ export function JobDetailView({
 
   return (
     <div className={cn("grid gap-3", !panel && "lg:grid-cols-[1fr_20rem]")}>
-      <div className="flex min-w-0 flex-col gap-3">
-        <Card>
+      {/* With a side column of its own, small screens show it right under the title card, above the long description. */}
+      <div className={cn("flex min-w-0 flex-col gap-3", aside && "max-lg:contents")}>
+        <Card className={cn(aside && "max-lg:-order-1")}>
           <CardContent className="flex flex-col gap-5">
             <div className="flex items-start gap-3">
               <CompanyLogo src={job.companyLogo} company={job.company} size="size-11" />
@@ -71,10 +80,15 @@ export function JobDetailView({
               </p>
             )}
             <div className="flex flex-wrap gap-1.5">
-              <a href={job.url} target="_blank" rel="noopener noreferrer nofollow" className={buttonVariants()}>
-                Apply on company site <ExternalLink />
-              </a>
-              <SaveButton jobId={job.id} saved={job.saved} withLabel />
+              {actions ?? (
+                <>
+                  <ApplyButton job={job} />
+                  {(!job.application || job.application.status === "saved") && <SaveButton jobId={job.id} saved={job.saved} withLabel />}
+                  <a href={job.url} target="_blank" rel="noopener noreferrer nofollow" className={buttonVariants({ variant: "ghost" })}>
+                    View posting <ExternalLink />
+                  </a>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -131,7 +145,12 @@ export function JobDetailView({
         )}
       </div>
 
-      {!panel && <aside className="flex flex-col gap-4 lg:sticky lg:top-10 lg:self-start">{quickMatch}</aside>}
+      {!panel && (
+        <aside className={cn("flex flex-col gap-3 lg:sticky lg:top-10 lg:self-start", aside && "max-lg:-order-1")}>
+          {aside}
+          {quickMatch}
+        </aside>
+      )}
     </div>
   );
 }

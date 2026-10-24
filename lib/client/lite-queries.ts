@@ -1,4 +1,5 @@
 import { eq, min } from "drizzle-orm";
+import { toAppliedItems, toApplicationData, type AppliedItem, type ApplicationData } from "@/app/(app)/applied/view-data";
 import { toHomeData } from "@/app/(app)/home/home-data";
 import type { HomeData } from "@/app/(app)/home/home-view";
 import type { ResultsData } from "@/app/(app)/jobs/results-view";
@@ -12,9 +13,9 @@ import { aiConfigFromRow } from "@/lib/ai/settings";
 import { getBrowserDb, type BrowserDb } from "@/lib/db/browser";
 import { LOCAL_USER } from "@/lib/db/local-user";
 import * as schema from "@/lib/db/schema";
-import { readApplications } from "@/lib/jobs/applications";
+import { readApplication, readApplications } from "@/lib/jobs/applications";
 import { readDashboard } from "@/lib/jobs/dashboard";
-import { readFitMatches, readJob, readJobsByIds, readSavedJobIds, sortJobs, toListItem, type JobListItem } from "@/lib/jobs/queries";
+import { readFitMatches, readJob, readJobsByIds, readTrackedJobs, sortJobs, toListItem, type JobListItem } from "@/lib/jobs/queries";
 import type { JobSort } from "@/lib/jobs/search-params";
 import { sourceCredit } from "@/lib/jobs/sources/credits";
 import { readOnboarding, readProfile, type ProfileView } from "@/lib/profile/queries";
@@ -65,7 +66,7 @@ export async function loadJobList(ids: string[], sort: JobSort): Promise<Omit<Re
   const { profile } = await readProfile(db, await me(db));
   const [rows, saved, fits, ai] = await Promise.all([
     readJobsByIds(db, ids),
-    readSavedJobIds(db, LOCAL_USER.id),
+    readTrackedJobs(db, LOCAL_USER.id),
     readFitMatches(db, LOCAL_USER.id, ids),
     aiEnabled(db),
   ]);
@@ -113,4 +114,18 @@ export async function loadWelcome(): Promise<OnboardingData> {
   const db = await getBrowserDb();
   const [{ profile, cvFileName }, ai, onboarding] = await Promise.all([readProfile(db, await me(db)), aiEnabled(db), readOnboarding(db, LOCAL_USER.id)]);
   return toOnboardingData(profile, cvFileName, ai, onboarding, true);
+}
+
+export async function loadApplied(): Promise<AppliedItem[]> {
+  const db = await getBrowserDb();
+  return toAppliedItems(await readApplications(db, LOCAL_USER.id));
+}
+
+export async function loadApplication(id: string): Promise<ApplicationData | null> {
+  const db = await getBrowserDb();
+  const application = await readApplication(db, LOCAL_USER.id, id);
+  if (!application) return null;
+  const [{ profile }, ai] = await Promise.all([readProfile(db, await me(db)), aiEnabled(db)]);
+  const job = application.jobId ? await readJob(db, LOCAL_USER.id, application.jobId, profile) : null;
+  return toApplicationData(application, job, ai, job && sourceCredit(job.source));
 }
