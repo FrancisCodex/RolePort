@@ -3,7 +3,8 @@ import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 import { CommandHint } from "@/components/marketing/command-menu";
 import { FeatureTabs } from "@/components/marketing/feature-demos";
-import { HeroSpotlight, Reveal } from "@/components/marketing/landing-motion";
+import { DotBackground } from "@/components/marketing/dot-background";
+import { Reveal } from "@/components/marketing/landing-motion";
 import { ProductDemo } from "@/components/marketing/product-demo";
 import { GitHubMark, REPO_URL, SetupGuide } from "@/components/marketing/setup-guide";
 import { buttonVariants } from "@/components/ui/button";
@@ -77,7 +78,7 @@ export default function LandingPage() {
   return (
     <>
       {/* Hero: pitch, then the product itself, live. */}
-      <HeroSpotlight className="overflow-hidden border-b border-border">
+      <DotBackground variant="hero" className="-mt-14 overflow-hidden border-b border-border pt-14">
         <section className="mx-auto flex max-w-6xl flex-col items-center px-4 pt-16 text-center sm:px-6 md:pt-24">
           <a
             href={REPO_URL}
@@ -87,18 +88,21 @@ export default function LandingPage() {
             Free and open source · MIT licence
             <ArrowRight className="size-3" />
           </a>
-          <h1 className="mt-6 max-w-3xl text-[2.6rem] leading-[1.03] font-semibold tracking-[-0.04em] text-balance sm:text-6xl md:text-[4.25rem]">
-            <RiseWords text={lead} />
-            <span className="text-muted">
-              <RiseWords text={tail} from={lead.split(" ").length} />
-            </span>
-          </h1>
-          <p
-            className="mt-5 max-w-xl animate-[rise_0.8s_var(--ease-snappy)_both] text-base text-muted text-pretty [animation-delay:400ms] sm:text-[17px] sm:leading-relaxed"
-          >
-            HireMe finds jobs in your country or abroad, scores how well each one fits you, and tracks every application.{" "}
-            {isLite ? "Nothing to install: your data stays in your browser." : "Your CV and data never leave your computer."}
-          </p>
+          {/* The dotted background stays clear in a soft oval round the headline and copy. */}
+          <div data-dots-clear className="flex flex-col items-center">
+            <h1 className="mt-6 max-w-3xl text-[2.6rem] leading-[1.03] font-semibold tracking-[-0.04em] text-balance sm:text-6xl md:text-[4.25rem]">
+              <RiseWords text={lead} />
+              <span className="text-muted">
+                <RiseWords text={tail} from={lead.split(" ").length} />
+              </span>
+            </h1>
+            <p
+              className="mt-5 max-w-xl animate-[rise_0.8s_var(--ease-snappy)_both] text-base text-muted text-pretty [animation-delay:400ms] sm:text-[17px] sm:leading-relaxed"
+            >
+              HireMe finds jobs in your country or abroad, scores how well each one fits you, and tracks every application.{" "}
+              {isLite ? "Nothing to install: your data stays in your browser." : "Your CV and data never leave your computer."}
+            </p>
+          </div>
           <div className="mt-8 flex animate-[rise_0.8s_var(--ease-snappy)_both] flex-wrap justify-center gap-2 [animation-delay:500ms]">
             {isLite ? (
               <>
@@ -139,7 +143,7 @@ export default function LandingPage() {
             <ProductDemo />
           </Reveal>
         </div>
-      </HeroSpotlight>
+      </DotBackground>
 
       {/* Countries marquee */}
       <section className="border-b border-border py-5" aria-label="Countries you can search">
@@ -264,11 +268,13 @@ export default function LandingPage() {
       {/* CTA */}
       <section className="mx-auto max-w-6xl px-4 pb-24 sm:px-6">
         <Reveal>
-          <HeroSpotlight className="overflow-hidden rounded-xl border border-border bg-surface px-6 py-20 text-center sm:px-16">
-            <h2 className="text-3xl font-semibold tracking-[-0.03em] text-balance sm:text-5xl">Your next job, found your way</h2>
-            <p className="mx-auto mt-4 max-w-md text-muted">
-              Free, open source and private. Start in your browser in seconds, or install it in five minutes.
-            </p>
+          <DotBackground variant="calm" className="overflow-hidden rounded-xl border border-border bg-surface px-6 py-20 text-center sm:px-16">
+            <div data-dots-clear>
+              <h2 className="text-3xl font-semibold tracking-[-0.03em] text-balance sm:text-5xl">Your next job, found your way</h2>
+              <p className="mx-auto mt-4 max-w-md text-muted">
+                Free, open source and private. Start in your browser in seconds, or install it in five minutes.
+              </p>
+            </div>
             <div className="mt-8 flex flex-wrap justify-center gap-2">
               <Link href="/home" className={buttonVariants({ size: "lg" })}>
                 Open HireMe
@@ -280,7 +286,7 @@ export default function LandingPage() {
               </a>
             </div>
             <CommandHint className="mt-5" />
-          </HeroSpotlight>
+          </DotBackground>
         </Reveal>
       </section>
     </>

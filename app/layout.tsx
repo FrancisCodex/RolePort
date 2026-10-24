@@ -37,6 +37,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html
       lang="en-PH"
       data-theme="light"
+      // In-page links glide (globals.css); this keeps route changes instant (Next 16 opt-in).
+      data-scroll-behavior="smooth"
       suppressHydrationWarning
       className={`${inter.variable} ${mono.variable} h-full antialiased`}
     >

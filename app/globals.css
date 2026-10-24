@@ -118,6 +118,8 @@
 
   html {
     -webkit-tap-highlight-color: transparent;
+    /* Section links (#features, #how) glide instead of jumping. */
+    scroll-behavior: smooth;
   }
 
   body {
@@ -147,6 +149,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
   *,
   *::before,
   *::after {
