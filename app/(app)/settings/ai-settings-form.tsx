@@ -98,17 +98,17 @@ export function AiSettingsForm({ initial, localMode, aiInBrowser = false }: { in
   return (
     <div className="flex flex-col gap-5">
       {initial.activeLabel ? (
-        <p className="flex items-center gap-2 rounded-2xl bg-success-soft px-4 py-3 text-sm font-medium text-success">
-          <Check className="size-4" /> AI is on: {initial.activeLabel}
+        <p className="flex items-center gap-2 rounded-md border border-success/20 bg-success-soft px-3 py-2 text-[13px] font-medium text-success">
+          <Check className="size-3.5" /> AI is on: {initial.activeLabel}
           {initial.activeSource === "env" && <span className="font-normal opacity-80">(from environment variables)</span>}
         </p>
       ) : (
-        <p className="rounded-2xl bg-surface-2 px-4 py-3 text-sm text-muted">
+        <p className="rounded-md bg-surface-2 px-3 py-2 text-[13px] text-muted">
           AI is off. Job search, quick match and the pipeline still work. Pick a provider to turn on CV import, fit evaluation and tailored applications.
         </p>
       )}
 
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
         {AI_PRESET_IDS.map((id) => {
           const p = AI_PRESETS[id];
           const active = id === preset;
@@ -119,11 +119,11 @@ export function AiSettingsForm({ initial, localMode, aiInBrowser = false }: { in
               onClick={() => choosePreset(id)}
               aria-pressed={active}
               className={cn(
-                "flex flex-col items-start gap-0.5 rounded-2xl border-2 px-4 py-3 text-left transition-colors",
-                active ? "border-brand bg-brand-soft" : "border-border bg-surface hover:border-border-strong",
+                "flex flex-col items-start gap-0.5 rounded-lg border px-3 py-2.5 text-left transition-colors",
+                active ? "border-brand/50 bg-brand-soft shadow-[inset_0_0_0_1px_var(--brand)]" : "border-border bg-surface hover:border-border-strong hover:bg-surface-2",
               )}
             >
-              <span className={cn("font-semibold", active && "text-brand-ink")}>{p.label}</span>
+              <span className={cn("text-[13px] font-medium", active && "text-brand-ink")}>{p.label}</span>
               <span className="text-xs text-muted">{p.description}</span>
             </button>
           );
@@ -157,7 +157,7 @@ export function AiSettingsForm({ initial, localMode, aiInBrowser = false }: { in
               placeholder={keyHint ? `Saved: ${keyHint}. Leave blank to keep it.` : "Paste your key"}
             />
             {config.keyUrl && (
-              <a href={config.keyUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-medium text-brand hover:underline">
+              <a href={config.keyUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs font-medium text-brand-ink hover:underline">
                 Get a {config.label} key <ExternalLink className="size-3" />
               </a>
             )}
@@ -178,7 +178,7 @@ export function AiSettingsForm({ initial, localMode, aiInBrowser = false }: { in
             ) : (
               <Input id="model" value={model} onChange={(e) => setModel(e.target.value)} placeholder="Model name" />
             )}
-            <Button type="button" variant="secondary" size="icon" className="size-12 shrink-0" aria-label="Load models" onClick={() => loadModels()} disabled={pending}>
+            <Button type="button" variant="secondary" size="icon" className="size-9 shrink-0" aria-label="Load models" onClick={() => loadModels()} disabled={pending}>
               {busy === "models" ? <Loader2 className="animate-spin" /> : <RefreshCw />}
             </Button>
           </div>
@@ -211,7 +211,7 @@ export function AiSettingsForm({ initial, localMode, aiInBrowser = false }: { in
         <p
           role="status"
           className={cn(
-            "rounded-2xl px-4 py-3 text-sm font-medium",
+            "rounded-md px-3 py-2 text-[13px] font-medium",
             status.tone === "success" && "bg-success-soft text-success",
             status.tone === "error" && "bg-danger-soft text-danger",
             status.tone === "info" && "bg-brand-soft text-brand-ink",

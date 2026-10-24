@@ -14,7 +14,7 @@ const options = [
     tagline: "Everything included",
     needs: (
       <>
-        <a href="https://www.docker.com/products/docker-desktop/" className="font-semibold text-fg underline-offset-4 hover:underline">
+        <a href="https://www.docker.com/products/docker-desktop/" className="font-medium text-fg underline-offset-4 hover:underline">
           Docker Desktop
         </a>{" "}
         and Git
@@ -30,7 +30,7 @@ const options = [
     tagline: "For working on the code",
     needs: (
       <>
-        <a href="https://nodejs.org" className="font-semibold text-fg underline-offset-4 hover:underline">
+        <a href="https://nodejs.org" className="font-medium text-fg underline-offset-4 hover:underline">
           Node.js
         </a>{" "}
         20.9+ (22 recommended) and Git
@@ -52,8 +52,8 @@ export function SetupGuide() {
   const option = options.find((o) => o.id === active)!;
 
   return (
-    <div className="min-w-0 rounded-3xl border border-border bg-surface p-2 shadow-[var(--shadow-soft)]">
-      <div role="tablist" aria-label="Install method" className="grid grid-cols-2 gap-1 rounded-2xl bg-surface-2 p-1">
+    <div className="min-w-0 rounded-xl border border-border bg-surface p-2 shadow-[var(--shadow-soft)]">
+      <div role="tablist" aria-label="Install method" className="grid grid-cols-2 gap-1 rounded-lg bg-surface-2 p-1">
         {options.map((o) => (
           <button
             key={o.id}
@@ -61,11 +61,11 @@ export function SetupGuide() {
             aria-selected={o.id === active}
             onClick={() => setActive(o.id)}
             className={cn(
-              "flex min-w-0 items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-sm font-semibold transition-colors",
-              o.id === active ? "bg-surface text-fg shadow-[var(--shadow-soft)]" : "text-muted hover:text-fg",
+              "flex min-w-0 items-center justify-center gap-2 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors",
+              o.id === active ? "bg-surface text-fg shadow-[0_0_0_1px_var(--border),var(--shadow-soft)]" : "text-muted hover:text-fg",
             )}
           >
-            <o.icon className="size-4 shrink-0" />
+            <o.icon className="size-3.5 shrink-0" />
             <span className="truncate">{o.label}</span>
             <span className="hidden truncate font-normal text-subtle sm:inline">· {o.tagline}</span>
           </button>
@@ -95,13 +95,13 @@ function CodeBlock({ lines }: { lines: readonly string[] }) {
   }
 
   return (
-    <div className="relative mt-3 rounded-2xl bg-[#141416] text-[13px] ring-1 ring-white/5 text-white/90">
+    <div className="relative mt-3 rounded-lg bg-[#0f0f11] text-[12.5px] ring-1 ring-white/8 text-white/90">
       <button
         onClick={copy}
         aria-label={copied ? "Copied" : "Copy commands"}
-        className="absolute top-2.5 right-2.5 grid size-8 place-items-center rounded-lg text-white/60 transition-colors hover:bg-white/10 hover:text-white"
+        className="absolute top-2 right-2 grid size-7 place-items-center rounded-md text-white/60 transition-colors hover:bg-white/10 hover:text-white"
       >
-        {copied ? <Check className="size-4" /> : <Copy className="size-4" />}
+        {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />}
       </button>
       <pre className="overflow-x-auto px-4 py-3.5 pr-12 font-mono leading-relaxed">
         {lines.map((line) => (

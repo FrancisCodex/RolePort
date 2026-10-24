@@ -53,14 +53,14 @@ export function AuthForm({ mode, googleEnabled }: { mode: Mode; googleEnabled: b
   const isSignUp = mode === "sign-up";
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-5">
       {googleEnabled && (
         <>
-          <Button type="button" variant="secondary" size="lg" onClick={onGoogle} disabled={pending}>
+          <Button type="button" variant="secondary" size="lg" className="h-9" onClick={onGoogle} disabled={pending}>
             <GoogleIcon />
             Continue with Google
           </Button>
-          <div className="flex items-center gap-3 text-xs font-medium uppercase tracking-wider text-subtle">
+          <div className="flex items-center gap-3 text-xs text-subtle">
             <span className="h-px flex-1 bg-border" />
             or
             <span className="h-px flex-1 bg-border" />
@@ -68,7 +68,7 @@ export function AuthForm({ mode, googleEnabled }: { mode: Mode; googleEnabled: b
         </>
       )}
 
-      <form action={onSubmit} className="flex flex-col gap-4">
+      <form action={onSubmit} className="flex flex-col gap-3">
         {isSignUp && (
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="name">Full name</Label>
@@ -93,22 +93,22 @@ export function AuthForm({ mode, googleEnabled }: { mode: Mode; googleEnabled: b
         </div>
 
         {error && (
-          <p role="alert" className="rounded-2xl bg-danger-soft px-4 py-3 text-sm font-medium text-danger">
+          <p role="alert" className="rounded-md border border-danger/20 bg-danger-soft px-3 py-2 text-[13px] font-medium text-danger">
             {error}
           </p>
         )}
 
-        <Button type="submit" size="lg" disabled={pending} className="mt-2">
+        <Button type="submit" size="lg" disabled={pending} className="mt-1 h-9">
           {pending && <Loader2 className="animate-spin" />}
           {isSignUp ? "Create my account" : "Sign in"}
         </Button>
       </form>
 
-      <p className="text-center text-sm text-muted">
+      <p className="text-center text-[13px] text-muted">
         {isSignUp ? "Already have an account? " : "New to HireMe? "}
         <Link
           href={isSignUp ? "/sign-in" : "/sign-up"}
-          className="font-semibold text-brand hover:underline"
+          className="font-medium text-brand-ink hover:underline"
         >
           {isSignUp ? "Sign in" : "Create an account"}
         </Link>

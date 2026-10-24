@@ -9,31 +9,34 @@ export default function AuthLayout({ children }: LayoutProps<"/">) {
   if (isLite) notFound();
   return (
     <div className="grid min-h-dvh lg:grid-cols-2">
-      <div className="flex flex-col px-4 py-6 sm:px-10">
+      <div className="flex flex-col px-4 py-5 sm:px-8">
         <Logo />
-        <main className="mx-auto flex w-full max-w-sm flex-1 flex-col justify-center py-12">{children}</main>
-        <p className="text-center text-xs text-subtle">Free and open source · Made in the Philippines 🇵🇭</p>
+        <main className="mx-auto flex w-full max-w-xs flex-1 flex-col justify-center py-12">{children}</main>
+        <p className="text-center text-xs text-subtle">Free and open source · Made in the Philippines</p>
       </div>
 
-      <aside className="relative hidden overflow-hidden bg-brand lg:flex lg:items-center lg:justify-center">
-        <div className="absolute -top-32 -right-32 size-96 rounded-full bg-white/10" />
-        <div className="absolute -bottom-40 -left-20 size-[28rem] rounded-full bg-white/5" />
-        <div className="relative w-full max-w-sm -rotate-2 rounded-3xl bg-surface p-6 text-fg shadow-[var(--shadow-lift)]">
+      {/* A quiet product preview on a dotted canvas. */}
+      <aside className="relative hidden overflow-hidden border-l border-border bg-sidebar lg:flex lg:items-center lg:justify-center">
+        <div
+          aria-hidden
+          className="absolute inset-0 [background-image:radial-gradient(var(--border-strong)_1px,transparent_1px)] [background-size:20px_20px] [mask-image:radial-gradient(ellipse_at_center,black_30%,transparent_75%)]"
+        />
+        <div className="relative w-full max-w-sm rounded-xl border border-border bg-surface p-5 text-fg shadow-[var(--shadow-lift)]">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-subtle">Top match today</p>
-              <p className="mt-1 font-display text-xl font-bold">Product Designer</p>
-              <p className="text-sm text-muted">Fintech startup · BGC, Taguig · Hybrid</p>
+              <p className="text-xs font-medium text-muted">Top match today</p>
+              <p className="mt-1 text-[15px] font-semibold">Product Designer</p>
+              <p className="text-[13px] text-muted">Fintech startup · BGC, Taguig · Hybrid</p>
             </div>
-            <MatchRing score={92} />
+            <MatchRing score={92} size={48} />
           </div>
-          <div className="mt-5 flex flex-wrap gap-2 text-xs font-semibold">
-            <span className="rounded-full bg-success-soft px-2.5 py-1 text-success">Figma ✓</span>
-            <span className="rounded-full bg-success-soft px-2.5 py-1 text-success">Design systems ✓</span>
-            <span className="rounded-full bg-warning-soft px-2.5 py-1 text-warning">Motion · learn</span>
+          <div className="mt-4 flex flex-wrap gap-1.5 text-[11px] font-medium">
+            <span className="rounded-md border border-success/20 bg-success-soft px-1.5 py-0.5 text-success">Figma</span>
+            <span className="rounded-md border border-success/20 bg-success-soft px-1.5 py-0.5 text-success">Design systems</span>
+            <span className="rounded-md border border-warning/20 bg-warning-soft px-1.5 py-0.5 text-warning">Motion · learn</span>
           </div>
-          <div className="mt-5 flex items-center gap-2 rounded-2xl bg-brand-soft px-4 py-3 text-sm font-medium text-brand-ink">
-            <Sparkles className="size-4" />
+          <div className="mt-4 flex items-center gap-2 border-t border-border pt-3 text-xs text-muted">
+            <Sparkles className="size-3.5 text-brand" />
             CV &amp; cover letter tailored in 40s
           </div>
         </div>

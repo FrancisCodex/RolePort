@@ -1,10 +1,9 @@
 // Draws the app icons in public/icons from the logo mark (components/brand/logo.tsx):
-// a green tile with the "H" and the sun dot. Run after changing the mark: node scripts/build-icons.mjs
+// an ink tile with a white "H". Run after changing the mark: node scripts/build-icons.mjs
 import { mkdirSync } from "node:fs";
 import sharp from "sharp";
 
-const BRAND = "#22c55e";
-const SUN = "#ffc83d";
+const INK = "#1b1b1d";
 
 /** `glyph` is the share of the canvas the 24×24 mark takes; `radius` rounds the tile (0 for full-bleed). */
 function svg(size, { glyph, radius }) {
@@ -12,10 +11,9 @@ function svg(size, { glyph, radius }) {
   const offset = (size - g) / 2;
   const scale = g / 24;
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-  <rect width="${size}" height="${size}" rx="${size * radius}" fill="${BRAND}"/>
-  <g transform="translate(${offset} ${offset}) scale(${scale})" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M6 5v14M18 5v14M6 12h12"/>
-    <circle cx="18" cy="5" r="1.4" fill="${SUN}" stroke="none"/>
+  <rect width="${size}" height="${size}" rx="${size * radius}" fill="${INK}"/>
+  <g transform="translate(${offset} ${offset}) scale(${scale})" fill="none" stroke="#fff" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M7 5v14M17 5v14M7 12h10"/>
   </g>
 </svg>`;
 }

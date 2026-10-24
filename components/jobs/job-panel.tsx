@@ -64,28 +64,28 @@ export function JobPanel({
         tabIndex={-1}
         className={cn(
           // Drawer (small screens)
-          "absolute inset-y-0 right-0 flex w-full flex-col bg-bg shadow-[var(--shadow-lift)] outline-none sm:max-w-xl sm:rounded-l-3xl sm:border-l sm:border-border",
+          "absolute inset-y-0 right-0 flex w-full flex-col bg-bg shadow-[var(--shadow-lift)] outline-none sm:max-w-xl sm:rounded-l-xl sm:border-l sm:border-border",
           "transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform motion-reduce:transition-none",
           drawerOpen ? "translate-x-0" : "translate-x-full",
           // Pane (wide screens)
-          "xl:relative xl:inset-auto xl:h-[calc(100dvh-3rem)] xl:max-w-none xl:translate-x-0 xl:overflow-hidden xl:rounded-3xl xl:border xl:border-border xl:bg-surface xl:shadow-[var(--shadow-soft)] xl:transition-none",
+          "xl:relative xl:inset-auto xl:h-[calc(100dvh-3rem)] xl:max-w-none xl:translate-x-0 xl:overflow-hidden xl:rounded-xl xl:border xl:border-border xl:bg-surface xl:shadow-[var(--shadow-soft)] xl:transition-none",
         )}
       >
-        <div className="flex h-14 shrink-0 items-center justify-between gap-2 border-b border-border px-3 sm:px-4">
+        <div className="flex h-11 shrink-0 items-center justify-between gap-2 border-b border-border px-2 sm:px-3">
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="grid size-10 place-items-center rounded-xl text-muted transition-colors hover:bg-surface-2 hover:text-fg xl:hidden"
+            className="grid size-8 place-items-center rounded-md text-muted transition-colors hover:bg-surface-2 hover:text-fg xl:hidden"
           >
-            <X className="size-5" />
+            <X className="size-4" />
           </button>
-          <span className="hidden text-xs font-semibold tracking-wider text-subtle uppercase xl:block">Job details</span>
+          <span className="hidden pl-1 text-xs font-medium text-muted xl:block">Job details</span>
           <a
             href={`/jobs/${jobId}`}
-            className="inline-flex h-9 items-center gap-1.5 rounded-xl px-3 text-sm font-semibold text-muted transition-colors hover:bg-surface-2 hover:text-fg"
+            className="inline-flex h-7 items-center gap-1.5 rounded-md px-2 text-xs font-medium text-muted transition-colors hover:bg-surface-2 hover:text-fg"
           >
-            <Maximize2 className="size-4" /> Open full page
+            <Maximize2 className="size-3.5" /> Open full page
           </a>
         </div>
         {/* Keyed by job so the scroll position resets and the content eases in when the selection changes. */}

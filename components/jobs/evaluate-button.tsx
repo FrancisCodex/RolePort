@@ -56,7 +56,7 @@ export function EvaluateButton({ jobId, again = false }: { jobId: string; again?
         <p className="text-xs text-subtle">Reading the posting against your profile. Local models can take up to a minute.</p>
       )}
       {error && (
-        <p role="alert" className="rounded-xl bg-danger-soft px-3 py-2 text-xs font-medium text-danger">
+        <p role="alert" className="rounded-md bg-danger-soft px-3 py-2 text-xs font-medium text-danger">
           {error.message}{" "}
           {error.needsSetup && (
             <Link href="/settings" className="font-semibold underline">

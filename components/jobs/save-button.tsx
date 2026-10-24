@@ -32,11 +32,11 @@ export function SaveButton({ jobId, saved, withLabel = false }: { jobId: string;
       aria-pressed={optimistic}
       aria-label={optimistic ? "Remove from saved" : "Save job"}
       className={cn(
-        "grid size-10 shrink-0 place-items-center rounded-xl transition-colors",
-        optimistic ? "bg-brand-soft text-brand" : "text-subtle hover:bg-surface-2 hover:text-fg",
+        "grid size-8 shrink-0 place-items-center rounded-md transition-colors",
+        optimistic ? "text-brand" : "text-subtle hover:bg-surface-2 hover:text-fg",
       )}
     >
-      <Bookmark className="size-5" fill={optimistic ? "currentColor" : "none"} />
+      <Bookmark className="size-4" fill={optimistic ? "currentColor" : "none"} />
     </button>
   );
 }

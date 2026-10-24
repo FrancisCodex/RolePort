@@ -56,13 +56,13 @@ export function SettingsView({ ai, localMode, aiInBrowser, rapidApiKeyHint, jobS
         <CardHeader>
           <CardTitle>Your data</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-3 text-sm text-muted">
-          <p className="flex gap-3">
-            <Database className="mt-0.5 size-4 shrink-0 text-brand" />
+        <CardContent className="flex flex-col gap-3 text-[13px] text-muted">
+          <p className="flex gap-2.5">
+            <Database className="mt-0.5 size-3.5 shrink-0 text-subtle" />
             {dataNote}
           </p>
-          <p className="flex gap-3">
-            <Lock className="mt-0.5 size-4 shrink-0 text-brand" />
+          <p className="flex gap-2.5">
+            <Lock className="mt-0.5 size-3.5 shrink-0 text-subtle" />
             {keyNote}
           </p>
           <BackupControls browserStorage={aiInBrowser} />

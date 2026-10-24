@@ -11,7 +11,7 @@ const UPDATED = "24 October 2026";
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="mt-10">
-      <h2 className="font-display text-2xl font-bold tracking-tight">{title}</h2>
+      <h2 className="text-lg font-semibold tracking-tight">{title}</h2>
       <div className="mt-3 flex flex-col gap-3 text-muted [&_strong]:text-fg">{children}</div>
     </section>
   );
@@ -20,9 +20,9 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 export default function PrivacyPage() {
   return (
     <article className="mx-auto max-w-3xl px-4 py-16 sm:px-6">
-      <p className="text-sm font-semibold tracking-wider text-brand uppercase">Privacy</p>
-      <h1 className="mt-2 font-display text-4xl font-bold tracking-tight text-balance">Your data stays with you</h1>
-      <p className="mt-4 text-lg text-muted text-pretty">
+      <p className="font-mono text-xs text-subtle">Privacy</p>
+      <h1 className="mt-3 text-3xl font-semibold tracking-[-0.025em] text-balance sm:text-4xl">Your data stays with you</h1>
+      <p className="mt-4 text-base text-muted text-pretty">
         HireMe has no accounts, no analytics and no ads. This page says exactly what goes where. Last updated {UPDATED}.
       </p>
 
@@ -72,13 +72,13 @@ export default function PrivacyPage() {
       <Section title="Questions">
         <p>
           HireMe is open source, so you can check all of this in the code. Ask or report anything on{" "}
-          <a href={`${REPO_URL}/issues`} className="font-medium text-brand hover:underline">
+          <a href={`${REPO_URL}/issues`} className="font-medium text-brand-ink hover:underline">
             GitHub
           </a>
           .
         </p>
         <p>
-          <Link href="/" className="font-medium text-brand hover:underline">
+          <Link href="/" className="font-medium text-brand-ink hover:underline">
             Back to HireMe
           </Link>
         </p>

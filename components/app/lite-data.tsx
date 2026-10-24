@@ -56,8 +56,8 @@ export function LiteData<T>({
 
   if (state && "error" in state) {
     return (
-      <div className="rounded-3xl border border-danger/30 bg-danger-soft p-5 text-sm">
-        <p className="font-semibold">Couldn&apos;t open your data in this browser.</p>
+      <div className="rounded-lg border border-danger/25 bg-danger-soft p-4 text-[13px]">
+        <p className="font-medium">Couldn&apos;t open your data in this browser.</p>
         <p className="mt-1 text-muted">{state.error}</p>
       </div>
     );

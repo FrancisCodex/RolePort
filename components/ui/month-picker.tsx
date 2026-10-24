@@ -117,16 +117,16 @@ export function MonthPicker({
           }
         }}
         className={cn(
-          "flex h-12 w-full min-w-0 items-center gap-2.5 rounded-2xl border-2 border-border bg-surface-2 px-4 text-left text-[15px] text-fg outline-none transition-colors hover:border-border-strong focus-visible:border-brand focus-visible:bg-surface",
-          open && "border-brand bg-surface hover:border-brand",
+          "flex h-9 w-full min-w-0 items-center gap-2 rounded-md border border-border bg-surface px-3 text-left text-sm text-fg shadow-[var(--shadow-soft)] outline-none transition-[border-color,box-shadow] hover:border-border-strong focus-visible:border-brand focus-visible:ring-3 focus-visible:ring-brand/15",
+          open && "border-brand ring-3 ring-brand/15 hover:border-brand",
           invalid && "border-danger hover:border-danger",
         )}
       >
-        <CalendarDays className={cn("size-4 shrink-0 text-subtle", open && "text-brand")} />
+        <CalendarDays className="size-3.5 shrink-0 text-subtle" />
         <span className={cn("flex-1 truncate", !display && "text-subtle")}>
           {display === "Present" ? (
             <span className="inline-flex items-center gap-1.5 font-medium">
-              <span className="size-2 rounded-full bg-brand" /> Present
+              <span className="size-1.5 rounded-full bg-success" /> Present
             </span>
           ) : (
             (display ?? placeholder)
@@ -148,7 +148,7 @@ export function MonthPicker({
                 close();
               }
             }}
-            className="z-50 flex animate-[menu-in_160ms_var(--ease-spring)] flex-col gap-3 overflow-y-auto rounded-2xl border border-border bg-surface p-3 shadow-[var(--shadow-lift)]"
+            className="z-50 flex animate-[menu-in_120ms_var(--ease-snappy)] flex-col gap-2 overflow-y-auto rounded-lg border border-border bg-surface p-2 shadow-[var(--shadow-lift)]"
           >
             <div className="flex items-center justify-between gap-2">
               <NavButton
@@ -162,7 +162,7 @@ export function MonthPicker({
                 type="button"
                 onClick={() => setMode(mode === "months" ? "years" : "months")}
                 aria-label={mode === "months" ? `${viewYear}, choose a year` : "Back to months"}
-                className="rounded-xl px-3 py-1.5 font-display text-[15px] font-semibold tabular-nums transition-colors hover:bg-surface-2"
+                className="rounded-md px-2.5 py-1 text-[13px] font-semibold tabular-nums transition-colors hover:bg-surface-2"
               >
                 {mode === "months" ? viewYear : `${yearPageStart} – ${Math.min(yearPageStart + YEARS_PER_PAGE - 1, maxYear())}`}
               </button>
@@ -175,7 +175,7 @@ export function MonthPicker({
               </NavButton>
             </div>
 
-            <div ref={gridRef} onKeyDown={onGridKeyDown} className="grid grid-cols-3 gap-1.5">
+            <div ref={gridRef} onKeyDown={onGridKeyDown} className="grid grid-cols-3 gap-1">
               {mode === "months"
                 ? MONTH_NAMES.map((name, i) => {
                     const d = { year: viewYear, month: i + 1 };
@@ -210,7 +210,7 @@ export function MonthPicker({
                   ))}
             </div>
 
-            <div className="flex items-center gap-1.5 border-t border-border pt-2.5">
+            <div className="flex items-center gap-1 border-t border-border pt-2">
               <FooterButton
                 onClick={() => pick(String(viewYear))}
                 disabled={beforeMin({ year: viewYear, month: null })}
@@ -288,10 +288,10 @@ function Cell({
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        "h-10 rounded-xl text-sm font-semibold tabular-nums outline-none transition-[background-color,color,transform] duration-150 ease-[var(--ease-spring)] focus-visible:ring-2 focus-visible:ring-brand/40 active:scale-95 disabled:pointer-events-none disabled:opacity-30",
+        "h-8 rounded-md text-[13px] font-medium tabular-nums outline-none transition-colors focus-visible:ring-2 focus-visible:ring-brand/40 disabled:pointer-events-none disabled:opacity-30",
         selected
-          ? "bg-brand text-brand-fg shadow-[0_2px_0_0_var(--brand-ledge)]"
-          : cn("text-fg hover:bg-surface-2", today && "ring-1 ring-brand/50 ring-inset"),
+          ? "bg-brand text-brand-fg"
+          : cn("text-fg hover:bg-surface-2", today && "text-brand-ink ring-1 ring-border-strong ring-inset"),
       )}
     >
       {children}
@@ -306,7 +306,7 @@ function NavButton({ label, disabled, onClick, children }: { label: string; disa
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="grid size-8 place-items-center rounded-xl text-muted transition-colors hover:bg-surface-2 hover:text-fg disabled:opacity-30 [&_svg]:size-4"
+      className="grid size-7 place-items-center rounded-md text-muted transition-colors hover:bg-surface-2 hover:text-fg disabled:opacity-30 [&_svg]:size-4"
     >
       {children}
     </button>
@@ -320,7 +320,7 @@ function FooterButton({ onClick, disabled, active, children }: { onClick: () => 
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "rounded-xl px-2.5 py-1.5 text-xs font-semibold transition-colors disabled:opacity-30",
+        "rounded-md px-2 py-1 text-xs font-medium transition-colors disabled:opacity-30",
         active ? "bg-brand-soft text-brand-ink" : "text-muted hover:bg-surface-2 hover:text-fg",
       )}
     >

@@ -64,15 +64,15 @@ export function LocalJobSpy({ enabled }: { enabled: boolean }) {
   return (
     <div className="flex flex-col gap-3 border-t border-border pt-4">
       <div className="flex flex-col gap-1">
-        <p className="font-semibold">LinkedIn, Indeed and more via JobSpy</p>
-        <p className="text-sm text-muted">
+        <p className="font-medium">LinkedIn, Indeed and more via JobSpy</p>
+        <p className="text-[13px] text-muted">
           Free and no key needed. Searches LinkedIn, Indeed, Google Jobs, Glassdoor and regional boards through the JobSpy service on your
           own computer. Results go straight from it to this browser. Powered by{" "}
           <a
             href="https://github.com/speedyapply/JobSpy"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 font-medium text-brand hover:underline"
+            className="inline-flex items-center gap-1 font-medium text-brand-ink hover:underline"
           >
             JobSpy <ExternalLink className="size-3" />
           </a>
@@ -80,7 +80,7 @@ export function LocalJobSpy({ enabled }: { enabled: boolean }) {
         </p>
       </div>
 
-      <details className="rounded-2xl border border-border p-4 text-sm text-muted">
+      <details className="rounded-lg border border-border px-3 py-2.5 text-[13px] text-muted">
         <summary className="cursor-pointer font-medium text-fg">How to run JobSpy on this computer</summary>
         <div className="mt-3 flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
@@ -118,13 +118,13 @@ export function LocalJobSpy({ enabled }: { enabled: boolean }) {
       </div>
 
       {confirming && (
-        <p className="rounded-2xl bg-warning-soft px-4 py-3 text-sm text-warning">
+        <p className="rounded-md border border-warning/20 bg-warning-soft px-3 py-2 text-[13px] text-warning">
           This reads public job pages from your own network. These sites&apos; terms don&apos;t allow automated access, and they may
           rate-limit or block your connection for a while. Use it for your own job search only.
         </p>
       )}
       {message && (
-        <p role="status" className={`rounded-2xl px-4 py-3 text-sm font-medium ${message.ok ? "bg-success-soft text-success" : "bg-danger-soft text-danger"}`}>
+        <p role="status" className={`rounded-md px-3 py-2 text-[13px] font-medium ${message.ok ? "border border-success/20 bg-success-soft text-success" : "border border-danger/20 bg-danger-soft text-danger"}`}>
           {message.text}
         </p>
       )}

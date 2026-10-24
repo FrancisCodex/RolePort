@@ -49,16 +49,16 @@ export function LocationFields({
             disabled={remote}
             placeholder={remote ? "Remote" : `City in ${name}`}
             aria-label="City"
-            className="h-12 w-full min-w-0 rounded-2xl border-2 border-border bg-surface-2 px-4 text-[15px] outline-none transition-colors placeholder:text-subtle focus:border-brand focus:bg-surface disabled:opacity-60"
+            className="h-9 w-full min-w-0 rounded-md border border-border bg-surface px-3 text-sm shadow-[var(--shadow-soft)] outline-none transition-[border-color,box-shadow] placeholder:text-subtle hover:border-border-strong focus:border-brand focus:ring-3 focus:ring-brand/15 disabled:opacity-60"
           />
-          <label className="flex shrink-0 items-center gap-1.5 text-sm font-medium text-muted">
+          <label className="flex shrink-0 items-center gap-1.5 text-[13px] text-muted">
             <input
               type="checkbox"
               name="loc"
               value="remote"
               checked={remote}
               onChange={(e) => setRemote(e.target.checked)}
-              className="size-4 accent-[var(--brand)]"
+              className="size-3.5 accent-[var(--brand)]"
             />
             Remote
           </label>

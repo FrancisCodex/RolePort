@@ -9,7 +9,7 @@ export function LitePipeline() {
     <LiteData
       load={(q) => q.loadPipeline()}
       tables={["application", "job"]}
-      fallback={<div className="h-64 animate-pulse rounded-3xl bg-surface-3" />}
+      fallback={<div className="h-64 animate-pulse rounded-xl bg-surface-3" />}
     >
       {(cards) => <PipelineBoard cards={cards} />}
     </LiteData>

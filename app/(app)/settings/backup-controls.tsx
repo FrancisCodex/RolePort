@@ -65,7 +65,7 @@ export function BackupControls({ browserStorage = false }: { browserStorage?: bo
   return (
     <div className="flex flex-col gap-3 border-t border-border pt-4">
       <div>
-        <p className="font-semibold text-fg">Backups</p>
+        <p className="font-medium text-fg">Backups</p>
         <p>One file with your profile, CV text, pipeline and evaluations. It works in HireMe Lite and in a self-hosted install. API keys aren&apos;t included.</p>
       </div>
 
@@ -93,7 +93,7 @@ export function BackupControls({ browserStorage = false }: { browserStorage?: bo
       </div>
 
       {file && (
-        <div className="flex flex-col gap-3 rounded-2xl border border-border p-4">
+        <div className="flex flex-col gap-3 rounded-lg border border-border p-4">
           <p className="font-medium text-fg">Restore {file.name}</p>
           <fieldset className="flex flex-col gap-2">
             <legend className="sr-only">How to restore</legend>
@@ -106,8 +106,8 @@ export function BackupControls({ browserStorage = false }: { browserStorage?: bo
               <label
                 key={value}
                 className={cn(
-                  "flex cursor-pointer gap-3 rounded-xl border-2 px-3 py-2",
-                  mode === value ? "border-brand bg-brand-soft" : "border-border hover:border-border-strong",
+                  "flex cursor-pointer gap-3 rounded-md border px-3 py-2",
+                  mode === value ? "border-brand/50 bg-brand-soft" : "border-border hover:border-border-strong",
                 )}
               >
                 <input type="radio" name="restore-mode" value={value} checked={mode === value} onChange={() => setMode(value)} className="mt-1 accent-[var(--brand)]" />
@@ -130,7 +130,7 @@ export function BackupControls({ browserStorage = false }: { browserStorage?: bo
       )}
 
       {message && (
-        <p role="status" className={`rounded-2xl px-4 py-3 font-medium ${message.ok ? "bg-success-soft text-success" : "bg-danger-soft text-danger"}`}>
+        <p role="status" className={`rounded-md px-3 py-2 text-[13px] font-medium ${message.ok ? "border border-success/20 bg-success-soft text-success" : "border border-danger/20 bg-danger-soft text-danger"}`}>
           {message.text}
         </p>
       )}
@@ -158,17 +158,17 @@ function BrowserStorage() {
 
   if (!status) return null;
   return (
-    <div className="flex flex-col gap-2 rounded-2xl bg-surface-2 px-4 py-3">
+    <div className="flex flex-col gap-2 rounded-md border border-border bg-surface-2 px-3 py-2.5">
       {status.usedBytes != null && (
         <p className="flex items-center gap-2">
-          <HardDrive className="size-4 shrink-0 text-brand" />
+          <HardDrive className="size-3.5 shrink-0 text-subtle" />
           Using {formatBytes(status.usedBytes)}
           {status.quotaBytes ? ` of ${formatBytes(status.quotaBytes)} available` : ""} in this browser.
         </p>
       )}
       {status.persisted ? (
         <p className="flex items-center gap-2">
-          <ShieldCheck className="size-4 shrink-0 text-success" />
+          <ShieldCheck className="size-3.5 shrink-0 text-success" />
           Protected: this browser won&apos;t clear HireMe&apos;s data to free up space.
         </p>
       ) : (

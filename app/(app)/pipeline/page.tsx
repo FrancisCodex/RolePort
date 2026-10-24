@@ -16,7 +16,7 @@ export default function PipelinePage() {
       {isLite ? (
         <LitePipeline />
       ) : (
-        <Suspense fallback={<div className="h-64 animate-pulse rounded-3xl bg-surface-3" />}>
+        <Suspense fallback={<div className="h-64 animate-pulse rounded-xl bg-surface-3" />}>
           <Board />
         </Suspense>
       )}

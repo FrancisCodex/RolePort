@@ -36,12 +36,12 @@ export function BackupReminder() {
   if (!show) return null;
 
   return (
-    <div role="status" className="mb-6 flex flex-col gap-3 rounded-2xl border border-warning/40 bg-warning-soft px-4 py-3 text-sm sm:flex-row sm:items-center">
+    <div role="status" className="mb-6 flex flex-col gap-3 rounded-lg border border-warning/25 bg-warning-soft px-3 py-2 text-[13px] sm:flex-row sm:items-center">
       <p className="flex-1 text-fg">
-        <span className="font-semibold">Time for a backup.</span> Your data lives only in this browser. Download a copy in case it&apos;s
+        <span className="font-medium">Time for a backup.</span> Your data lives only in this browser. Download a copy in case it&apos;s
         cleared or you switch devices.
       </p>
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
         <Button
           size="sm"
           disabled={pending}
