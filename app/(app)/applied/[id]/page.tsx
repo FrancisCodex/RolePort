@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { isAiConfigured } from "@/lib/ai/config";
+import { getMyApplicationKit } from "@/lib/documents/data";
 import { getMyApplication } from "@/lib/jobs/data";
 import { sourceCredit } from "@/lib/jobs/sources/credits";
 import { isLite } from "@/lib/mode";
@@ -13,7 +14,7 @@ import { LiteApplication } from "./lite-application";
 
 export const metadata: Metadata = { title: "Application" };
 
-// Where "Apply" leads: the saved posting, its progress and (next) the tailored CV and answers.
+// Where "Apply" leads: the saved posting, its progress, and the CV and cover letter to send with it.
 export default function ApplicationPage(props: PageProps<"/applied/[id]">) {
   return (
     <>
@@ -33,5 +34,6 @@ async function Application({ params }: { params: PageProps<"/applied/[id]">["par
   const [found, aiEnabled] = await Promise.all([getMyApplication(id), isAiConfigured()]);
   if (!found) notFound();
   const { application, job } = found;
-  return <ApplicationView data={toApplicationData(application, job, aiEnabled, job && sourceCredit(job.source))} />;
+  const kit = await getMyApplicationKit(id, aiEnabled);
+  return <ApplicationView data={toApplicationData(application, job, aiEnabled, job && sourceCredit(job.source), kit)} />;
 }

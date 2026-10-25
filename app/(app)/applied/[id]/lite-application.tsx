@@ -13,7 +13,7 @@ export function LiteApplication() {
     <LiteData
       key={id} // a different application is a fresh load
       load={(q) => q.loadApplication(id)}
-      tables={["application", "job", "job_match", "profile", "user_settings"]}
+      tables={["application", "job", "job_match", "profile", "user_settings", "document"]}
       fallback={<div className="h-96 animate-pulse rounded-xl bg-surface-3" />}
     >
       {(data) =>

@@ -137,7 +137,9 @@ export async function loadApplication(id: string): Promise<ApplicationData | nul
   if (!application) return null;
   const [{ profile }, ai] = await Promise.all([readProfile(db, await me(db)), aiEnabled(db)]);
   const job = application.jobId ? await readJob(db, LOCAL_USER.id, application.jobId, profile) : null;
-  return toApplicationData(application, job, ai, job && sourceCredit(job.source));
+  const user = await me(db);
+  const [cv, letter] = await Promise.all([readCvPage(db, user, id, ai), readLetterPage(db, user, id, ai)]);
+  return toApplicationData(application, job, ai, job && sourceCredit(job.source), { cv, letter });
 }
 
 export async function loadCvPage(applicationId: string): Promise<CvPageData | null> {

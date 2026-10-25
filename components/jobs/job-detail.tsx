@@ -2,6 +2,7 @@ import { Check, Clock, ExternalLink, Layers, MapPin, Sparkles, TriangleAlert, X 
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { ApplyButton } from "@/components/jobs/apply-button";
+import { ExpandableDescription } from "@/components/jobs/expandable-description";
 import { FitEvaluation } from "@/components/jobs/fit-evaluation";
 import { CompanyLogo } from "@/components/jobs/job-card";
 import { SaveButton } from "@/components/jobs/save-button";
@@ -27,6 +28,9 @@ export function JobDetailView({
   source,
   actions,
   aside,
+  lead,
+  asideEnd,
+  descriptionPreview = false,
 }: {
   job: JobListItem;
   aiEnabled: boolean;
@@ -37,6 +41,12 @@ export function JobDetailView({
   actions?: ReactNode;
   /** Page variant: shown above the quick match in the side column. */
   aside?: ReactNode;
+  /** Shown right under the title card, above the evaluation and the posting's details. */
+  lead?: ReactNode;
+  /** Page variant: shown at the bottom of the side column, under the quick match. */
+  asideEnd?: ReactNode;
+  /** Show the description in the title card as a short preview with "Show more" (the posting is a reference there, not the task). */
+  descriptionPreview?: boolean;
 }) {
   const panel = variant === "panel";
   const salary = formatSalary(job.salaryMin, job.salaryMax, job.salaryCurrency, job.salaryPeriod);
@@ -104,8 +114,11 @@ export function JobDetailView({
                 ))}
               </p>
             )}
+            {descriptionPreview && job.description && <ExpandableDescription html={job.description} />}
           </CardContent>
         </Card>
+
+        {lead && <div className={cn("flex flex-col gap-3", aside && "max-lg:-order-1")}>{lead}</div>}
 
         <FitEvaluation jobId={job.id} fit={job.fit} aiEnabled={aiEnabled} postedAt={job.postedAt} />
 
@@ -137,7 +150,7 @@ export function JobDetailView({
           </Card>
         )}
 
-        {job.description && (
+        {job.description && !descriptionPreview && (
           <Card>
             <CardHeader>
               <CardTitle>Full description</CardTitle>
@@ -163,6 +176,7 @@ export function JobDetailView({
         <aside className={cn("flex flex-col gap-3 lg:sticky lg:top-10 lg:self-start", aside && "max-lg:-order-1")}>
           {aside}
           {quickMatch}
+          {asideEnd}
         </aside>
       )}
     </div>

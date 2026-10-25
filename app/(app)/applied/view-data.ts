@@ -1,5 +1,7 @@
 import type { SourceCredit } from "@/components/jobs/job-detail";
+import type { CvPageData } from "@/lib/cv/tailor";
 import type { ApplicationDetail, ApplicationStatus, PipelineItem } from "@/lib/jobs/applications";
+import type { LetterPageData } from "@/lib/letter/letter";
 import type { JobListItem } from "@/lib/jobs/queries";
 import { timeAgo } from "@/lib/jobs/format";
 
@@ -38,7 +40,11 @@ export type ApplicationData = {
   job: JobListItem | null;
   aiEnabled: boolean;
   source: SourceCredit | null;
+  /** The documents prepared for this application, so the page can make, download and copy them in place. */
+  kit: ApplicationKit;
 };
+
+export type ApplicationKit = { cv: CvPageData | null; letter: LetterPageData | null };
 
 export function formatDay(date: Date): string {
   return date.toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" });
@@ -64,6 +70,7 @@ export function toApplicationData(
   job: JobListItem | null,
   aiEnabled: boolean,
   source: SourceCredit | null,
+  kit: ApplicationKit,
 ): ApplicationData {
   return {
     id: application.id,
@@ -78,5 +85,6 @@ export function toApplicationData(
     job,
     aiEnabled,
     source,
+    kit,
   };
 }
