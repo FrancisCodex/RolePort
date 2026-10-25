@@ -128,12 +128,14 @@ export function ProfileEditor({
       setCvFileName(result.data.fileName);
       setProfile((p) => mergeDraft(p, result.data.draft));
       setDirty(true);
-      const found = result.data.draft.skills?.length ?? 0;
+      const { draft } = result.data;
+      const found = draft.skills?.length ?? 0;
+      const contact = [draft.email && "email", draft.phone && "phone", draft.links?.length && "links"].filter(Boolean).join(", ");
       setStatus({
         tone: "info",
         text: result.data.usedAi
           ? "Your profile was filled in from your CV. Review it, then save."
-          : `${result.data.aiError ? `AI couldn't read your CV (${result.data.aiError}). ` : ""}Found ${found} skill${found === 1 ? "" : "s"} in your CV. Fill in the rest below, then save.`,
+          : `${result.data.aiError ? `AI couldn't read your CV (${result.data.aiError}). ` : ""}Found ${found} skill${found === 1 ? "" : "s"}${contact ? ` and your ${contact}` : ""} in your CV. Fill in the rest below, then save.`,
       });
     });
   }
@@ -244,6 +246,26 @@ export function ProfileEditor({
               onChange={(e) => update("headline", e.target.value || null)}
             />
           </Field>
+          <Field label="Email" htmlFor="email">
+            <Input
+              id="email"
+              type="email"
+              autoComplete="email"
+              placeholder="you@example.com"
+              value={profile.email}
+              onChange={(e) => update("email", e.target.value)}
+            />
+          </Field>
+          <Field label="Phone" htmlFor="phone">
+            <Input
+              id="phone"
+              type="tel"
+              autoComplete="tel"
+              placeholder={profile.country === "PH" ? "e.g. +63 917 123 4567" : "With country code"}
+              value={profile.phone}
+              onChange={(e) => update("phone", e.target.value)}
+            />
+          </Field>
           <Field label="Country you live in" htmlFor="country">
             <Select
               id="country"
@@ -286,6 +308,9 @@ export function ProfileEditor({
             />
           </Field>
         </div>
+        <Field label="Links" htmlFor="links" hint="LinkedIn, portfolio, GitHub. Up to 4, printed at the top of your CV.">
+          <TagInput id="links" value={profile.links} max={4} placeholder="Paste a link, then Enter" onChange={(links) => update("links", links)} />
+        </Field>
         <Field label="Summary" htmlFor="summary">
           <Textarea
             id="summary"

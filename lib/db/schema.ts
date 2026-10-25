@@ -136,6 +136,7 @@ export type Experience = {
 };
 export type Education = { school: string; degree: string; field?: string; year?: string };
 export type Language = { name: string; level: string };
+export type CvContact = { email: string; phone: string; links: string[] };
 
 export const profile = pgTable("profile", {
   userId: text("user_id")
@@ -171,6 +172,8 @@ export const profile = pgTable("profile", {
   cvFileName: text("cv_file_name"),
   /** Writing-style notes used when drafting cover letters. */
   writingStyle: text("writing_style"),
+  /** Contact lines printed at the top of generated CVs. */
+  cvContact: jsonb("cv_contact").$type<CvContact>().default({ email: "", phone: "", links: [] }).notNull(),
   onboardingStep: integer("onboarding_step").default(0).notNull(),
   onboardedAt: timestamp("onboarded_at", { withTimezone: true }),
   currentStreak: integer("current_streak").default(0).notNull(),
@@ -344,6 +347,8 @@ export const userSettings = pgTable("user_settings", {
   rapidApiKeyEnc: text("rapid_api_key_enc"),
   /** Opted in to the JobSpy boards (LinkedIn, Indeed, …) on a self-hosted install. */
   jobspyEnabled: boolean("jobspy_enabled").default(false).notNull(),
+  /** The user's own instructions for CV tailoring, or null to use the default (lib/ai/tailor-cv.ts). */
+  cvPrompt: text("cv_prompt"),
   ...timestamps,
 });
 

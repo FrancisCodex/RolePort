@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { MAX_NOTES } from "@/app/(app)/applied/view-data";
+import type { TailorResult } from "@/app/(app)/applied/[id]/cv/actions";
 import type { EvaluateResult } from "@/app/(app)/jobs/actions";
 import { aiErrorMessage, isUnreachable } from "@/lib/ai/errors";
 import { explainLocalFailure, isLocalUrl, isOllamaUrl } from "@/lib/ai/local-server";
@@ -15,9 +16,12 @@ import {
   type AiSettingsInput,
 } from "@/lib/ai/settings";
 import { AiUnavailableError, generateStructured, listModels } from "@/lib/ai/structured";
+import { MAX_CV_PROMPT } from "@/lib/ai/cv-prompt";
 import { exportBackup } from "@/lib/backup/export";
 import { importErrorMessage, readBackupForm } from "@/lib/backup/form";
 import { importBackup, type ImportSummary } from "@/lib/backup/import";
+import { discardApplicationCv, saveEditedCv, tailorApplicationCv } from "@/lib/cv/tailor";
+import { cvContentSchema, type CvContent } from "@/lib/cv/types";
 import { getBrowserDb, type BrowserDb } from "@/lib/db/browser";
 import { LOCAL_USER } from "@/lib/db/local-user";
 import {
@@ -143,6 +147,48 @@ export async function evaluateJob(jobId: string): Promise<EvaluateResult> {
     if (isUnreachable(error) && baseUrl && isLocalUrl(baseUrl)) return { ok: false, error: await explainLocalFailure(baseUrl) };
     return { ok: false, error: aiErrorMessage(error, "The evaluation failed. Please try again.") };
   }
+}
+
+/* CV tailoring -------------------------------------------------------------- */
+
+export async function tailorCv(applicationId: string): Promise<TailorResult> {
+  const db = await getBrowserDb();
+  const config = await savedAiConfig(db);
+  if (!config) return { ok: false, error: new AiUnavailableError().message, needsSetup: true };
+  try {
+    const data = await tailorApplicationCv(db, await me(db), applicationId, config);
+    void invalidate("document");
+    return { ok: true, data };
+  } catch (error) {
+    console.error("[cv] tailoring failed", error);
+    const baseUrl = config.provider === "openai_compatible" ? config.baseUrl : null;
+    if (isUnreachable(error) && baseUrl && isLocalUrl(baseUrl)) return { ok: false, error: await explainLocalFailure(baseUrl) };
+    return { ok: false, error: aiErrorMessage(error, "Tailoring failed. Please try again.") };
+  }
+}
+
+export async function saveCv(applicationId: string, content: CvContent): Promise<Result> {
+  const parsed = cvContentSchema.safeParse(content);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Some fields are too long." };
+  if (!(await saveEditedCv(await getBrowserDb(), LOCAL_USER.id, applicationId, parsed.data))) return { ok: false, error: "Application not found." };
+  // Other tabs pick the edit up; this one already shows it.
+  void invalidate("document", "profile");
+  return { ok: true, data: undefined };
+}
+
+export async function discardCv(applicationId: string): Promise<Result<CvContent>> {
+  const db = await getBrowserDb();
+  const content = await discardApplicationCv(db, await me(db), applicationId);
+  if (!content) return { ok: false, error: "Application not found." };
+  void invalidate("document");
+  return { ok: true, data: content };
+}
+
+export async function saveCvPrompt(prompt: string | null): Promise<Result> {
+  if (prompt != null && (typeof prompt !== "string" || prompt.length > MAX_CV_PROMPT)) return { ok: false, error: `Keep the prompt under ${MAX_CV_PROMPT} characters.` };
+  await writeSettings(await getBrowserDb(), LOCAL_USER.id, { cvPrompt: prompt?.trim() || null });
+  await invalidate("user_settings");
+  return { ok: true, data: undefined };
 }
 
 /* Settings ------------------------------------------------------------------ */

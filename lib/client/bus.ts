@@ -4,7 +4,7 @@
  * Other open tabs hear about it over a BroadcastChannel.
  */
 
-export type Table = "profile" | "job" | "application" | "job_match" | "user_settings";
+export type Table = "profile" | "job" | "application" | "job_match" | "user_settings" | "document";
 
 type Listener = { tables: Table[]; reload: () => Promise<void> };
 

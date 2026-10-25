@@ -1,4 +1,5 @@
 import * as applied from "@/app/(app)/applied/actions";
+import * as cv from "@/app/(app)/applied/[id]/cv/actions";
 import * as jobs from "@/app/(app)/jobs/actions";
 import * as profile from "@/app/(app)/profile/actions";
 import * as settings from "@/app/(app)/settings/actions";
@@ -45,3 +46,8 @@ export const saveJobSpyEnabled: typeof settings.saveJobSpyEnabled = isLite
   : settings.saveJobSpyEnabled;
 export const exportData: typeof settings.exportData = isLite ? async () => (await lite()).exportData() : settings.exportData;
 export const importData: typeof settings.importData = isLite ? async (...a) => (await lite()).importData(...a) : settings.importData;
+
+export const tailorCv: typeof cv.tailorCv = isLite ? async (...a) => (await lite()).tailorCv(...a) : cv.tailorCv;
+export const saveCv: typeof cv.saveCv = isLite ? async (...a) => (await lite()).saveCv(...a) : cv.saveCv;
+export const discardCv: typeof cv.discardCv = isLite ? async (...a) => (await lite()).discardCv(...a) : cv.discardCv;
+export const saveCvPrompt: typeof cv.saveCvPrompt = isLite ? async (...a) => (await lite()).saveCvPrompt(...a) : cv.saveCvPrompt;

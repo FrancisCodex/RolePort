@@ -62,6 +62,7 @@ async function SettingsContent() {
       localMode={isLocalMode}
       rapidApiKeyHint={maskSecret(decryptSecret(row?.rapidApiKeyEnc))}
       jobSpy={showJobSpy ? { enabled: Boolean(row?.jobspyEnabled), reachable } : null}
+      cvPrompt={row?.cvPrompt ?? null}
       dataNote={
         process.env.DATABASE_URL
           ? "Your profile, jobs and applications are stored in the Postgres database set in DATABASE_URL."
