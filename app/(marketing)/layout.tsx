@@ -16,7 +16,16 @@ export default function MarketingLayout({ children }: LayoutProps<"/">) {
             <a href={`${REPO_URL}/blob/main/LICENSE`} className="underline-offset-4 hover:text-fg hover:underline">
               MIT licence
             </a>{" "}
-            · Made in the Philippines for job seekers everywhere ·{" "}
+            · Made in the Philippines for job seekers everywhere · Made by{" "}
+            <a
+              href="https://github.com/FrancisCodex"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline-offset-4 hover:text-fg hover:underline"
+            >
+              Francis
+            </a>{" "}
+            ·{" "}
             <Link href="/privacy" className="underline-offset-4 hover:text-fg hover:underline">
               Privacy
             </Link>
