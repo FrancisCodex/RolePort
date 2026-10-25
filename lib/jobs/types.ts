@@ -41,7 +41,11 @@ export type NormalizedJob = {
   postedAt: string | null;
   /** The source suspects the posting is old or reposted. */
   possiblyStale: boolean;
+  /** Other boards carrying the same opening, set when duplicates are merged (lib/jobs/dedupe.ts). */
+  alsoOn?: JobLink[];
 };
+
+export type JobLink = { source: string; url: string };
 
 export type SourceStatus = {
   id: string;

@@ -63,11 +63,13 @@ export function TabBarFallback() {
   return <TabBarLinks isActive={none} />;
 }
 
+const tabItems = navItems.filter((item) => !("tab" in item) || item.tab);
+
 function TabBarLinks({ isActive }: { isActive: IsActive }) {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-bg/90 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl lg:hidden">
       <div className="mx-auto flex max-w-md items-stretch justify-around px-2">
-        {navItems.map(({ href, label, icon: Icon }) => {
+        {tabItems.map(({ href, label, icon: Icon }) => {
           const active = isActive(href);
           return (
             <Link

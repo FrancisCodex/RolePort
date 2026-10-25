@@ -24,11 +24,18 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
 from jobspy import scrape_jobs
+from jobspy.glassdoor.constant import domains as glassdoor_domains
+from jobspy.model import Country
 
 SITES = {"linkedin", "indeed", "google", "glassdoor", "zip_recruiter", "bayt", "naukri", "bdjobs", "hellowork"}
 MAX_RESULTS = 25
 # Boards whose search results have no description; JobSpy then opens each posting.
 FETCH_DESCRIPTION = {"linkedin", "bayt", "hellowork"}
+
+# Countries without their own Glassdoor site whose jobs glassdoor.com finds by location
+# (JobSpy does the same for Malaysia and Vietnam). Checked by searching each one.
+for _country in (Country.PHILIPPINES,):
+    glassdoor_domains.setdefault(_country, "www.glassdoor.com")
 
 log = logging.getLogger("jobspy-service")
 

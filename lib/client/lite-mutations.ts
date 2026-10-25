@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { MAX_NOTES } from "@/app/(app)/applied/view-data";
 import type { EvaluateResult } from "@/app/(app)/jobs/actions";
 import { aiErrorMessage, isUnreachable } from "@/lib/ai/errors";
 import { explainLocalFailure, isLocalUrl, isOllamaUrl } from "@/lib/ai/local-server";
@@ -19,7 +20,14 @@ import { importErrorMessage, readBackupForm } from "@/lib/backup/form";
 import { importBackup, type ImportSummary } from "@/lib/backup/import";
 import { getBrowserDb, type BrowserDb } from "@/lib/db/browser";
 import { LOCAL_USER } from "@/lib/db/local-user";
-import { setStatus, toggleSaved, type ApplicationStatus } from "@/lib/jobs/applications";
+import {
+  markApplied,
+  removeApplication,
+  setStatus,
+  toggleSaved,
+  writeNotes,
+  type ApplicationStatus,
+} from "@/lib/jobs/applications";
 import { vetoReason } from "@/lib/jobs/fit";
 import { evaluateStoredJob } from "@/lib/jobs/fit-evaluation";
 import { readCvFile, type CvImport } from "@/lib/profile/cv-file";
@@ -94,6 +102,30 @@ export async function toggleSavedJob(jobId: string): Promise<{ saved: boolean }>
 
 export async function setApplicationStatus(applicationId: string, status: ApplicationStatus): Promise<void> {
   if (await setStatus(await getBrowserDb(), LOCAL_USER.id, applicationId, status)) await invalidate("application");
+}
+
+export async function applyToJob(jobId: string): Promise<Result<{ applicationId: string }>> {
+  const applied = await markApplied(await getBrowserDb(), LOCAL_USER.id, jobId);
+  if (!applied) return { ok: false, error: "This job is no longer stored. Search for it again." };
+  if (applied.changed) {
+    await invalidate("application");
+    void requestPersistence();
+  }
+  return { ok: true, data: { applicationId: applied.applicationId } };
+}
+
+export async function saveApplicationNotes(applicationId: string, notes: string): Promise<Result> {
+  if (typeof notes !== "string" || notes.length > MAX_NOTES) return { ok: false, error: "Notes are too long." };
+  if (!(await writeNotes(await getBrowserDb(), LOCAL_USER.id, applicationId, notes))) return { ok: false, error: "Application not found." };
+  // Other tabs pick the notes up; this one already shows them.
+  void invalidate("application");
+  return { ok: true, data: undefined };
+}
+
+export async function deleteApplication(applicationId: string): Promise<Result> {
+  if (!(await removeApplication(await getBrowserDb(), LOCAL_USER.id, applicationId))) return { ok: false, error: "Application not found." };
+  await invalidate("application");
+  return { ok: true, data: undefined };
 }
 
 /** Reloading here is a quick local query, so every evaluation refreshes the list (unlike the server's refreshPage). */

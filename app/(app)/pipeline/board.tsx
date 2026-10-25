@@ -9,7 +9,6 @@ import { StatusSelect, type Status } from "./status-select";
 
 export type BoardCard = {
   id: string;
-  jobId: string | null;
   role: string;
   company: string;
   status: Status;
@@ -179,13 +178,9 @@ function PipelineCard({
     >
       <div className="flex gap-1.5">
         <div className="min-w-0 flex-1">
-          {card.jobId ? (
-            <Link href={`/jobs/${card.jobId}`} draggable={false} className="text-[13px] leading-snug font-medium hover:underline">
-              {card.role}
-            </Link>
-          ) : (
-            <p className="text-[13px] leading-snug font-medium">{card.role}</p>
-          )}
+          <Link href={`/applied/${card.id}`} draggable={false} className="text-[13px] leading-snug font-medium hover:underline">
+            {card.role}
+          </Link>
           <p className="truncate text-xs text-muted">{card.company}</p>
           {card.updated && <p className="mt-1 text-[11px] text-subtle">Updated {card.updated.toLowerCase()}</p>}
         </div>

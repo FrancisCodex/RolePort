@@ -6,7 +6,6 @@ import type { BoardCard } from "./board";
 export function toBoardCards(items: PipelineItem[]): BoardCard[] {
   return items.map((i) => ({
     id: i.id,
-    jobId: i.jobId,
     role: i.role,
     company: i.company,
     status: i.status,

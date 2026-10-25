@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { AnyDb } from "@/lib/db/types";
 import type { JobRow } from "./queries";
@@ -70,4 +70,73 @@ export async function setStatus(db: AnyDb, userId: string, applicationId: string
     .where(eq(schema.application.id, app.id));
   await db.insert(schema.applicationEvent).values({ applicationId: app.id, status });
   return true;
+}
+
+export type ApplicationEvent = typeof schema.applicationEvent.$inferSelect;
+export type ApplicationDetail = PipelineItem & { events: ApplicationEvent[] };
+
+/** One application with its job and its status history (oldest first), or null if it isn't the user's. */
+export async function readApplication(db: AnyDb, userId: string, applicationId: string): Promise<ApplicationDetail | null> {
+  const [row] = await db
+    .select()
+    .from(schema.application)
+    .leftJoin(schema.job, eq(schema.application.jobId, schema.job.id))
+    .where(and(eq(schema.application.id, applicationId), eq(schema.application.userId, userId)));
+  if (!row) return null;
+  const events = await db
+    .select()
+    .from(schema.applicationEvent)
+    .where(eq(schema.applicationEvent.applicationId, applicationId))
+    .orderBy(asc(schema.applicationEvent.occurredAt));
+  return { ...row.application, job: row.job, events };
+}
+
+/**
+ * The "Apply" button: put the job on the user's list as applied (or move it on from "saved")
+ * and return its application, where the user prepares and tracks it. An application that's
+ * further along is left as it is. Null if the job isn't stored.
+ */
+export async function markApplied(db: AnyDb, userId: string, jobId: string): Promise<{ applicationId: string; changed: boolean } | null> {
+  const [existing] = await db
+    .select()
+    .from(schema.application)
+    .where(and(eq(schema.application.userId, userId), eq(schema.application.jobId, jobId)));
+  if (existing) {
+    if (existing.status !== "saved") return { applicationId: existing.id, changed: false };
+    await setStatus(db, userId, existing.id, "applied");
+    return { applicationId: existing.id, changed: true };
+  }
+
+  const [job] = await db.select().from(schema.job).where(eq(schema.job.id, jobId));
+  if (!job) return null;
+
+  const [app] = await db
+    .insert(schema.application)
+    .values({ userId, jobId, company: job.company, role: job.title, status: "applied", channel: job.source, appliedAt: new Date() })
+    // A second click that raced the first: use the application it created.
+    .onConflictDoNothing()
+    .returning();
+  if (!app) return markApplied(db, userId, jobId);
+  await db.insert(schema.applicationEvent).values({ applicationId: app.id, status: "applied" });
+  return { applicationId: app.id, changed: true };
+}
+
+/** Replace an application's notes (empty clears them). Returns whether anything changed. */
+export async function writeNotes(db: AnyDb, userId: string, applicationId: string, notes: string): Promise<boolean> {
+  const value = notes.trim() || null;
+  const updated = await db
+    .update(schema.application)
+    .set({ notes: value })
+    .where(and(eq(schema.application.id, applicationId), eq(schema.application.userId, userId)))
+    .returning({ id: schema.application.id });
+  return updated.length > 0;
+}
+
+/** Stop tracking an application in any status, with its history and documents. Returns whether it existed. */
+export async function removeApplication(db: AnyDb, userId: string, applicationId: string): Promise<boolean> {
+  const removed = await db
+    .delete(schema.application)
+    .where(and(eq(schema.application.id, applicationId), eq(schema.application.userId, userId)))
+    .returning({ id: schema.application.id });
+  return removed.length > 0;
 }

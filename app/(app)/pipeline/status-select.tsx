@@ -1,5 +1,6 @@
 "use client";
 
+import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
 
 export const STATUS_LABEL = {
@@ -28,5 +29,26 @@ export function StatusSelect({ status, onChange }: { status: Status; onChange: (
       options={STATUS_OPTIONS}
       onValueChange={(next) => onChange(next as Status)}
     />
+  );
+}
+
+export const STATUS_TONE: Record<Status, "neutral" | "brand" | "success" | "warning" | "danger"> = {
+  saved: "neutral",
+  applied: "brand",
+  screening: "brand",
+  interview: "warning",
+  offer: "success",
+  hired: "success",
+  rejected: "danger",
+  withdrawn: "neutral",
+  offer_declined: "neutral",
+  ghosted: "neutral",
+};
+
+export function StatusBadge({ status, className }: { status: Status; className?: string }) {
+  return (
+    <Badge tone={STATUS_TONE[status]} className={className}>
+      {STATUS_LABEL[status]}
+    </Badge>
   );
 }

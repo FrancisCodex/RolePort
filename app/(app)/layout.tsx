@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { SidebarNav, SidebarNavFallback, TabBar, TabBarFallback } from "@/components/app/app-nav";
 import { BackupReminder } from "@/components/app/backup-reminder";
+import { SidebarCollapseButton, SidebarExpandButton } from "@/components/app/sidebar-toggle";
 import { OpenBrowserDb } from "@/components/app/open-browser-db";
 import { LiteUserChip, UserChip, UserChipSkeleton } from "@/components/app/user-chip";
 import { SettingsLink } from "@/components/app/settings-link";
@@ -12,10 +13,14 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
   return (
     <div className="flex min-h-dvh">
       {isLite && <OpenBrowserDb />}
-      <aside className="sticky top-0 hidden h-dvh w-56 shrink-0 flex-col border-r border-border bg-sidebar px-2.5 pt-3 pb-2.5 lg:flex">
+      <SidebarExpandButton />
+      <aside className="sticky top-0 hidden h-dvh w-56 shrink-0 flex-col border-r border-border bg-sidebar px-2.5 pt-3 pb-2.5 lg:flex [[data-sidebar=hidden]_&]:lg:hidden!">
         <div className="flex h-8 items-center justify-between pr-0.5 pl-2">
           <Logo href="/home" />
-          <ThemeToggle />
+          <div className="flex items-center">
+            <ThemeToggle />
+            <SidebarCollapseButton />
+          </div>
         </div>
         <div className="mt-5 flex-1">
           <Suspense fallback={<SidebarNavFallback />}>

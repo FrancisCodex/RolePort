@@ -1,4 +1,4 @@
-import { Briefcase, Flame, MapPin } from "lucide-react";
+import { Briefcase, Flame, Layers, MapPin } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { MatchRing } from "@/components/ui/match-ring";
@@ -49,6 +49,11 @@ export function JobCard({ job }: { job: JobListItem }) {
             {salary && <Badge tone="success">{salary}</Badge>}
             {posted && <span>{posted}</span>}
             {job.extras.possiblyStale && <Badge tone="warning">May be old</Badge>}
+            {job.extras.alsoOn.length > 0 && (
+              <Badge title={`Also on ${job.extras.alsoOn.length} other board${job.extras.alsoOn.length === 1 ? "" : "s"}`}>
+                <Layers /> +{job.extras.alsoOn.length}
+              </Badge>
+            )}
             {veto && (
               <Badge tone="danger" title={veto}>
                 Excluded

@@ -126,7 +126,7 @@ Keys are encrypted before they're saved and never sent back to the browser.
 | --- | --- |
 | LinkedIn | All |
 | Indeed | 60+ countries, including the Philippines |
-| Glassdoor | 22 countries, including Singapore, Australia, the UK and the US |
+| Glassdoor | 23 countries, including the Philippines, Singapore, Australia, the UK and the US |
 | Bayt | UAE, Saudi Arabia, Qatar, Kuwait, Bahrain, Oman, Egypt, Morocco |
 | Naukri | India |
 | BDJobs | Bangladesh |

@@ -1,3 +1,4 @@
+import * as applied from "@/app/(app)/applied/actions";
 import * as jobs from "@/app/(app)/jobs/actions";
 import * as profile from "@/app/(app)/profile/actions";
 import * as settings from "@/app/(app)/settings/actions";
@@ -23,6 +24,14 @@ export const setApplicationStatus: typeof jobs.setApplicationStatus = isLite
   ? async (...a) => (await lite()).setApplicationStatus(...a)
   : jobs.setApplicationStatus;
 export const evaluateJob: typeof jobs.evaluateJob = isLite ? async (jobId) => (await lite()).evaluateJob(jobId) : jobs.evaluateJob;
+
+export const applyToJob: typeof applied.applyToJob = isLite ? async (...a) => (await lite()).applyToJob(...a) : applied.applyToJob;
+export const saveApplicationNotes: typeof applied.saveApplicationNotes = isLite
+  ? async (...a) => (await lite()).saveApplicationNotes(...a)
+  : applied.saveApplicationNotes;
+export const deleteApplication: typeof applied.deleteApplication = isLite
+  ? async (...a) => (await lite()).deleteApplication(...a)
+  : applied.deleteApplication;
 
 export const saveAiSettings: typeof settings.saveAiSettings = isLite ? async (...a) => (await lite()).saveAiSettings(...a) : settings.saveAiSettings;
 export const turnOffAi: typeof settings.turnOffAi = isLite ? async () => (await lite()).turnOffAi() : settings.turnOffAi;
