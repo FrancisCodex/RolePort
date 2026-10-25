@@ -1,4 +1,4 @@
-import { ArrowRight, BarChart3, Bot, FileText, Globe, Lock, MessagesSquare, Search, UserRound, KanbanSquare } from "lucide-react";
+import { ArrowRight, BarChart3, Bot, FileText, Globe, Lock, Mail, MessageSquareText, MessagesSquare, ScrollText, Search, Send, UserRound } from "lucide-react";
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 import { CommandHint } from "@/components/marketing/command-menu";
@@ -25,17 +25,36 @@ const steps = [
     body: "Search jobs in your country, abroad or remote. Every result gets a match score, and your AI can explain the fit in detail.",
   },
   {
-    icon: KanbanSquare,
-    title: "Track every application",
-    body: "Save the jobs worth your time and move them from Saved to Applied, Interview and Offer as things happen.",
+    icon: Send,
+    title: "Apply with everything ready",
+    body: "Press Apply and get a page for that job: tailor your CV, write the cover letter, then track it from Applied to Offer.",
   },
 ];
 
 /** The features the interactive tabs don't already show. */
 const moreFeatures = [
-  { icon: Globe, title: "Search anywhere", body: "Jobs from freehire, Jobicy, JSearch and JobSpy, filtered by the country you choose." },
+  {
+    icon: Globe,
+    title: "Search anywhere, once",
+    body: "Jobs from freehire, Jobicy, JSearch and JobSpy (LinkedIn, Indeed, Glassdoor and more), with the same opening shown once even when it's on several boards.",
+  },
   { icon: Bot, title: "Bring your own AI", body: "Claude, OpenAI, OpenRouter, Groq, or a free local model through Ollama." },
-  { icon: FileText, title: "Tailored CV & cover letter", body: "Coming next: ATS-friendly documents written from your real experience.", soon: true },
+  {
+    icon: FileText,
+    title: "ATS-friendly tailored CV",
+    body: "Rewritten for each job from your real experience, checked for anything it can't back up, and downloaded as a PDF that applicant tracking systems can read.",
+  },
+  {
+    icon: Mail,
+    title: "Cover letters in a click",
+    body: "Written from your profile and the posting, checked for clichés and claims you didn't make. Copy it into the form or download it.",
+  },
+  {
+    icon: ScrollText,
+    title: "Prompts you can read",
+    body: "See exactly what's sent to the AI, change how your CV and letters are written, or go back to the default.",
+  },
+  { icon: MessageSquareText, title: "Application answers", body: "Coming next: answers to the questions on application forms, grounded in your experience.", soon: true },
   { icon: MessagesSquare, title: "Interview coach", body: "Coming next: prep packs and mock interviews built from the job you applied to.", soon: true },
   { icon: BarChart3, title: "Skill gap insights", body: "Planned: the skills employers keep asking for, and a plan to learn them.", soon: true },
   {
@@ -99,7 +118,8 @@ export default function LandingPage() {
             <p
               className="mt-5 max-w-xl animate-[rise_0.8s_var(--ease-snappy)_both] text-base text-muted text-pretty [animation-delay:400ms] sm:text-[17px] sm:leading-relaxed"
             >
-              HireMe finds jobs in your country or abroad, scores how well each one fits you, and tracks every application.{" "}
+              HireMe finds jobs in your country or abroad, scores how well each one fits you, tailors your CV and cover letter for each one, and
+              tracks every application.{" "}
               {isLite ? "Nothing to install: your data stays in your browser." : "Your CV and data never leave your computer."}
             </p>
           </div>

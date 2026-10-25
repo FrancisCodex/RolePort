@@ -1,8 +1,9 @@
-import { and, desc, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { countryName } from "@/lib/geo/countries";
 import * as schema from "@/lib/db/schema";
 import type { CvContact } from "@/lib/db/schema";
 import type { AnyDb } from "@/lib/db/types";
+import { deleteAppDocument, readAppDocument, writeAppDocument } from "@/lib/documents/queries";
 import type { ProfileInput } from "@/lib/profile/schema";
 import { defaultPageSize, type CvContent, type CvTailoring, type SavedCv } from "./types";
 
@@ -52,31 +53,13 @@ type StoredCv = { content: CvContent; tailoring: CvTailoring | null };
 
 /** The CV saved for this application, or null if there isn't one yet. */
 export async function readCv(db: AnyDb, userId: string, applicationId: string): Promise<SavedCv | null> {
-  const [row] = await db
-    .select()
-    .from(schema.document)
-    .where(and(eq(schema.document.userId, userId), eq(schema.document.applicationId, applicationId), eq(schema.document.kind, "cv")))
-    .orderBy(desc(schema.document.updatedAt))
-    .limit(1);
-  if (!row?.content) return null;
-  const stored = row.content as StoredCv;
-  return { content: stored.content, tailoring: stored.tailoring ?? null, updatedAt: row.updatedAt, version: row.version };
+  const doc = await readAppDocument<StoredCv>(db, userId, applicationId, "cv");
+  return doc && { content: doc.data.content, tailoring: doc.data.tailoring ?? null, updatedAt: doc.updatedAt, version: doc.version };
 }
 
 /** Save the CV for an application, replacing the previous one (its version goes up). */
 export async function writeCv(db: AnyDb, userId: string, applicationId: string, title: string, cv: StoredCv): Promise<void> {
-  const [existing] = await db
-    .select({ id: schema.document.id, version: schema.document.version })
-    .from(schema.document)
-    .where(and(eq(schema.document.userId, userId), eq(schema.document.applicationId, applicationId), eq(schema.document.kind, "cv")));
-  if (existing) {
-    await db
-      .update(schema.document)
-      .set({ title, content: cv, version: existing.version + 1 })
-      .where(eq(schema.document.id, existing.id));
-  } else {
-    await db.insert(schema.document).values({ userId, applicationId, kind: "cv", title, content: cv });
-  }
+  await writeAppDocument(db, userId, applicationId, "cv", title, cv);
 }
 
 export async function readCvPrompt(db: AnyDb, userId: string): Promise<string | null> {
@@ -86,7 +69,5 @@ export async function readCvPrompt(db: AnyDb, userId: string): Promise<string | 
 
 /** Throw away an application's CV, so the page starts again from the profile. */
 export async function deleteCv(db: AnyDb, userId: string, applicationId: string): Promise<void> {
-  await db
-    .delete(schema.document)
-    .where(and(eq(schema.document.userId, userId), eq(schema.document.applicationId, applicationId), eq(schema.document.kind, "cv")));
+  await deleteAppDocument(db, userId, applicationId, "cv");
 }

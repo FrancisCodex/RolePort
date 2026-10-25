@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/react";
-import { ArrowRight, Bot, Check, Cloud, Cpu, FileText, KanbanSquare, Laptop, Lock, ShieldCheck, Target, X } from "lucide-react";
+import { ArrowRight, Bot, Check, Cloud, Copy, Cpu, Download, FileText, KanbanSquare, Laptop, Loader2, Lock, Mail, ShieldCheck, Sparkles, Target, X } from "lucide-react";
 import { useState, type DragEvent, type ReactNode } from "react";
 import { MatchRing } from "@/components/ui/match-ring";
 import { cn } from "@/lib/utils";
@@ -13,6 +13,7 @@ type Tab = { id: string; icon: typeof Target; title: string; body: string };
 
 const TABS: Tab[] = [
   { id: "match", icon: Target, title: "Honest match scores", body: "Toggle the skills on your profile and watch the score, strengths and gaps change." },
+  { id: "kit", icon: FileText, title: "Tailor & apply in one place", body: "Tailor your CV and write the cover letter for a job in a click, then download or copy them." },
   { id: "pipeline", icon: KanbanSquare, title: "A pipeline you can drag", body: "Move applications from Saved to Offer. Your response rate keeps itself up to date." },
   { id: "privacy", icon: Lock, title: "Your AI, your data", body: "Pick a provider and see exactly where your CV goes. With Ollama, nowhere at all." },
 ];
@@ -75,6 +76,7 @@ export function FeatureTabs() {
             className="h-full"
           >
             {active === "match" && <MatchDemo />}
+            {active === "kit" && <KitDemo />}
             {active === "pipeline" && <PipelineDemo />}
             {active === "privacy" && <PrivacyDemo />}
           </motion.div>
@@ -456,5 +458,181 @@ function Connector() {
         <line x1="0" y1="1" x2="64" y2="1" stroke="var(--brand)" strokeWidth="2" strokeDasharray="4 4" className="animate-[dash_0.6s_linear_infinite] motion-reduce:animate-none" />
       </svg>
     </>
+  );
+}
+
+/* Tailor & apply ------------------------------------------------------------- */
+
+const CV_BEFORE = {
+  headline: "Frontend Developer",
+  bullets: ["Built the customer dashboard used by 40,000 merchants", "Wrote unit tests and reviewed pull requests"],
+};
+const CV_AFTER = {
+  headline: "React Developer (Next.js)",
+  bullets: [
+    "Built the customer dashboard in React and TypeScript, used by 40,000 merchants",
+    "Wrote Jest unit tests and reviewed pull requests for a team of 5",
+  ],
+};
+const LETTER = [
+  "I'm applying for the React Developer role at Kalye Labs. For the past four years I've built customer-facing web apps in React and TypeScript, most recently a dashboard used by 40,000 merchants.",
+  "Your posting asks for Next.js and a habit of testing. I write Jest tests for everything I ship, and I'd welcome the chance to talk about your storefront.",
+];
+
+type Step = "idle" | "working" | "done";
+
+function KitDemo() {
+  const [cv, setCv] = useState<Step>("idle");
+  const [letter, setLetter] = useState<Step>("idle");
+  const [copied, setCopied] = useState(false);
+
+  // Pretend generation: in HireMe this is your own AI provider, given your profile and the posting.
+  const run = (set: (s: Step) => void) =>
+    new Promise<void>((resolve) => {
+      set("working");
+      setTimeout(() => {
+        set("done");
+        resolve();
+      }, 1100);
+    });
+
+  async function prepareAll() {
+    if (cv !== "done") await run(setCv);
+    if (letter !== "done") await run(setLetter);
+  }
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(`Dear Hiring Manager,\n\n${LETTER.join("\n\n")}\n\nSincerely,\nJuan dela Cruz`);
+      setCopied(true);
+    } catch {}
+  }
+
+  const busy = cv === "working" || letter === "working";
+  const shown = cv === "done" ? CV_AFTER : CV_BEFORE;
+
+  return (
+    <div className="flex h-full flex-col">
+      <DemoHeader title="React Developer · Kalye Labs" hint="Prepare your application" />
+      <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
+        <p className="text-[13px] font-medium">Your application kit</p>
+        <DemoButton onClick={() => void prepareAll()} disabled={busy || (cv === "done" && letter === "done")} primary>
+          <Sparkles className="size-3.5" /> Prepare all with AI
+        </DemoButton>
+      </div>
+
+      <div className="grid flex-1 sm:grid-cols-2">
+        {/* CV */}
+        <div className="flex flex-col gap-2.5 border-b border-border p-4 sm:border-r sm:border-b-0">
+          <KitTitle icon={FileText} title="Tailored CV" done={cv === "done"} />
+          <div className="rounded-lg border border-border bg-surface-2/60 p-3">
+            <AnimatePresence mode="wait" initial={false}>
+              <motion.div
+                key={cv === "done" ? "after" : "before"}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              >
+                <p className="text-xs font-semibold">{shown.headline}</p>
+                <ul className="mt-1.5 flex flex-col gap-1">
+                  {shown.bullets.map((b) => (
+                    <li key={b} className="flex gap-1.5 text-[11px] leading-snug text-muted">
+                      <span className="mt-[5px] size-1 shrink-0 rounded-full bg-subtle" /> {b}
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+          {cv === "done" ? (
+            <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} className="flex flex-wrap gap-1">
+              {["React", "Next.js", "TypeScript", "Jest"].map((k) => (
+                <span key={k} className="inline-flex items-center gap-0.5 rounded-md bg-success-soft px-1.5 py-px text-[10px] font-medium text-success">
+                  <Check className="size-2.5" strokeWidth={3} /> {k}
+                </span>
+              ))}
+              <span className="rounded-md border border-border px-1.5 py-px text-[10px] font-medium text-subtle">Not in your profile: GraphQL</span>
+            </motion.div>
+          ) : (
+            <p className="text-[11px] text-subtle">From your profile. Tailoring uses only facts you&apos;ve given.</p>
+          )}
+          <div className="mt-auto flex flex-wrap gap-1.5">
+            <DemoButton onClick={() => void run(setCv)} disabled={busy || cv === "done"} primary={cv !== "done"}>
+              {cv === "working" ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5" />}
+              {cv === "working" ? "Tailoring…" : cv === "done" ? "Tailored" : "Tailor with AI"}
+            </DemoButton>
+            <DemoButton disabled={cv !== "done"} primary={cv === "done"}>
+              <Download className="size-3.5" /> ATS-friendly PDF
+            </DemoButton>
+          </div>
+        </div>
+
+        {/* Letter */}
+        <div className="flex flex-col gap-2.5 p-4">
+          <KitTitle icon={Mail} title="Cover letter" done={letter === "done"} />
+          <div className="min-h-24 rounded-lg border border-border bg-surface-2/60 p-3 text-[11px] leading-relaxed text-muted">
+            {letter === "done" ? (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-1.5">
+                <p>Dear Hiring Manager,</p>
+                {LETTER.map((p) => (
+                  <p key={p}>{p}</p>
+                ))}
+              </motion.div>
+            ) : letter === "working" ? (
+              <span className="flex items-center gap-1.5">
+                <Loader2 className="size-3.5 animate-spin" /> Writing from your profile and the posting…
+              </span>
+            ) : (
+              <span className="text-subtle">Not written yet.</span>
+            )}
+          </div>
+          <div className="mt-auto flex flex-wrap gap-1.5">
+            <DemoButton onClick={() => void run(setLetter)} disabled={busy || letter === "done"} primary={letter !== "done"}>
+              <Sparkles className="size-3.5" /> {letter === "done" ? "Written" : "Write with AI"}
+            </DemoButton>
+            <DemoButton onClick={() => void copy()} disabled={letter !== "done"} primary={letter === "done"}>
+              {copied ? <Check className="size-3.5" /> : <Copy className="size-3.5" />} {copied ? "Copied" : "Copy text"}
+            </DemoButton>
+          </div>
+        </div>
+      </div>
+
+      <p className="flex items-center gap-1.5 border-t border-border px-4 py-2.5 text-[11px] text-muted">
+        <ShieldCheck className="size-3 shrink-0 text-brand" /> Every claim is checked against your profile, and the prompts are yours to read and edit.
+      </p>
+    </div>
+  );
+}
+
+function KitTitle({ icon: Icon, title, done }: { icon: typeof Target; title: string; done: boolean }) {
+  return (
+    <p className="flex items-center gap-2 text-xs font-medium">
+      <span
+        className={cn(
+          "grid size-6 place-items-center rounded-md border",
+          done ? "border-success/30 bg-success-soft text-success" : "border-border text-muted",
+        )}
+      >
+        {done ? <Check className="size-3.5" strokeWidth={2.5} /> : <Icon className="size-3.5" strokeWidth={1.75} />}
+      </span>
+      {title}
+    </p>
+  );
+}
+
+function DemoButton({ children, onClick, disabled, primary }: { children: ReactNode; onClick?: () => void; disabled?: boolean; primary?: boolean }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "inline-flex h-7 items-center gap-1 rounded-md px-2.5 text-xs font-medium transition-colors disabled:cursor-default disabled:opacity-50",
+        primary ? "bg-brand text-brand-fg hover:bg-brand-hover" : "border border-border text-muted hover:border-border-strong hover:text-fg",
+      )}
+    >
+      {children}
+    </button>
   );
 }

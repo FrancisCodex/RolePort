@@ -2,9 +2,9 @@ import { Database, Lock } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AiSettingsForm, type AiSettingsView } from "./ai-settings-form";
 import { BackupControls } from "./backup-controls";
-import { CvPromptForm } from "./cv-prompt-form";
 import { JobSourceForm, JobSpyToggle } from "./job-source-form";
 import { LocalJobSpy } from "./local-jobspy";
+import { CvPromptForm, LetterPromptForm } from "./prompt-form";
 
 export type SettingsData = {
   ai: AiSettingsView;
@@ -19,13 +19,15 @@ export type SettingsData = {
   localJobSpy?: { enabled: boolean };
   /** The user's own CV tailoring instructions, or null for the default. */
   cvPrompt: string | null;
+  /** The user's own cover letter instructions, or null for the default. */
+  coverLetterPrompt: string | null;
   /** Where the user's data and keys are kept, for the "Your data" card. */
   dataNote: string;
   keyNote: string;
 };
 
 /** The Settings cards, shared by the server page and the lite edition. */
-export function SettingsView({ ai, localMode, aiInBrowser, rapidApiKeyHint, jobSpy, localJobSpy, cvPrompt, dataNote, keyNote }: SettingsData) {
+export function SettingsView({ ai, localMode, aiInBrowser, rapidApiKeyHint, jobSpy, localJobSpy, cvPrompt, coverLetterPrompt, dataNote, keyNote }: SettingsData) {
   return (
     <div className="flex flex-col gap-4">
       <Card>
@@ -50,6 +52,19 @@ export function SettingsView({ ai, localMode, aiInBrowser, rapidApiKeyHint, jobS
         </CardHeader>
         <CardContent>
           <CvPromptForm saved={cvPrompt} />
+        </CardContent>
+      </Card>
+
+      <Card id="letter-prompt">
+        <CardHeader>
+          <CardTitle>Cover letter prompt</CardTitle>
+          <CardDescription>
+            Exactly what HireMe asks the AI when it writes a cover letter. Change the tone, length or structure to suit you, or go back to
+            the default at any time.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <LetterPromptForm saved={coverLetterPrompt} />
         </CardContent>
       </Card>
 

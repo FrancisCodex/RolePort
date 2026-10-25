@@ -11,6 +11,7 @@ import { toOnboardingData } from "@/app/(onboarding)/welcome/onboarding-data";
 import type { OnboardingData } from "@/app/(onboarding)/welcome/onboarding-flow";
 import { aiConfigFromRow } from "@/lib/ai/settings";
 import { readCvPage, type CvPageData } from "@/lib/cv/tailor";
+import { readLetterPage, type LetterPageData } from "@/lib/letter/letter";
 import { getBrowserDb, type BrowserDb } from "@/lib/db/browser";
 import { LOCAL_USER } from "@/lib/db/local-user";
 import * as schema from "@/lib/db/schema";
@@ -90,7 +91,13 @@ export async function loadJob(
   return job && { job, aiEnabled: ai, source: sourceCredit(job.source) };
 }
 
-export async function loadSettings(): Promise<{ ai: AiSettingsView; rapidApiKeyHint: string | null; jobspyEnabled: boolean; cvPrompt: string | null }> {
+export async function loadSettings(): Promise<{
+  ai: AiSettingsView;
+  rapidApiKeyHint: string | null;
+  jobspyEnabled: boolean;
+  cvPrompt: string | null;
+  coverLetterPrompt: string | null;
+}> {
   const db = await getBrowserDb();
   const row = await readSettings(db, LOCAL_USER.id);
   return {
@@ -98,6 +105,7 @@ export async function loadSettings(): Promise<{ ai: AiSettingsView; rapidApiKeyH
     rapidApiKeyHint: maskSecret(readKey(row?.rapidApiKeyEnc)),
     jobspyEnabled: Boolean(row?.jobspyEnabled),
     cvPrompt: row?.cvPrompt ?? null,
+    coverLetterPrompt: row?.coverLetterPrompt ?? null,
   };
 }
 
@@ -129,10 +137,17 @@ export async function loadApplication(id: string): Promise<ApplicationData | nul
   if (!application) return null;
   const [{ profile }, ai] = await Promise.all([readProfile(db, await me(db)), aiEnabled(db)]);
   const job = application.jobId ? await readJob(db, LOCAL_USER.id, application.jobId, profile) : null;
-  return toApplicationData(application, job, ai, job && sourceCredit(job.source));
+  const user = await me(db);
+  const [cv, letter] = await Promise.all([readCvPage(db, user, id, ai), readLetterPage(db, user, id, ai)]);
+  return toApplicationData(application, job, ai, job && sourceCredit(job.source), { cv, letter });
 }
 
 export async function loadCvPage(applicationId: string): Promise<CvPageData | null> {
   const db = await getBrowserDb();
   return readCvPage(db, await me(db), applicationId, await aiEnabled(db));
+}
+
+export async function loadLetterPage(applicationId: string): Promise<LetterPageData | null> {
+  const db = await getBrowserDb();
+  return readLetterPage(db, await me(db), applicationId, await aiEnabled(db));
 }

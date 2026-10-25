@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from "motion/react";
 import {
   ArrowRight,
   BookOpen,
+  ClipboardCheck,
   Compass,
   CornerDownLeft,
   Download,
@@ -28,6 +29,7 @@ const COMMANDS: Command[] = [
   { id: "open", group: "Jump into HireMe", label: "Open HireMe", icon: ArrowRight, hint: "Dashboard", run: (go) => go("/home") },
   { id: "search", group: "Jump into HireMe", label: "Search jobs", icon: Search, hint: "At home or abroad", run: (go) => go("/jobs") },
   { id: "cv", group: "Jump into HireMe", label: "Import your CV", icon: FileUp, hint: "Profile", run: (go) => go("/profile") },
+  { id: "applied", group: "Jump into HireMe", label: "Prepare an application", icon: ClipboardCheck, hint: "CV and cover letter", run: (go) => go("/applied") },
   { id: "pipeline", group: "Jump into HireMe", label: "Open your pipeline", icon: KanbanSquare, run: (go) => go("/pipeline") },
   { id: "ai", group: "Jump into HireMe", label: "Set up your AI provider", icon: Sparkles, hint: "Settings", run: (go) => go("/settings") },
   { id: "guide", group: "Jump into HireMe", label: "Run the setup guide", icon: Compass, run: (go) => go("/welcome") },

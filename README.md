@@ -1,6 +1,6 @@
 # HireMe
 
-A free, open-source job search app you run yourself. Find jobs in the Philippines or abroad, see how well each one fits you, and track every application, with your CV and data staying on your own machine.
+A free, open-source job search app you run yourself. Find jobs in the Philippines or abroad, see how well each one fits you, tailor your CV and cover letter for each one, and track every application, with your CV and data staying on your own machine.
 
 Bring your own AI: Claude, OpenAI, OpenRouter, Groq, or a free local model through [Ollama](https://ollama.com).
 Don't want to install anything? [HireMe Lite](#hireme-lite-in-your-browser) runs the same app in your browser.
@@ -97,19 +97,22 @@ Run Lite yourself with `npm run dev:lite` (port 3100), or build it with `npm run
 
 | Feature | Needs |
 | --- | --- |
-| Job search in your country or abroad: jobs from [freehire](https://freehire.me), remote roles from [Jobicy](https://jobicy.com). Set where you live and which countries you'd move to in your profile | Nothing |
+| Job search in your country or abroad: jobs from [freehire](https://freehire.me), remote roles from [Jobicy](https://jobicy.com). Set where you live and which countries you'd move to in your profile. The same opening posted on several boards shows once, with links to the others, and results come 20 to a page | Nothing |
 | Quick match score from your skills on every job | Nothing |
+| Applied jobs: **Apply** opens a page for that job with the saved posting, its status history and your notes, and your application kit: the tailored CV to download and the cover letter to copy, each made in one click (or both with **Prepare all with AI**) | Nothing (AI for the one-click drafts) |
 | Pipeline: save jobs, track Saved → Applied → Interview → Offer | Nothing |
 | ATS-friendly CV as a PDF for any saved or applied job: built from your profile, editable, and checked by reading its text back out | Nothing |
 | Dashboard: applications sent, response rate, interviews and offers, how far applications get, weekly pace, follow-ups due | Nothing |
 | Setup guide (`/welcome`): name, roles and CV in a few steps, then pointers to AI, JobSpy and more. New users start there in HireMe Lite; set `NEXT_PUBLIC_HIREME_ONBOARDING=on` to do the same on a self-hosted install | Nothing |
-| CV import with automatic skill detection | Nothing |
+| CV import with automatic skill detection, plus your email, phone and profile links | Nothing |
 | AI fills in your whole profile from your CV | An AI provider |
 | AI fit evaluation: eligibility, language and location gates, four scored dimensions, strengths, gaps and a recommendation. Evaluate one job or the top 10 results | An AI provider |
 | JobStreet, Indeed, LinkedIn and Kalibrr listings via [JSearch](https://rapidapi.com/letscrunch/api/jsearch) | A RapidAPI key (free tier) |
 | LinkedIn, Indeed, Glassdoor, Bayt, Naukri and more via [JobSpy](https://github.com/speedyapply/JobSpy) | The JobSpy service, on a self-hosted install ([details](#jobspy-linkedin-indeed-and-more)) |
 | CV tailoring: rewrites your headline, summary, skills and bullets for one posting from your own facts, flags anything it can't back up, and lists what the posting asks for that you don't show. The prompt is in Settings to read and change | An AI provider |
-| Coming next: cover letter and application answers, follow-ups, interview coach | An AI provider |
+| Cover letters: drafted from your profile for one posting, checked for numbers it can't back up, placeholders and clichés, then copied into a form or downloaded as a PDF. The prompt is in Settings to read and change | An AI provider (or write it yourself) |
+| Prompts you can read: Settings shows the full CV tailoring and cover letter prompts to change or reset, and each page shows exactly what's sent to your AI | An AI provider |
+| Coming next: answers to application-form questions, follow-ups, interview coach | An AI provider |
 
 ## Choosing an AI provider
 

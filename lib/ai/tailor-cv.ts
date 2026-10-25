@@ -31,7 +31,8 @@ export type TailoredCvRaw = z.infer<typeof tailoredCvSchema>;
 
 const MAX_CV_TEXT_CHARS = 8000;
 
-function candidateBlock(profile: ProfileInput, cvText: string | null): string {
+/** The candidate as the models see it, inside <candidate_profile> tags. Shared with cover letters. */
+export function candidateBlock(profile: ProfileInput, cvText: string | null): string {
   const skills = (level: "primary" | "secondary" | "learning") =>
     profile.skills.filter((s) => s.level === level).map((s) => s.name).join(", ") || "none";
   const roles = profile.experience.map((e, i) => {
@@ -87,11 +88,12 @@ export function mentions(text: string, term: string): boolean {
 }
 
 /** The numbers a line states, normalized ("1,200" → "1200", "35%" → "35"). */
-function numbersIn(text: string): string[] {
+export function numbersIn(text: string): string[] {
   return (text.match(/\d[\d,.]*/g) ?? []).map((n) => n.replace(/[,.]+$/, "").replace(/,/g, "")).filter((n) => n.length > 0);
 }
 
-function sourceOf(profile: ProfileInput, cvText: string | null): string {
+/** Everything the profile and CV say, for checking claims against. */
+export function sourceOf(profile: ProfileInput, cvText: string | null): string {
   return [
     profile.headline,
     profile.summary,

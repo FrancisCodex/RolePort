@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { getMyCvPage } from "@/lib/cv/data";
 import { isLite } from "@/lib/mode";
-import { CvHeader } from "./cv-header";
+import { DocumentHeader } from "../document-header";
 import { CvWorkspace } from "./cv-workspace";
 import { LiteCv } from "./lite-cv";
 
@@ -26,7 +26,7 @@ async function Cv({ params }: { params: PageProps<"/applied/[id]/cv">["params"] 
   if (!data) notFound();
   return (
     <>
-      <CvHeader applicationId={id} role={data.role} company={data.company} />
+      <DocumentHeader applicationId={id} title="Tailored CV" role={data.role} company={data.company} />
       {/* The editor keeps its own state after loading; saves and tailoring update it in place. */}
       <CvWorkspace data={data} />
     </>
