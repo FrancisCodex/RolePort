@@ -1,4 +1,5 @@
 import * as applied from "@/app/(app)/applied/actions";
+import * as letter from "@/app/(app)/applied/[id]/cover-letter/actions";
 import * as cv from "@/app/(app)/applied/[id]/cv/actions";
 import * as jobs from "@/app/(app)/jobs/actions";
 import * as profile from "@/app/(app)/profile/actions";
@@ -51,3 +52,10 @@ export const tailorCv: typeof cv.tailorCv = isLite ? async (...a) => (await lite
 export const saveCv: typeof cv.saveCv = isLite ? async (...a) => (await lite()).saveCv(...a) : cv.saveCv;
 export const discardCv: typeof cv.discardCv = isLite ? async (...a) => (await lite()).discardCv(...a) : cv.discardCv;
 export const saveCvPrompt: typeof cv.saveCvPrompt = isLite ? async (...a) => (await lite()).saveCvPrompt(...a) : cv.saveCvPrompt;
+
+export const draftLetter: typeof letter.draftLetter = isLite ? async (...a) => (await lite()).draftLetter(...a) : letter.draftLetter;
+export const saveLetter: typeof letter.saveLetter = isLite ? async (...a) => (await lite()).saveLetter(...a) : letter.saveLetter;
+export const discardLetter: typeof letter.discardLetter = isLite ? async (...a) => (await lite()).discardLetter(...a) : letter.discardLetter;
+export const saveLetterPrompt: typeof letter.saveLetterPrompt = isLite
+  ? async (...a) => (await lite()).saveLetterPrompt(...a)
+  : letter.saveLetterPrompt;

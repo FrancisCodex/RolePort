@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { MAX_NOTES } from "@/app/(app)/applied/view-data";
+import type { DraftLetterResult } from "@/app/(app)/applied/[id]/cover-letter/actions";
 import type { TailorResult } from "@/app/(app)/applied/[id]/cv/actions";
 import type { EvaluateResult } from "@/app/(app)/jobs/actions";
 import { aiErrorMessage, isUnreachable } from "@/lib/ai/errors";
@@ -17,11 +18,14 @@ import {
 } from "@/lib/ai/settings";
 import { AiUnavailableError, generateStructured, listModels } from "@/lib/ai/structured";
 import { MAX_CV_PROMPT } from "@/lib/ai/cv-prompt";
+import { MAX_LETTER_PROMPT } from "@/lib/ai/letter-prompt";
 import { exportBackup } from "@/lib/backup/export";
 import { importErrorMessage, readBackupForm } from "@/lib/backup/form";
 import { importBackup, type ImportSummary } from "@/lib/backup/import";
 import { discardApplicationCv, saveEditedCv, tailorApplicationCv } from "@/lib/cv/tailor";
 import { cvContentSchema, type CvContent } from "@/lib/cv/types";
+import { discardApplicationLetter, draftApplicationLetter, saveEditedLetter } from "@/lib/letter/letter";
+import { letterContentSchema, type LetterContent } from "@/lib/letter/types";
 import { getBrowserDb, type BrowserDb } from "@/lib/db/browser";
 import { LOCAL_USER } from "@/lib/db/local-user";
 import {
@@ -187,6 +191,50 @@ export async function discardCv(applicationId: string): Promise<Result<CvContent
 export async function saveCvPrompt(prompt: string | null): Promise<Result> {
   if (prompt != null && (typeof prompt !== "string" || prompt.length > MAX_CV_PROMPT)) return { ok: false, error: `Keep the prompt under ${MAX_CV_PROMPT} characters.` };
   await writeSettings(await getBrowserDb(), LOCAL_USER.id, { cvPrompt: prompt?.trim() || null });
+  await invalidate("user_settings");
+  return { ok: true, data: undefined };
+}
+
+/* Cover letters ------------------------------------------------------------- */
+
+export async function draftLetter(applicationId: string): Promise<DraftLetterResult> {
+  const db = await getBrowserDb();
+  const config = await savedAiConfig(db);
+  if (!config) return { ok: false, error: new AiUnavailableError().message, needsSetup: true };
+  try {
+    const data = await draftApplicationLetter(db, await me(db), applicationId, config);
+    void invalidate("document");
+    return { ok: true, data };
+  } catch (error) {
+    console.error("[letter] drafting failed", error);
+    const baseUrl = config.provider === "openai_compatible" ? config.baseUrl : null;
+    if (isUnreachable(error) && baseUrl && isLocalUrl(baseUrl)) return { ok: false, error: await explainLocalFailure(baseUrl) };
+    return { ok: false, error: aiErrorMessage(error, "Writing the letter failed. Please try again.") };
+  }
+}
+
+export async function saveLetter(applicationId: string, content: LetterContent): Promise<Result> {
+  const parsed = letterContentSchema.safeParse(content);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Some fields are too long." };
+  const db = await getBrowserDb();
+  if (!(await saveEditedLetter(db, await me(db), applicationId, parsed.data))) return { ok: false, error: "Application not found." };
+  void invalidate("document", "profile");
+  return { ok: true, data: undefined };
+}
+
+export async function discardLetter(applicationId: string): Promise<Result<LetterContent>> {
+  const db = await getBrowserDb();
+  const content = await discardApplicationLetter(db, await me(db), applicationId);
+  if (!content) return { ok: false, error: "Application not found." };
+  void invalidate("document");
+  return { ok: true, data: content };
+}
+
+export async function saveLetterPrompt(prompt: string | null): Promise<Result> {
+  if (prompt != null && (typeof prompt !== "string" || prompt.length > MAX_LETTER_PROMPT)) {
+    return { ok: false, error: `Keep the prompt under ${MAX_LETTER_PROMPT} characters.` };
+  }
+  await writeSettings(await getBrowserDb(), LOCAL_USER.id, { coverLetterPrompt: prompt?.trim() || null });
   await invalidate("user_settings");
   return { ok: true, data: undefined };
 }

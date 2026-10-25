@@ -4,6 +4,7 @@ import { Check, Download, FileSearch, Loader2, RotateCcw, Save, Sparkles, Triang
 import Link from "next/link";
 import { useState, useTransition, type ReactNode } from "react";
 import { EmptyState } from "@/components/app/empty-state";
+import { PromptDetails } from "@/components/app/prompt-details";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -355,28 +356,7 @@ function TailorCard({
           </p>
         )}
 
-        {data.prompt && (
-          <details className="rounded-lg border border-border bg-surface-2 text-xs">
-            <summary className="flex cursor-pointer items-center gap-2 px-3 py-2 font-medium text-muted select-none hover:text-fg">
-              See exactly what&apos;s sent
-              <Badge tone={data.prompt.custom ? "brand" : "neutral"} className="ml-auto">
-                {data.prompt.custom ? "Your prompt" : "Default prompt"}
-              </Badge>
-            </summary>
-            <div className="flex flex-col gap-2 border-t border-border p-3">
-              <p className="text-muted">
-                Sent only to the AI provider you chose. The second part is your profile and the posting, built fresh each time.{" "}
-                <Link href="/settings#cv-prompt" className="font-medium text-brand-ink hover:underline">
-                  Edit the prompt
-                </Link>
-              </p>
-              <p className="font-medium">Instructions</p>
-              <pre className="max-h-64 overflow-auto rounded-md border border-border bg-surface p-2 leading-relaxed whitespace-pre-wrap">{data.prompt.system}</pre>
-              <p className="font-medium">Your profile and the posting</p>
-              <pre className="max-h-64 overflow-auto rounded-md border border-border bg-surface p-2 leading-relaxed whitespace-pre-wrap">{data.prompt.user}</pre>
-            </div>
-          </details>
-        )}
+        {data.prompt && <PromptDetails prompt={data.prompt} settingsAnchor="cv-prompt" />}
       </CardContent>
     </Card>
   );

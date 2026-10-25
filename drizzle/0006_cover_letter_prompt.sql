@@ -1,0 +1,1 @@
+ALTER TABLE "user_settings" ADD COLUMN "cover_letter_prompt" text;

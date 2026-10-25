@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight, ExternalLink, FileText, MessageSquareText, Trash2 } from "lucide-react";
+import { ChevronRight, ExternalLink, FileText, Mail, MessageSquareText, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useOptimistic, useRef, useState, useTransition } from "react";
@@ -123,6 +123,12 @@ const prepareSteps = (id: string) => [
     title: "Tailor your CV",
     body: "An ATS-friendly CV rewritten for this posting from your profile, as a PDF.",
     href: `/applied/${id}/cv`,
+  },
+  {
+    icon: Mail,
+    title: "Prepare a cover letter",
+    body: "A letter written from your profile for this posting, to paste into the form or send as a PDF.",
+    href: `/applied/${id}/cover-letter`,
   },
   {
     icon: MessageSquareText,

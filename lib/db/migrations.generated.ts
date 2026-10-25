@@ -96,5 +96,13 @@ export const migrations: MigrationMeta[] = [
     "bps": true,
     "folderMillis": 1792940458305,
     "hash": "515879fee1f3e805bf694b1efe02b754be3c605a968f57fc0af5878dec537d6b"
+  },
+  {
+    "sql": [
+      "ALTER TABLE \"user_settings\" ADD COLUMN \"cover_letter_prompt\" text;"
+    ],
+    "bps": true,
+    "folderMillis": 1792945762040,
+    "hash": "063347ad6926b4cf9b6e07fd6480cef0aef7a6495ad1f91753138f09969629bc"
   }
 ];

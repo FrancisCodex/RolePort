@@ -109,7 +109,8 @@ Run Lite yourself with `npm run dev:lite` (port 3100), or build it with `npm run
 | JobStreet, Indeed, LinkedIn and Kalibrr listings via [JSearch](https://rapidapi.com/letscrunch/api/jsearch) | A RapidAPI key (free tier) |
 | LinkedIn, Indeed, Glassdoor, Bayt, Naukri and more via [JobSpy](https://github.com/speedyapply/JobSpy) | The JobSpy service, on a self-hosted install ([details](#jobspy-linkedin-indeed-and-more)) |
 | CV tailoring: rewrites your headline, summary, skills and bullets for one posting from your own facts, flags anything it can't back up, and lists what the posting asks for that you don't show. The prompt is in Settings to read and change | An AI provider |
-| Coming next: cover letter and application answers, follow-ups, interview coach | An AI provider |
+| Cover letters: drafted from your profile for one posting, checked for numbers it can't back up, placeholders and clichés, then copied into a form or downloaded as a PDF. The prompt is in Settings to read and change | An AI provider (or write it yourself) |
+| Coming next: application answers, follow-ups, interview coach | An AI provider |
 
 ## Choosing an AI provider
 
