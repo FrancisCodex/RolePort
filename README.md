@@ -100,6 +100,7 @@ Run Lite yourself with `npm run dev:lite` (port 3100), or build it with `npm run
 | Job search in your country or abroad: jobs from [freehire](https://freehire.me), remote roles from [Jobicy](https://jobicy.com). Set where you live and which countries you'd move to in your profile | Nothing |
 | Quick match score from your skills on every job | Nothing |
 | Pipeline: save jobs, track Saved → Applied → Interview → Offer | Nothing |
+| ATS-friendly CV as a PDF for any saved or applied job: built from your profile, editable, and checked by reading its text back out | Nothing |
 | Dashboard: applications sent, response rate, interviews and offers, how far applications get, weekly pace, follow-ups due | Nothing |
 | Setup guide (`/welcome`): name, roles and CV in a few steps, then pointers to AI, JobSpy and more. New users start there in HireMe Lite; set `NEXT_PUBLIC_HIREME_ONBOARDING=on` to do the same on a self-hosted install | Nothing |
 | CV import with automatic skill detection | Nothing |
@@ -107,7 +108,8 @@ Run Lite yourself with `npm run dev:lite` (port 3100), or build it with `npm run
 | AI fit evaluation: eligibility, language and location gates, four scored dimensions, strengths, gaps and a recommendation. Evaluate one job or the top 10 results | An AI provider |
 | JobStreet, Indeed, LinkedIn and Kalibrr listings via [JSearch](https://rapidapi.com/letscrunch/api/jsearch) | A RapidAPI key (free tier) |
 | LinkedIn, Indeed, Glassdoor, Bayt, Naukri and more via [JobSpy](https://github.com/speedyapply/JobSpy) | The JobSpy service, on a self-hosted install ([details](#jobspy-linkedin-indeed-and-more)) |
-| Coming next: tailored CV and cover letter, follow-ups, interview coach | An AI provider |
+| CV tailoring: rewrites your headline, summary, skills and bullets for one posting from your own facts, flags anything it can't back up, and lists what the posting asks for that you don't show. The prompt is in Settings to read and change | An AI provider |
+| Coming next: cover letter and application answers, follow-ups, interview coach | An AI provider |
 
 ## Choosing an AI provider
 

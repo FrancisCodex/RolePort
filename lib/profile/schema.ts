@@ -7,6 +7,14 @@ export const SKILL_LEVELS = ["primary", "secondary", "learning"] as const;
 export const profileSchema = z.object({
   name: z.string().trim().min(1, "Add your name").max(120),
   headline: z.string().trim().max(160).nullable(),
+  /** Contact lines for CVs and applications. Empty when not given. */
+  email: z
+    .string()
+    .trim()
+    .max(160)
+    .refine((v) => !v || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v), "Check your email address"),
+  phone: z.string().trim().max(60),
+  links: z.array(z.string().trim().min(1).max(200)).max(4, "Keep it to 4 links"),
   summary: z.string().trim().max(2000).nullable(),
   city: z.string().trim().max(80).nullable(),
   region: z.string().trim().max(80).nullable(),
@@ -54,6 +62,9 @@ export type ProfileInput = z.infer<typeof profileSchema>;
 export const emptyProfile: ProfileInput = {
   name: "",
   headline: null,
+  email: "",
+  phone: "",
+  links: [],
   summary: null,
   city: null,
   region: null,

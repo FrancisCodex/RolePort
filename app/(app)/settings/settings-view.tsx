@@ -2,6 +2,7 @@ import { Database, Lock } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AiSettingsForm, type AiSettingsView } from "./ai-settings-form";
 import { BackupControls } from "./backup-controls";
+import { CvPromptForm } from "./cv-prompt-form";
 import { JobSourceForm, JobSpyToggle } from "./job-source-form";
 import { LocalJobSpy } from "./local-jobspy";
 
@@ -16,13 +17,15 @@ export type SettingsData = {
   jobSpy: { enabled: boolean; reachable: boolean } | null;
   /** Lite: JobSpy on the user's computer, called from the browser. */
   localJobSpy?: { enabled: boolean };
+  /** The user's own CV tailoring instructions, or null for the default. */
+  cvPrompt: string | null;
   /** Where the user's data and keys are kept, for the "Your data" card. */
   dataNote: string;
   keyNote: string;
 };
 
 /** The Settings cards, shared by the server page and the lite edition. */
-export function SettingsView({ ai, localMode, aiInBrowser, rapidApiKeyHint, jobSpy, localJobSpy, dataNote, keyNote }: SettingsData) {
+export function SettingsView({ ai, localMode, aiInBrowser, rapidApiKeyHint, jobSpy, localJobSpy, cvPrompt, dataNote, keyNote }: SettingsData) {
   return (
     <div className="flex flex-col gap-4">
       <Card>
@@ -34,6 +37,19 @@ export function SettingsView({ ai, localMode, aiInBrowser, rapidApiKeyHint, jobS
         </CardHeader>
         <CardContent>
           <AiSettingsForm initial={ai} localMode={localMode} aiInBrowser={aiInBrowser} />
+        </CardContent>
+      </Card>
+
+      <Card id="cv-prompt">
+        <CardHeader>
+          <CardTitle>CV tailoring prompt</CardTitle>
+          <CardDescription>
+            Exactly what HireMe asks the AI when it tailors your CV to a job. Read it, change it to suit how you like your CV written, or
+            go back to the default at any time.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CvPromptForm saved={cvPrompt} />
         </CardContent>
       </Card>
 

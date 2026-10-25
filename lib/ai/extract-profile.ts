@@ -10,6 +10,9 @@ import { generateStructured } from "./structured";
 const extractedProfileSchema = z.object({
   name: z.string(),
   headline: z.string().nullable(),
+  email: z.string().nullable(),
+  phone: z.string().nullable(),
+  links: z.array(z.string()),
   summary: z.string().nullable(),
   city: z.string().nullable(),
   region: z.string().nullable(),
@@ -42,6 +45,7 @@ Rules:
 - Only record what the CV supports. Never invent employers, dates, skills, degrees or achievements. Use null or an empty list when something is missing.
 - skills: up to 40 concrete skills and tools. "primary" = used heavily in recent roles; "secondary" = used but not central; "learning" = only mentioned as coursework, certificates in progress, or self-study.
 - experience: most recent first. Dates as "YYYY-MM" or "YYYY"; end is null for a current role. Keep up to 5 highlights per role, close to the CV's own wording.
+- email, phone, links: copy them exactly as written in the CV. links are the candidate's own profile pages (LinkedIn, GitHub, portfolio), at most 4; never employers' websites. Use null or an empty list when they're missing.
 - city/region/country: the candidate's current location if stated. country is the ISO 3166-1 alpha-2 code (e.g. "PH", "SG", "AE"). For the Philippines use Philippine names (e.g. city "Quezon City", region "NCR"; city "Cebu City", region "Central Visayas"); elsewhere region is the state or province.
 - yearsExperience: total professional years, rounded down.
 - desiredRoles: 1-4 job titles this person is a strong fit for next, based on the CV.
@@ -57,11 +61,14 @@ export async function extractProfileFromCv(cvText: string, config: AiConfig): Pr
     prompt: `<cv>\n${cvText}\n</cv>`,
     schema: extractedProfileSchema,
   });
-  const { country, ...rest } = result;
+  const { country, email, phone, links, ...rest } = result;
   const known = findCountry(country);
   return {
     // Models don't always follow the date format they're asked for ("Mar 2022", "Present").
     ...normalizeProfileDates(rest),
+    email: email?.trim() ?? "",
+    phone: phone?.trim() ?? "",
+    links: links.map((l) => l.trim()).filter(Boolean).slice(0, 4),
     ...(known ? { country: known.code, salaryCurrency: known.currency } : {}),
     yearsExperience: result.yearsExperience == null ? null : Math.max(0, Math.floor(result.yearsExperience)),
   };

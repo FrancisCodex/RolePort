@@ -87,5 +87,14 @@ export const migrations: MigrationMeta[] = [
     "bps": true,
     "folderMillis": 1792738129144,
     "hash": "6c2701a57b65a350ca907f1e131809329b5d868b52eb61d89f9264eb689ab760"
+  },
+  {
+    "sql": [
+      "ALTER TABLE \"profile\" ADD COLUMN \"cv_contact\" jsonb DEFAULT '{\"email\":\"\",\"phone\":\"\",\"links\":[]}'::jsonb NOT NULL;",
+      "\nALTER TABLE \"user_settings\" ADD COLUMN \"cv_prompt\" text;"
+    ],
+    "bps": true,
+    "folderMillis": 1792940458305,
+    "hash": "515879fee1f3e805bf694b1efe02b754be3c605a968f57fc0af5878dec537d6b"
   }
 ];

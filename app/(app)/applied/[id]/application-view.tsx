@@ -1,6 +1,7 @@
 "use client";
 
-import { ExternalLink, FileText, MessageSquareText, Trash2 } from "lucide-react";
+import { ChevronRight, ExternalLink, FileText, MessageSquareText, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useOptimistic, useRef, useState, useTransition } from "react";
 import { CompanyLogo } from "@/components/jobs/job-card";
@@ -45,7 +46,7 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
   const aside = (
     <>
       <ProgressCard data={data} status={status} />
-      <PrepareCard />
+      <PrepareCard id={data.id} />
       <NotesCard id={data.id} initial={data.notes} />
       <RemoveButton id={data.id} />
     </>
@@ -115,39 +116,56 @@ function ProgressCard({ data, status }: { data: ApplicationData; status: Status 
   );
 }
 
-const PREPARE = [
+/** Steps that open their own page carry `href`; the rest are still to come. */
+const prepareSteps = (id: string) => [
   {
     icon: FileText,
     title: "Tailor your CV",
     body: "An ATS-friendly CV rewritten for this posting from your profile, as a PDF.",
+    href: `/applied/${id}/cv`,
   },
   {
     icon: MessageSquareText,
     title: "Answer application questions",
     body: "Paste the questions from the application form and get drafts grounded in your experience.",
+    href: null,
   },
 ];
 
-function PrepareCard() {
+function PrepareCard({ id }: { id: string }) {
   return (
     <Card>
       <CardHeader>
         <CardTitle>Prepare your application</CardTitle>
       </CardHeader>
       <ul className="flex flex-col divide-y divide-border">
-        {PREPARE.map(({ icon: Icon, title, body }) => (
-          <li key={title} className="flex gap-3 px-5 py-3.5">
-            <span className="grid size-8 shrink-0 place-items-center rounded-md border border-border bg-surface-2 text-muted">
-              <Icon className="size-4" strokeWidth={1.75} />
-            </span>
-            <div className="min-w-0">
-              <p className="flex flex-wrap items-center gap-1.5 text-[13px] font-medium">
-                {title} <Badge>Coming soon</Badge>
-              </p>
-              <p className="mt-0.5 text-xs text-muted">{body}</p>
-            </div>
-          </li>
-        ))}
+        {prepareSteps(id).map(({ icon: Icon, title, body, href }) => {
+          const inner = (
+            <>
+              <span className="grid size-8 shrink-0 place-items-center rounded-md border border-border bg-surface-2 text-muted">
+                <Icon className="size-4" strokeWidth={1.75} />
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="flex flex-wrap items-center gap-1.5 text-[13px] font-medium">
+                  {title} {!href && <Badge>Coming soon</Badge>}
+                </p>
+                <p className="mt-0.5 text-xs text-muted">{body}</p>
+              </div>
+              {href && <ChevronRight aria-hidden className="mt-2 size-4 shrink-0 text-subtle" />}
+            </>
+          );
+          return (
+            <li key={title}>
+              {href ? (
+                <Link href={href} className="flex gap-3 px-5 py-3.5 transition-colors hover:bg-surface-2/60">
+                  {inner}
+                </Link>
+              ) : (
+                <div className="flex gap-3 px-5 py-3.5">{inner}</div>
+              )}
+            </li>
+          );
+        })}
       </ul>
     </Card>
   );

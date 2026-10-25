@@ -10,6 +10,7 @@ import { aiSettingsView } from "@/app/(app)/settings/view";
 import { toOnboardingData } from "@/app/(onboarding)/welcome/onboarding-data";
 import type { OnboardingData } from "@/app/(onboarding)/welcome/onboarding-flow";
 import { aiConfigFromRow } from "@/lib/ai/settings";
+import { readCvPage, type CvPageData } from "@/lib/cv/tailor";
 import { getBrowserDb, type BrowserDb } from "@/lib/db/browser";
 import { LOCAL_USER } from "@/lib/db/local-user";
 import * as schema from "@/lib/db/schema";
@@ -89,13 +90,14 @@ export async function loadJob(
   return job && { job, aiEnabled: ai, source: sourceCredit(job.source) };
 }
 
-export async function loadSettings(): Promise<{ ai: AiSettingsView; rapidApiKeyHint: string | null; jobspyEnabled: boolean }> {
+export async function loadSettings(): Promise<{ ai: AiSettingsView; rapidApiKeyHint: string | null; jobspyEnabled: boolean; cvPrompt: string | null }> {
   const db = await getBrowserDb();
   const row = await readSettings(db, LOCAL_USER.id);
   return {
     ai: aiSettingsView(row, readKey, aiConfigFromRow(row, readKey)),
     rapidApiKeyHint: maskSecret(readKey(row?.rapidApiKeyEnc)),
     jobspyEnabled: Boolean(row?.jobspyEnabled),
+    cvPrompt: row?.cvPrompt ?? null,
   };
 }
 
@@ -128,4 +130,9 @@ export async function loadApplication(id: string): Promise<ApplicationData | nul
   const [{ profile }, ai] = await Promise.all([readProfile(db, await me(db)), aiEnabled(db)]);
   const job = application.jobId ? await readJob(db, LOCAL_USER.id, application.jobId, profile) : null;
   return toApplicationData(application, job, ai, job && sourceCredit(job.source));
+}
+
+export async function loadCvPage(applicationId: string): Promise<CvPageData | null> {
+  const db = await getBrowserDb();
+  return readCvPage(db, await me(db), applicationId, await aiEnabled(db));
 }

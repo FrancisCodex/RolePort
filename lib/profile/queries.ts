@@ -26,6 +26,9 @@ export async function readProfile(db: AnyDb, user: { id: string; name: string })
   const profile: ProfileInput = {
     name: user.name,
     headline: row.headline,
+    email: row.cvContact.email,
+    phone: row.cvContact.phone,
+    links: row.cvContact.links,
     summary: row.summary,
     city: row.city,
     region: row.region,
@@ -62,9 +65,10 @@ export async function readCvText(db: AnyDb, userId: string): Promise<string | nu
 
 /** Save a validated profile (the name lives on the user row). */
 export async function writeProfile(db: AnyDb, userId: string, input: ProfileInput): Promise<void> {
-  const { name, ...profile } = input;
+  const { name, email, phone, links, ...profile } = input;
   const values = {
     ...profile,
+    cvContact: { email, phone, links },
     experience: profile.experience.map((e) => ({ ...e, end: e.end ?? undefined, location: e.location ?? undefined })),
     education: profile.education.map((e) => ({ ...e, field: e.field ?? undefined, year: e.year ?? undefined })),
   };

@@ -100,7 +100,7 @@ Write in plain English, second person ("you"). Plain text only: no markdown, no 
 const MAX_DESCRIPTION_CHARS = 6000;
 const MAX_CV_CHARS = 3000;
 
-function clip(text: string, max: number) {
+export function clip(text: string, max: number) {
   return text.length > max ? `${text.slice(0, max)} …[trimmed]` : text;
 }
 
@@ -180,7 +180,8 @@ function profileBlock(p: ProfileInput, cvText: string | null): string {
   return lines.filter(Boolean).join("\n");
 }
 
-function jobBlock(job: EvaluationJob): string {
+/** The posting as the models see it, inside <job_posting> tags. Shared with CV tailoring. */
+export function jobBlock(job: EvaluationJob): string {
   const salary = formatSalary(job.salaryMin, job.salaryMax, job.salaryCurrency, job.salaryPeriod);
   const required = job.requirements.filter((r) => r.priority === "required").map((r) => `- ${r.text}`);
   const preferred = job.requirements.filter((r) => r.priority === "preferred").map((r) => `- ${r.text}`);
