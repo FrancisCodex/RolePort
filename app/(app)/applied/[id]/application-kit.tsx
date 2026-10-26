@@ -282,7 +282,11 @@ function KitRow({
           </Link>
         </div>
         <p className="-mt-1.5 text-xs text-muted">{status}</p>
-        {preview && <p className="rounded-md border border-border bg-surface-2 px-3 py-2 text-xs leading-relaxed whitespace-pre-line text-muted">{preview}</p>}
+        {preview && (
+          <div className="rounded-md border border-border bg-surface-2 px-3 py-2">
+            <ExpandableText text={preview} />
+          </div>
+        )}
         {warnings > 0 && (
           <Link href={href} className="flex items-center gap-1.5 text-xs font-medium text-warning hover:underline">
             <TriangleAlert className="size-3.5" /> {warnings} thing{warnings === 1 ? "" : "s"} to check before you send
@@ -333,7 +337,7 @@ function QuestionsRow({ applicationId, data }: { applicationId: string; data: Qu
             <p className="text-xs font-medium whitespace-pre-line">{item.question}</p>
             {item.answer.trim() ? (
               <>
-                <p className="text-xs leading-relaxed whitespace-pre-line text-muted">{item.answer}</p>
+                <ExpandableText text={item.answer} />
                 <Button size="sm" variant="secondary" className="self-start" onClick={() => void copy(item)}>
                   {copied === item.id ? <Check /> : <Copy />} {copied === item.id ? "Copied" : "Copy answer"}
                 </Button>
@@ -360,5 +364,21 @@ function QuestionsRow({ applicationId, data }: { applicationId: string; data: Qu
         )}
       </div>
     </li>
+  );
+}
+
+/** Long text cut to a few lines, with a toggle to read all of it in place. Short text shows as is. */
+function ExpandableText({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  const long = text.length > 280 || text.split("\n").length > 4;
+  return (
+    <div className="flex flex-col items-start gap-1.5">
+      <p className={cn("text-xs leading-relaxed whitespace-pre-line text-muted", long && !open && "line-clamp-4")}>{text}</p>
+      {long && (
+        <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="text-xs font-medium text-brand-ink hover:underline">
+          {open ? "Show less" : "Show more"}
+        </button>
+      )}
+    </div>
   );
 }
