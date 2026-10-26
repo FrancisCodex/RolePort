@@ -1,18 +1,18 @@
 "use client";
 
-import { Check, ChevronRight, Copy, Download, FileText, Loader2, Mail, MessageSquareText, Sparkles, TriangleAlert, Wand2 } from "lucide-react";
+import { Check, ChevronRight, Copy, Download, FileText, Loader2, Mail, Sparkles, TriangleAlert, Wand2 } from "lucide-react";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { draftLetter, tailorCv } from "@/lib/client/mutations";
 import { cvFileName, renderCvPdf } from "@/lib/cv/pdf";
 import type { CvContent, CvTailoring } from "@/lib/cv/types";
 import { letterFileName, renderLetterPdf } from "@/lib/letter/pdf";
-import { letterText, paragraphsOf, wordCount, type LetterContent, type LetterReview } from "@/lib/letter/types";
+import { letterText, wordCount, type LetterContent, type LetterReview } from "@/lib/letter/types";
 import { cn } from "@/lib/utils";
 import type { ApplicationKit as Kit } from "../view-data";
+import { QuestionsPanel } from "./questions-panel";
 
 const when = (iso: string) => new Date(iso).toLocaleString("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
 
@@ -118,7 +118,6 @@ export function ApplicationKit({ applicationId, company, kit }: { applicationId:
   const working = busy !== null;
   const cvWarnings = cv?.tailoring?.warnings.length ?? 0;
   const letterWarnings = letter?.review?.warnings.length ?? 0;
-  const firstParagraph = letter ? paragraphsOf(letter.content.body)[0] : undefined;
 
   return (
     <Card>
@@ -187,7 +186,7 @@ export function ApplicationKit({ applicationId, company, kit }: { applicationId:
             warnings={letterWarnings}
             error={errors.letter}
             busyText={busy === "letter-ai" ? "Writing your cover letter… local models can take a minute or two." : null}
-            preview={firstParagraph}
+            preview={hasLetter ? letterText(letter!.content) : undefined}
           >
             {canAi && (
               <Button size="sm" variant={hasLetter ? "secondary" : "primary"} onClick={() => void runLetter()} disabled={working}>
@@ -206,15 +205,7 @@ export function ApplicationKit({ applicationId, company, kit }: { applicationId:
             )}
           </KitRow>
 
-          <li className="flex gap-3 px-5 py-3.5">
-            <RowIcon icon={MessageSquareText} />
-            <div className="min-w-0 flex-1">
-              <p className="flex flex-wrap items-center gap-1.5 text-[13px] font-medium">
-                Application questions <Badge>Coming soon</Badge>
-              </p>
-              <p className="mt-0.5 text-xs text-muted">Paste the questions from the application form and get answers grounded in your experience.</p>
-            </div>
-          </li>
+          {kit.questions && <QuestionsPanel applicationId={applicationId} data={kit.questions} />}
         </ul>
       )}
 
@@ -244,7 +235,7 @@ export function ApplicationKit({ applicationId, company, kit }: { applicationId:
   );
 }
 
-function RowIcon({ icon: Icon, done = false }: { icon: typeof FileText; done?: boolean }) {
+export function RowIcon({ icon: Icon, done = false }: { icon: typeof FileText; done?: boolean }) {
   return (
     <span
       className={cn(
@@ -291,7 +282,7 @@ function KitRow({
           </Link>
         </div>
         <p className="-mt-1.5 text-xs text-muted">{status}</p>
-        {preview && <p className="line-clamp-3 rounded-md border border-border bg-surface-2 px-3 py-2 text-xs leading-relaxed text-muted">{preview}</p>}
+        {preview && <p className="rounded-md border border-border bg-surface-2 px-3 py-2 text-xs leading-relaxed whitespace-pre-line text-muted">{preview}</p>}
         {warnings > 0 && (
           <Link href={href} className="flex items-center gap-1.5 text-xs font-medium text-warning hover:underline">
             <TriangleAlert className="size-3.5" /> {warnings} thing{warnings === 1 ? "" : "s"} to check before you send

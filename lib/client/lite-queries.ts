@@ -12,6 +12,7 @@ import type { OnboardingData } from "@/app/(onboarding)/welcome/onboarding-flow"
 import { aiConfigFromRow } from "@/lib/ai/settings";
 import { readCvPage, type CvPageData } from "@/lib/cv/tailor";
 import { readLetterPage, type LetterPageData } from "@/lib/letter/letter";
+import { readQuestionsPage } from "@/lib/questions/questions";
 import { getBrowserDb, type BrowserDb } from "@/lib/db/browser";
 import { LOCAL_USER } from "@/lib/db/local-user";
 import * as schema from "@/lib/db/schema";
@@ -138,8 +139,8 @@ export async function loadApplication(id: string): Promise<ApplicationData | nul
   const [{ profile }, ai] = await Promise.all([readProfile(db, await me(db)), aiEnabled(db)]);
   const job = application.jobId ? await readJob(db, LOCAL_USER.id, application.jobId, profile) : null;
   const user = await me(db);
-  const [cv, letter] = await Promise.all([readCvPage(db, user, id, ai), readLetterPage(db, user, id, ai)]);
-  return toApplicationData(application, job, ai, job && sourceCredit(job.source), { cv, letter });
+  const [cv, letter, questions] = await Promise.all([readCvPage(db, user, id, ai), readLetterPage(db, user, id, ai), readQuestionsPage(db, user, id, ai)]);
+  return toApplicationData(application, job, ai, job && sourceCredit(job.source), { cv, letter, questions });
 }
 
 export async function loadCvPage(applicationId: string): Promise<CvPageData | null> {

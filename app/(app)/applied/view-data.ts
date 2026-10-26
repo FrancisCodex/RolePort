@@ -2,6 +2,7 @@ import type { SourceCredit } from "@/components/jobs/job-detail";
 import type { CvPageData } from "@/lib/cv/tailor";
 import type { ApplicationDetail, ApplicationStatus, PipelineItem } from "@/lib/jobs/applications";
 import type { LetterPageData } from "@/lib/letter/letter";
+import type { QuestionsData } from "@/lib/questions/types";
 import type { JobListItem } from "@/lib/jobs/queries";
 import { timeAgo } from "@/lib/jobs/format";
 
@@ -44,7 +45,7 @@ export type ApplicationData = {
   kit: ApplicationKit;
 };
 
-export type ApplicationKit = { cv: CvPageData | null; letter: LetterPageData | null };
+export type ApplicationKit = { cv: CvPageData | null; letter: LetterPageData | null; questions: QuestionsData | null };
 
 export function formatDay(date: Date): string {
   return date.toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" });

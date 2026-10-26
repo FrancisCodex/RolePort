@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { MAX_NOTES } from "@/app/(app)/applied/view-data";
 import type { DraftLetterResult } from "@/app/(app)/applied/[id]/cover-letter/actions";
+import type { AnswerResult } from "@/app/(app)/applied/[id]/questions/actions";
 import type { TailorResult } from "@/app/(app)/applied/[id]/cv/actions";
 import type { EvaluateResult } from "@/app/(app)/jobs/actions";
 import { aiErrorMessage, isUnreachable } from "@/lib/ai/errors";
@@ -25,6 +26,8 @@ import { importBackup, type ImportSummary } from "@/lib/backup/import";
 import { discardApplicationCv, saveEditedCv, tailorApplicationCv } from "@/lib/cv/tailor";
 import { cvContentSchema, type CvContent } from "@/lib/cv/types";
 import { discardApplicationLetter, draftApplicationLetter, saveEditedLetter } from "@/lib/letter/letter";
+import { draftQuestionAnswer, saveQuestionList } from "@/lib/questions/questions";
+import { questionsSchema, type QuestionItem } from "@/lib/questions/types";
 import { letterContentSchema, type LetterContent } from "@/lib/letter/types";
 import { getBrowserDb, type BrowserDb } from "@/lib/db/browser";
 import { LOCAL_USER } from "@/lib/db/local-user";
@@ -237,6 +240,33 @@ export async function saveLetterPrompt(prompt: string | null): Promise<Result> {
   await writeSettings(await getBrowserDb(), LOCAL_USER.id, { coverLetterPrompt: prompt?.trim() || null });
   await invalidate("user_settings");
   return { ok: true, data: undefined };
+}
+
+/* Application questions ----------------------------------------------------- */
+
+export async function saveQuestions(applicationId: string, items: QuestionItem[]): Promise<Result> {
+  const parsed = questionsSchema.safeParse(items);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Some fields are too long." };
+  const db = await getBrowserDb();
+  if (!(await saveQuestionList(db, await me(db), applicationId, parsed.data))) return { ok: false, error: "Application not found." };
+  void invalidate("document");
+  return { ok: true, data: undefined };
+}
+
+export async function answerApplicationQuestion(applicationId: string, questionId: string): Promise<AnswerResult> {
+  const db = await getBrowserDb();
+  const config = await savedAiConfig(db);
+  if (!config) return { ok: false, error: new AiUnavailableError().message, needsSetup: true };
+  try {
+    const data = await draftQuestionAnswer(db, await me(db), applicationId, questionId, config);
+    void invalidate("document");
+    return { ok: true, data };
+  } catch (error) {
+    console.error("[questions] answering failed", error);
+    const baseUrl = config.provider === "openai_compatible" ? config.baseUrl : null;
+    if (isUnreachable(error) && baseUrl && isLocalUrl(baseUrl)) return { ok: false, error: await explainLocalFailure(baseUrl) };
+    return { ok: false, error: aiErrorMessage(error, "Writing the answer failed. Please try again.") };
+  }
 }
 
 /* Settings ------------------------------------------------------------------ */
