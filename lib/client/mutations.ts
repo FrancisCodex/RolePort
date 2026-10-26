@@ -62,6 +62,9 @@ export const saveLetterPrompt: typeof letter.saveLetterPrompt = isLite
   : letter.saveLetterPrompt;
 
 export const saveQuestions: typeof questions.saveQuestions = isLite ? async (...a) => (await lite()).saveQuestions(...a) : questions.saveQuestions;
+export const saveAnswerPrompt: typeof questions.saveAnswerPrompt = isLite
+  ? async (...a) => (await lite()).saveAnswerPrompt(...a)
+  : questions.saveAnswerPrompt;
 export const answerApplicationQuestion: typeof questions.answerApplicationQuestion = isLite
   ? async (...a) => (await lite()).answerApplicationQuestion(...a)
   : questions.answerApplicationQuestion;

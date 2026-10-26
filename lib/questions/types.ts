@@ -18,6 +18,10 @@ export const questionItemSchema = z.object({
     .object({
       model: z.string(),
       at: z.string(),
+      customPrompt: z.boolean().default(false),
+      /** The profile facts the answer leans on. */
+      facts: z.array(z.string()).default([]),
+      notes: z.string().default(""),
       warnings: z.array(z.string()),
     })
     .nullable(),
@@ -28,7 +32,13 @@ export const questionsSchema = z.array(questionItemSchema).max(MAX_QUESTIONS, `K
 export type QuestionItem = z.infer<typeof questionItemSchema>;
 
 export type QuestionsData = {
+  applicationId: string;
+  role: string;
+  company: string;
   items: QuestionItem[];
+  hasPosting: boolean;
   aiEnabled: boolean;
   profileEmpty: boolean;
+  /** What a run would send now (for the first question, or a sample), for the "see what's sent" panel. */
+  prompt: { system: string; user: string; custom: boolean };
 };

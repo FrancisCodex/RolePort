@@ -1,13 +1,16 @@
 "use server";
 
+import { refresh } from "next/cache";
 import { AiUnavailableError } from "@/lib/ai/client";
 import { getAiConfig } from "@/lib/ai/config";
+import { MAX_ANSWER_PROMPT } from "@/lib/ai/answer-prompt";
 import { aiErrorMessage } from "@/lib/ai/errors";
 import { getDb } from "@/lib/db";
 import { draftQuestionAnswer, saveQuestionList } from "@/lib/questions/questions";
 import { questionsSchema, type QuestionItem } from "@/lib/questions/types";
 import type { Result } from "@/lib/result";
 import { getCurrentUser } from "@/lib/session";
+import { writeSettings } from "@/lib/settings/queries";
 
 export type AnswerResult = Result<QuestionItem> & { needsSetup?: boolean };
 
@@ -31,4 +34,15 @@ export async function answerApplicationQuestion(applicationId: string, questionI
     console.error("[questions] answering failed", error);
     return { ok: false, error: aiErrorMessage(error, "Writing the answer failed. Please try again.") };
   }
+}
+
+/** Save the user's own answer instructions; null or blank goes back to the default. */
+export async function saveAnswerPrompt(prompt: string | null): Promise<Result> {
+  if (prompt != null && (typeof prompt !== "string" || prompt.length > MAX_ANSWER_PROMPT)) {
+    return { ok: false, error: `Keep the prompt under ${MAX_ANSWER_PROMPT} characters.` };
+  }
+  const user = await getCurrentUser();
+  await writeSettings(await getDb(), user.id, { answerPrompt: prompt?.trim() || null });
+  refresh();
+  return { ok: true, data: undefined };
 }

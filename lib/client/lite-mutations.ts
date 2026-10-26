@@ -19,6 +19,7 @@ import {
 } from "@/lib/ai/settings";
 import { AiUnavailableError, generateStructured, listModels } from "@/lib/ai/structured";
 import { MAX_CV_PROMPT } from "@/lib/ai/cv-prompt";
+import { MAX_ANSWER_PROMPT } from "@/lib/ai/answer-prompt";
 import { MAX_LETTER_PROMPT } from "@/lib/ai/letter-prompt";
 import { exportBackup } from "@/lib/backup/export";
 import { importErrorMessage, readBackupForm } from "@/lib/backup/form";
@@ -267,6 +268,15 @@ export async function answerApplicationQuestion(applicationId: string, questionI
     if (isUnreachable(error) && baseUrl && isLocalUrl(baseUrl)) return { ok: false, error: await explainLocalFailure(baseUrl) };
     return { ok: false, error: aiErrorMessage(error, "Writing the answer failed. Please try again.") };
   }
+}
+
+export async function saveAnswerPrompt(prompt: string | null): Promise<Result> {
+  if (prompt != null && (typeof prompt !== "string" || prompt.length > MAX_ANSWER_PROMPT)) {
+    return { ok: false, error: `Keep the prompt under ${MAX_ANSWER_PROMPT} characters.` };
+  }
+  await writeSettings(await getBrowserDb(), LOCAL_USER.id, { answerPrompt: prompt?.trim() || null });
+  await invalidate("user_settings");
+  return { ok: true, data: undefined };
 }
 
 /* Settings ------------------------------------------------------------------ */

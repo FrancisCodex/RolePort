@@ -351,6 +351,8 @@ export const userSettings = pgTable("user_settings", {
   cvPrompt: text("cv_prompt"),
   /** The user's own instructions for cover letters, or null to use the default (lib/ai/letter-prompt.ts). */
   coverLetterPrompt: text("cover_letter_prompt"),
+  /** The user's own instructions for application question answers, or null to use the default (lib/ai/answer-prompt.ts). */
+  answerPrompt: text("answer_prompt"),
   ...timestamps,
 });
 
