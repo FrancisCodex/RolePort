@@ -52,9 +52,9 @@ const moreFeatures = [
   {
     icon: ScrollText,
     title: "Prompts you can read",
-    body: "See exactly what's sent to the AI, change how your CV and letters are written, or go back to the default.",
+    body: "See exactly what's sent to the AI, change how your CV, letters and answers are written, or go back to the default.",
   },
-  { icon: MessageSquareText, title: "Application answers", body: "Coming next: answers to the questions on application forms, grounded in your experience.", soon: true },
+  { icon: MessageSquareText, title: "Application answers", body: "Paste a question from the application form and get an answer from your real experience, with what it leans on and what to check." },
   { icon: MessagesSquare, title: "Interview coach", body: "Coming next: prep packs and mock interviews built from the job you applied to.", soon: true },
   { icon: BarChart3, title: "Skill gap insights", body: "Planned: the skills employers keep asking for, and a plan to learn them.", soon: true },
   {

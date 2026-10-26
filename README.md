@@ -111,8 +111,9 @@ Run Lite yourself with `npm run dev:lite` (port 3100), or build it with `npm run
 | LinkedIn, Indeed, Glassdoor, Bayt, Naukri and more via [JobSpy](https://github.com/speedyapply/JobSpy) | The JobSpy service, on a self-hosted install ([details](#jobspy-linkedin-indeed-and-more)) |
 | CV tailoring: rewrites your headline, summary, skills and bullets for one posting from your own facts, flags anything it can't back up, and lists what the posting asks for that you don't show. The prompt is in Settings to read and change | An AI provider |
 | Cover letters: drafted from your profile for one posting, checked for numbers it can't back up, placeholders and clichés, then copied into a form or downloaded as a PDF. The prompt is in Settings to read and change | An AI provider (or write it yourself) |
-| Prompts you can read: Settings shows the full CV tailoring and cover letter prompts to change or reset, and each page shows exactly what's sent to your AI | An AI provider |
-| Coming next: answers to application-form questions, follow-ups, interview coach | An AI provider |
+| Application questions: paste a question from an application form and get an answer from your profile and CV, with the facts it leans on and what to check. Answers can be edited and copied, and the prompt is in Settings to read and change | An AI provider (or write them yourself) |
+| Prompts you can read: Settings shows the full CV tailoring, cover letter and application question prompts to change or reset, and each page shows exactly what's sent to your AI | An AI provider |
+| Coming next: follow-ups, interview coach | An AI provider |
 
 ## Choosing an AI provider
 
