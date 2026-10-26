@@ -4,7 +4,7 @@ import { AiSettingsForm, type AiSettingsView } from "./ai-settings-form";
 import { BackupControls } from "./backup-controls";
 import { JobSourceForm, JobSpyToggle } from "./job-source-form";
 import { LocalJobSpy } from "./local-jobspy";
-import { CvPromptForm, LetterPromptForm } from "./prompt-form";
+import { AnswerPromptForm, CvPromptForm, LetterPromptForm } from "./prompt-form";
 
 export type SettingsData = {
   ai: AiSettingsView;
@@ -21,13 +21,14 @@ export type SettingsData = {
   cvPrompt: string | null;
   /** The user's own cover letter instructions, or null for the default. */
   coverLetterPrompt: string | null;
+  answerPrompt: string | null;
   /** Where the user's data and keys are kept, for the "Your data" card. */
   dataNote: string;
   keyNote: string;
 };
 
 /** The Settings cards, shared by the server page and the lite edition. */
-export function SettingsView({ ai, localMode, aiInBrowser, rapidApiKeyHint, jobSpy, localJobSpy, cvPrompt, coverLetterPrompt, dataNote, keyNote }: SettingsData) {
+export function SettingsView({ ai, localMode, aiInBrowser, rapidApiKeyHint, jobSpy, localJobSpy, cvPrompt, coverLetterPrompt, answerPrompt, dataNote, keyNote }: SettingsData) {
   return (
     <div className="flex flex-col gap-4">
       <Card>
@@ -65,6 +66,19 @@ export function SettingsView({ ai, localMode, aiInBrowser, rapidApiKeyHint, jobS
         </CardHeader>
         <CardContent>
           <LetterPromptForm saved={coverLetterPrompt} />
+        </CardContent>
+      </Card>
+
+      <Card id="answer-prompt">
+        <CardHeader>
+          <CardTitle>Application questions prompt</CardTitle>
+          <CardDescription>
+            Exactly what HireMe asks the AI when it answers a question from an application form. Change the tone, length or approach to
+            suit you, or go back to the default at any time.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <AnswerPromptForm saved={answerPrompt} />
         </CardContent>
       </Card>
 

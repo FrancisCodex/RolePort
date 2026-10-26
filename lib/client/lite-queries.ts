@@ -12,6 +12,8 @@ import type { OnboardingData } from "@/app/(onboarding)/welcome/onboarding-flow"
 import { aiConfigFromRow } from "@/lib/ai/settings";
 import { readCvPage, type CvPageData } from "@/lib/cv/tailor";
 import { readLetterPage, type LetterPageData } from "@/lib/letter/letter";
+import { readQuestionsPage } from "@/lib/questions/questions";
+import type { QuestionsData } from "@/lib/questions/types";
 import { getBrowserDb, type BrowserDb } from "@/lib/db/browser";
 import { LOCAL_USER } from "@/lib/db/local-user";
 import * as schema from "@/lib/db/schema";
@@ -97,6 +99,7 @@ export async function loadSettings(): Promise<{
   jobspyEnabled: boolean;
   cvPrompt: string | null;
   coverLetterPrompt: string | null;
+  answerPrompt: string | null;
 }> {
   const db = await getBrowserDb();
   const row = await readSettings(db, LOCAL_USER.id);
@@ -106,6 +109,7 @@ export async function loadSettings(): Promise<{
     jobspyEnabled: Boolean(row?.jobspyEnabled),
     cvPrompt: row?.cvPrompt ?? null,
     coverLetterPrompt: row?.coverLetterPrompt ?? null,
+    answerPrompt: row?.answerPrompt ?? null,
   };
 }
 
@@ -138,8 +142,8 @@ export async function loadApplication(id: string): Promise<ApplicationData | nul
   const [{ profile }, ai] = await Promise.all([readProfile(db, await me(db)), aiEnabled(db)]);
   const job = application.jobId ? await readJob(db, LOCAL_USER.id, application.jobId, profile) : null;
   const user = await me(db);
-  const [cv, letter] = await Promise.all([readCvPage(db, user, id, ai), readLetterPage(db, user, id, ai)]);
-  return toApplicationData(application, job, ai, job && sourceCredit(job.source), { cv, letter });
+  const [cv, letter, questions] = await Promise.all([readCvPage(db, user, id, ai), readLetterPage(db, user, id, ai), readQuestionsPage(db, user, id, ai)]);
+  return toApplicationData(application, job, ai, job && sourceCredit(job.source), { cv, letter, questions });
 }
 
 export async function loadCvPage(applicationId: string): Promise<CvPageData | null> {
@@ -150,4 +154,9 @@ export async function loadCvPage(applicationId: string): Promise<CvPageData | nu
 export async function loadLetterPage(applicationId: string): Promise<LetterPageData | null> {
   const db = await getBrowserDb();
   return readLetterPage(db, await me(db), applicationId, await aiEnabled(db));
+}
+
+export async function loadQuestionsPage(applicationId: string): Promise<QuestionsData | null> {
+  const db = await getBrowserDb();
+  return readQuestionsPage(db, await me(db), applicationId, await aiEnabled(db));
 }

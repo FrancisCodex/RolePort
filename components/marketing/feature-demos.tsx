@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/react";
-import { ArrowRight, Bot, Check, Cloud, Copy, Cpu, Download, FileText, KanbanSquare, Laptop, Loader2, Lock, Mail, ShieldCheck, Sparkles, Target, X } from "lucide-react";
+import { ArrowRight, Bot, Check, Cloud, Copy, Cpu, Download, FileText, KanbanSquare, Laptop, Loader2, Lock, Mail, MessageSquareText, ShieldCheck, Sparkles, Target, X } from "lucide-react";
 import { useState, type DragEvent, type ReactNode } from "react";
 import { MatchRing } from "@/components/ui/match-ring";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,7 @@ type Tab = { id: string; icon: typeof Target; title: string; body: string };
 const TABS: Tab[] = [
   { id: "match", icon: Target, title: "Honest match scores", body: "Toggle the skills on your profile and watch the score, strengths and gaps change." },
   { id: "kit", icon: FileText, title: "Tailor & apply in one place", body: "Tailor your CV and write the cover letter for a job in a click, then download or copy them." },
+  { id: "answers", icon: MessageSquareText, title: "Answers to form questions", body: "Paste a question from the application form and get an answer written from your real experience." },
   { id: "pipeline", icon: KanbanSquare, title: "A pipeline you can drag", body: "Move applications from Saved to Offer. Your response rate keeps itself up to date." },
   { id: "privacy", icon: Lock, title: "Your AI, your data", body: "Pick a provider and see exactly where your CV goes. With Ollama, nowhere at all." },
 ];
@@ -77,6 +78,7 @@ export function FeatureTabs() {
           >
             {active === "match" && <MatchDemo />}
             {active === "kit" && <KitDemo />}
+            {active === "answers" && <AnswersDemo />}
             {active === "pipeline" && <PipelineDemo />}
             {active === "privacy" && <PrivacyDemo />}
           </motion.div>
@@ -600,6 +602,118 @@ function KitDemo() {
 
       <p className="flex items-center gap-1.5 border-t border-border px-4 py-2.5 text-[11px] text-muted">
         <ShieldCheck className="size-3 shrink-0 text-brand" /> Every claim is checked against your profile, and the prompts are yours to read and edit.
+      </p>
+    </div>
+  );
+}
+
+/* Application questions ---------------------------------------------------------- */
+
+const QUESTIONS = [
+  {
+    id: "why",
+    question: "Why do you want to work at Kalye Labs?",
+    answer:
+      "Your posting describes a storefront built in Next.js with a strong testing habit, which is how I already work. At my last job I built the customer dashboard in React and TypeScript for 40,000 merchants, and I wrote Jest tests for everything I shipped. I would like to bring that to your team.",
+    facts: ["Built a React and TypeScript dashboard used by 40,000 merchants", "Writes Jest tests for what they ship"],
+    note: "It leans on your dashboard role. Add a reason of your own if you have one.",
+  },
+  {
+    id: "project",
+    question: "Describe a project you're proud of.",
+    answer:
+      "The customer dashboard I built for 40,000 merchants. I built the main screens in React and TypeScript, added unit tests, and reviewed pull requests for a team of 5, so changes shipped with fewer surprises.",
+    facts: ["Customer dashboard for 40,000 merchants", "Reviewed pull requests for a team of 5"],
+    note: "Check the outcome. Your profile doesn't say how many fewer bugs there were.",
+  },
+  {
+    id: "notice",
+    question: "What is your notice period?",
+    answer: "I would like to confirm my notice period with you directly, since I have not set a start date yet.",
+    facts: [],
+    note: "Your profile doesn't cover this, so it didn't guess. Write your own answer.",
+  },
+];
+
+function AnswersDemo() {
+  const [picked, setPicked] = useState(QUESTIONS[0].id);
+  const [state, setState] = useState<Record<string, Step>>({});
+  const [copied, setCopied] = useState<string | null>(null);
+  const q = QUESTIONS.find((x) => x.id === picked) ?? QUESTIONS[0];
+  const step = state[q.id] ?? "idle";
+
+  // Pretend generation: in HireMe this is your own AI provider, given your profile, the posting and the question.
+  function answer() {
+    const id = q.id;
+    setState((s) => ({ ...s, [id]: "working" }));
+    setTimeout(() => setState((s) => ({ ...s, [id]: "done" })), 1100);
+  }
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(q.answer);
+      setCopied(q.id);
+    } catch {}
+  }
+
+  return (
+    <div className="flex h-full flex-col">
+      <DemoHeader title="React Developer · Kalye Labs" hint="Application questions" />
+      <div className="flex flex-1 flex-col gap-3 p-4">
+        <div>
+          <p className="mb-2 text-xs font-medium text-muted">Pick a question from the form</p>
+          <div className="flex flex-wrap gap-1.5">
+            {QUESTIONS.map((x) => (
+              <button
+                key={x.id}
+                type="button"
+                onClick={() => setPicked(x.id)}
+                aria-pressed={x.id === picked}
+                className={cn(
+                  "rounded-md border px-2.5 py-1 text-left text-xs transition-colors",
+                  x.id === picked ? "border-brand/40 bg-brand-soft font-medium text-brand-ink" : "border-border text-muted hover:border-border-strong hover:text-fg",
+                )}
+              >
+                {x.question}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex min-h-36 flex-col gap-2 rounded-lg border border-border bg-surface-2/60 p-3">
+          <p className="text-xs font-semibold">{q.question}</p>
+          {step === "done" ? (
+            <motion.div key={q.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col gap-2.5">
+              <p className="text-[11px] leading-relaxed text-muted">{q.answer}</p>
+              <div className="flex flex-col gap-1 rounded-md border border-border bg-surface p-2">
+                {q.facts.map((f) => (
+                  <p key={f} className="flex gap-1.5 text-[11px] text-muted">
+                    <Check className="mt-px size-3 shrink-0 text-success" strokeWidth={2.5} /> {f}
+                  </p>
+                ))}
+                <p className="text-[11px] text-subtle">{q.note}</p>
+              </div>
+            </motion.div>
+          ) : step === "working" ? (
+            <span className="flex items-center gap-1.5 text-[11px] text-muted">
+              <Loader2 className="size-3.5 animate-spin" /> Writing from your profile and the posting…
+            </span>
+          ) : (
+            <span className="text-[11px] text-subtle">Not answered yet.</span>
+          )}
+        </div>
+
+        <div className="mt-auto flex flex-wrap gap-1.5">
+          <DemoButton onClick={answer} disabled={step !== "idle"} primary={step === "idle"}>
+            <Sparkles className="size-3.5" /> {step === "done" ? "Answered" : "Answer with AI"}
+          </DemoButton>
+          <DemoButton onClick={() => void copy()} disabled={step !== "done"} primary={step === "done"}>
+            {copied === q.id ? <Check className="size-3.5" /> : <Copy className="size-3.5" />} {copied === q.id ? "Copied" : "Copy answer"}
+          </DemoButton>
+        </div>
+      </div>
+      <p className="flex items-center gap-1.5 border-t border-border px-4 py-2.5 text-[11px] text-muted">
+        <ShieldCheck className="size-3 shrink-0 text-brand" /> It only uses facts from your profile, and tells you what to check or add.
       </p>
     </div>
   );

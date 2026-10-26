@@ -1,5 +1,6 @@
 import * as applied from "@/app/(app)/applied/actions";
 import * as letter from "@/app/(app)/applied/[id]/cover-letter/actions";
+import * as questions from "@/app/(app)/applied/[id]/questions/actions";
 import * as cv from "@/app/(app)/applied/[id]/cv/actions";
 import * as jobs from "@/app/(app)/jobs/actions";
 import * as profile from "@/app/(app)/profile/actions";
@@ -59,3 +60,11 @@ export const discardLetter: typeof letter.discardLetter = isLite ? async (...a) 
 export const saveLetterPrompt: typeof letter.saveLetterPrompt = isLite
   ? async (...a) => (await lite()).saveLetterPrompt(...a)
   : letter.saveLetterPrompt;
+
+export const saveQuestions: typeof questions.saveQuestions = isLite ? async (...a) => (await lite()).saveQuestions(...a) : questions.saveQuestions;
+export const saveAnswerPrompt: typeof questions.saveAnswerPrompt = isLite
+  ? async (...a) => (await lite()).saveAnswerPrompt(...a)
+  : questions.saveAnswerPrompt;
+export const answerApplicationQuestion: typeof questions.answerApplicationQuestion = isLite
+  ? async (...a) => (await lite()).answerApplicationQuestion(...a)
+  : questions.answerApplicationQuestion;

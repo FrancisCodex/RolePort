@@ -5,9 +5,10 @@ import { useState, useTransition, type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/fields";
+import { ANSWER_FIXED_RULES, DEFAULT_ANSWER_PROMPT, MAX_ANSWER_PROMPT } from "@/lib/ai/answer-prompt";
 import { CV_FIXED_RULES, DEFAULT_CV_PROMPT, MAX_CV_PROMPT } from "@/lib/ai/cv-prompt";
 import { DEFAULT_LETTER_PROMPT, LETTER_FIXED_RULES, MAX_LETTER_PROMPT } from "@/lib/ai/letter-prompt";
-import { saveCvPrompt, saveLetterPrompt } from "@/lib/client/mutations";
+import { saveAnswerPrompt, saveCvPrompt, saveLetterPrompt } from "@/lib/client/mutations";
 import type { Result } from "@/lib/result";
 import { cn } from "@/lib/utils";
 
@@ -123,6 +124,20 @@ export function LetterPromptForm({ saved }: { saved: string | null }) {
       max={MAX_LETTER_PROMPT}
       onSave={saveLetterPrompt}
       fixedNote="They keep job postings from giving the AI instructions and let HireMe read the answer. HireMe adds your name, contact details, the date and the employer's address around the letter itself, and flags numbers it can't find in your profile or CV, leftover placeholders and clichés."
+    />
+  );
+}
+
+export function AnswerPromptForm({ saved }: { saved: string | null }) {
+  return (
+    <PromptForm
+      id="answer-prompt-text"
+      saved={saved}
+      defaultPrompt={DEFAULT_ANSWER_PROMPT}
+      fixedRules={ANSWER_FIXED_RULES}
+      max={MAX_ANSWER_PROMPT}
+      onSave={saveAnswerPrompt}
+      fixedNote="They keep job postings and questions from giving the AI instructions and let HireMe read the answer. HireMe also flags numbers it can't find in your profile or CV and leftover placeholders."
     />
   );
 }

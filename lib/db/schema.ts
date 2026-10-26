@@ -119,7 +119,7 @@ export const applicationStatus = pgEnum("application_status", [
   "ghosted",
 ]);
 
-export const documentKind = pgEnum("document_kind", ["uploaded_cv", "cv", "cover_letter", "follow_up"]);
+export const documentKind = pgEnum("document_kind", ["uploaded_cv", "cv", "cover_letter", "follow_up", "application_answers"]);
 
 /* -------------------------------------------------------------------------- */
 /* Profile — the structured version of the reference repo's profile files     */
@@ -351,6 +351,8 @@ export const userSettings = pgTable("user_settings", {
   cvPrompt: text("cv_prompt"),
   /** The user's own instructions for cover letters, or null to use the default (lib/ai/letter-prompt.ts). */
   coverLetterPrompt: text("cover_letter_prompt"),
+  /** The user's own instructions for application question answers, or null to use the default (lib/ai/answer-prompt.ts). */
+  answerPrompt: text("answer_prompt"),
   ...timestamps,
 });
 

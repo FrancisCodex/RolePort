@@ -3,14 +3,14 @@
 import { Check, ChevronRight, Copy, Download, FileText, Loader2, Mail, MessageSquareText, Sparkles, TriangleAlert, Wand2 } from "lucide-react";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { draftLetter, tailorCv } from "@/lib/client/mutations";
 import { cvFileName, renderCvPdf } from "@/lib/cv/pdf";
 import type { CvContent, CvTailoring } from "@/lib/cv/types";
 import { letterFileName, renderLetterPdf } from "@/lib/letter/pdf";
-import { letterText, paragraphsOf, wordCount, type LetterContent, type LetterReview } from "@/lib/letter/types";
+import { letterText, wordCount, type LetterContent, type LetterReview } from "@/lib/letter/types";
+import type { QuestionItem, QuestionsData } from "@/lib/questions/types";
 import { cn } from "@/lib/utils";
 import type { ApplicationKit as Kit } from "../view-data";
 
@@ -118,7 +118,6 @@ export function ApplicationKit({ applicationId, company, kit }: { applicationId:
   const working = busy !== null;
   const cvWarnings = cv?.tailoring?.warnings.length ?? 0;
   const letterWarnings = letter?.review?.warnings.length ?? 0;
-  const firstParagraph = letter ? paragraphsOf(letter.content.body)[0] : undefined;
 
   return (
     <Card>
@@ -187,7 +186,7 @@ export function ApplicationKit({ applicationId, company, kit }: { applicationId:
             warnings={letterWarnings}
             error={errors.letter}
             busyText={busy === "letter-ai" ? "Writing your cover letter… local models can take a minute or two." : null}
-            preview={firstParagraph}
+            preview={hasLetter ? letterText(letter!.content) : undefined}
           >
             {canAi && (
               <Button size="sm" variant={hasLetter ? "secondary" : "primary"} onClick={() => void runLetter()} disabled={working}>
@@ -206,15 +205,7 @@ export function ApplicationKit({ applicationId, company, kit }: { applicationId:
             )}
           </KitRow>
 
-          <li className="flex gap-3 px-5 py-3.5">
-            <RowIcon icon={MessageSquareText} />
-            <div className="min-w-0 flex-1">
-              <p className="flex flex-wrap items-center gap-1.5 text-[13px] font-medium">
-                Application questions <Badge>Coming soon</Badge>
-              </p>
-              <p className="mt-0.5 text-xs text-muted">Paste the questions from the application form and get answers grounded in your experience.</p>
-            </div>
-          </li>
+          {kit.questions && <QuestionsRow applicationId={applicationId} data={kit.questions} />}
         </ul>
       )}
 
@@ -291,7 +282,11 @@ function KitRow({
           </Link>
         </div>
         <p className="-mt-1.5 text-xs text-muted">{status}</p>
-        {preview && <p className="line-clamp-3 rounded-md border border-border bg-surface-2 px-3 py-2 text-xs leading-relaxed text-muted">{preview}</p>}
+        {preview && (
+          <div className="rounded-md border border-border bg-surface-2 px-3 py-2">
+            <ExpandableText text={preview} />
+          </div>
+        )}
         {warnings > 0 && (
           <Link href={href} className="flex items-center gap-1.5 text-xs font-medium text-warning hover:underline">
             <TriangleAlert className="size-3.5" /> {warnings} thing{warnings === 1 ? "" : "s"} to check before you send
@@ -305,3 +300,85 @@ function KitRow({
   );
 }
 
+/** The final answers to the form's questions, ready to copy. Adding, rewriting and the prompt live on the questions page. */
+function QuestionsRow({ applicationId, data }: { applicationId: string; data: QuestionsData }) {
+  const [copied, setCopied] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const href = `/applied/${applicationId}/questions`;
+  const answered = data.items.filter((i) => i.answer.trim());
+  const warnings = data.items.reduce((n, i) => n + (i.draft?.warnings.length ? 1 : 0), 0);
+
+  async function copy(item: QuestionItem) {
+    try {
+      await navigator.clipboard.writeText(item.answer);
+      setCopied(item.id);
+    } catch {
+      setError("Couldn't copy. Open the questions page and copy it from there.");
+    }
+  }
+
+  return (
+    <li className="flex gap-3 px-5 py-3.5">
+      <RowIcon icon={MessageSquareText} done={data.items.length > 0 && answered.length === data.items.length} />
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+          <p className="text-[13px] font-medium">Application questions</p>
+          <Link href={href} className="inline-flex items-center gap-0.5 text-xs font-medium text-muted hover:text-fg">
+            Review &amp; edit <ChevronRight className="size-3.5" />
+          </Link>
+        </div>
+        <p className="-mt-1.5 text-xs text-muted">
+          {data.items.length
+            ? `${answered.length} of ${data.items.length} answered`
+            : "Paste the questions from the application form and get answers grounded in your experience."}
+        </p>
+        {data.items.map((item) => (
+          <div key={item.id} className="flex flex-col gap-1.5 rounded-md border border-border bg-surface-2 px-3 py-2">
+            <p className="text-xs font-medium whitespace-pre-line">{item.question}</p>
+            {item.answer.trim() ? (
+              <>
+                <ExpandableText text={item.answer} />
+                <Button size="sm" variant="secondary" className="self-start" onClick={() => void copy(item)}>
+                  {copied === item.id ? <Check /> : <Copy />} {copied === item.id ? "Copied" : "Copy answer"}
+                </Button>
+              </>
+            ) : (
+              <Link href={href} className="text-xs font-medium text-brand-ink hover:underline">
+                Not answered yet. Answer it
+              </Link>
+            )}
+          </div>
+        ))}
+        {warnings > 0 && (
+          <Link href={href} className="flex items-center gap-1.5 text-xs font-medium text-warning hover:underline">
+            <TriangleAlert className="size-3.5" /> {warnings} answer{warnings === 1 ? "" : "s"} to check before you send
+          </Link>
+        )}
+        {error && <p className="text-xs text-danger">{error}</p>}
+        {data.items.length === 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            <Link href={href} className={buttonVariants({ size: "sm" })}>
+              Add questions
+            </Link>
+          </div>
+        )}
+      </div>
+    </li>
+  );
+}
+
+/** Long text cut to a few lines, with a toggle to read all of it in place. Short text shows as is. */
+function ExpandableText({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  const long = text.length > 280 || text.split("\n").length > 4;
+  return (
+    <div className="flex flex-col items-start gap-1.5">
+      <p className={cn("text-xs leading-relaxed whitespace-pre-line text-muted", long && !open && "line-clamp-4")}>{text}</p>
+      {long && (
+        <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="text-xs font-medium text-brand-ink hover:underline">
+          {open ? "Show less" : "Show more"}
+        </button>
+      )}
+    </div>
+  );
+}
