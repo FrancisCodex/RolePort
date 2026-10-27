@@ -21,7 +21,6 @@ export const metadata: Metadata = {
   },
   description:
     "Free, open-source job search that runs on your own machine. Find jobs in your country or abroad, score your fit with your own AI, and track every application.",
-  icons: { apple: "/icons/apple-touch-icon.png" },
   // Installed to the home screen (app/manifest.ts); iOS also keeps a home-screen app's storage.
   appleWebApp: { capable: true, title: "HireMe", statusBarStyle: "default" },
 };
