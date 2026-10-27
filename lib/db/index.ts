@@ -44,11 +44,6 @@ function state(): DbState {
   return (globalForDb.hiremeDb ??= createDb());
 }
 
-/** Synchronous handle for libraries that need one (Better Auth). Prefer getDb() everywhere else. */
-export function getDbSync(): Db {
-  return state().db;
-}
-
 /** Resolves once the schema is migrated. */
 export async function getDb(): Promise<Db> {
   const s = state();

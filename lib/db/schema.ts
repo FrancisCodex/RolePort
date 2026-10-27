@@ -26,7 +26,8 @@ const timestamps = {
 };
 
 /* -------------------------------------------------------------------------- */
-/* Auth (Better Auth core tables — field names must match its schema)         */
+/* Users. session/account/verification are unused since accounts were removed; */
+/* they stay so existing databases need no migration.                         */
 /* -------------------------------------------------------------------------- */
 
 export const user = pgTable("user", {

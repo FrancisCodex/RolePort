@@ -8,8 +8,6 @@ import { AnswerPromptForm, CvPromptForm, LetterPromptForm } from "./prompt-form"
 
 export type SettingsData = {
   ai: AiSettingsView;
-  /** Whether to suggest a local model (Ollama) first. */
-  localMode: boolean;
   /** AI calls run from this browser and data lives in it (the lite edition). */
   aiInBrowser?: boolean;
   rapidApiKeyHint: string | null;
@@ -28,7 +26,7 @@ export type SettingsData = {
 };
 
 /** The Settings cards, shared by the server page and the lite edition. */
-export function SettingsView({ ai, localMode, aiInBrowser, rapidApiKeyHint, jobSpy, localJobSpy, cvPrompt, coverLetterPrompt, answerPrompt, dataNote, keyNote }: SettingsData) {
+export function SettingsView({ ai, aiInBrowser, rapidApiKeyHint, jobSpy, localJobSpy, cvPrompt, coverLetterPrompt, answerPrompt, dataNote, keyNote }: SettingsData) {
   return (
     <div className="flex flex-col gap-4">
       <Card>
@@ -39,7 +37,7 @@ export function SettingsView({ ai, localMode, aiInBrowser, rapidApiKeyHint, jobS
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <AiSettingsForm initial={ai} localMode={localMode} aiInBrowser={aiInBrowser} />
+          <AiSettingsForm initial={ai} aiInBrowser={aiInBrowser} />
         </CardContent>
       </Card>
 
