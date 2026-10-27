@@ -10,7 +10,7 @@ import { exportBackup } from "@/lib/backup/export";
 import { importErrorMessage, readBackupForm } from "@/lib/backup/form";
 import { importBackup, type ImportSummary } from "@/lib/backup/import";
 import { getDb } from "@/lib/db";
-import { isLocalMode, jobSpyUrl } from "@/lib/env";
+import { jobSpyUrl } from "@/lib/env";
 import type { Result } from "@/lib/result";
 import { decryptSecret, encryptSecret } from "@/lib/secrets";
 import { getCurrentUser } from "@/lib/session";
@@ -21,7 +21,7 @@ export type { AiSettingsInput };
 /** Form input → provider config, reusing the saved key when the field was left blank. */
 async function resolve(input: AiSettingsInput) {
   const saved = await getMySettingsRow();
-  return resolveAiInput(input, decryptSecret(saved?.aiApiKeyEnc), isLocalMode);
+  return resolveAiInput(input, decryptSecret(saved?.aiApiKeyEnc));
 }
 
 function errorMessage(error: unknown) {
@@ -81,7 +81,7 @@ export async function fetchModels(raw: AiSettingsInput): Promise<Result<string[]
     const apiKey = parsed.data.clearApiKey ? null : parsed.data.apiKey || decryptSecret(saved?.aiApiKeyEnc);
     const models = await listModels({
       provider: preset.provider,
-      baseUrl: preset.provider === "openai_compatible" ? checkBaseUrl(parsed.data.baseUrl || preset.baseUrl, isLocalMode) : null,
+      baseUrl: preset.provider === "openai_compatible" ? checkBaseUrl(parsed.data.baseUrl || preset.baseUrl) : null,
       apiKey,
     });
     return { ok: true, data: models };
@@ -105,9 +105,9 @@ export async function saveJobSpyEnabled(raw: { enabled: boolean }): Promise<Resu
   const user = await getCurrentUser();
   const input = z.object({ enabled: z.boolean() }).safeParse(raw);
   if (!input.success) return { ok: false, error: "Invalid setting." };
-  // The JobSpy boards are for self-hosted, single-person installs only.
-  if (input.data.enabled && (!isLocalMode || !jobSpyUrl)) {
-    return { ok: false, error: "JobSpy is only available on a self-hosted install with the JobSpy service running." };
+  // The JobSpy boards need the sidecar running next to this install.
+  if (input.data.enabled && !jobSpyUrl) {
+    return { ok: false, error: "Start the JobSpy service and set JOBSPY_URL first." };
   }
   await writeSettings(await getDb(), user.id, { jobspyEnabled: input.data.enabled });
   refresh();

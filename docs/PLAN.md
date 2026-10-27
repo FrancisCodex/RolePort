@@ -41,7 +41,7 @@ So porting it means: **turn each prompt into a server-side feature that calls an
 - **Next.js 16 App Router** (this repo). Note the version changes: `middleware` is now `proxy.ts`, and Cache Components affect caching. Read `node_modules/next/dist/docs/` before writing each part.
 - **UI**: Tailwind v4 (already installed) + shadcn/ui (Radix) + Motion for spring animations, Geist/Inter fonts, lucide icons. Premium feel = big rounded cards, soft shadows, generous spacing, playful micro-interactions and streaks (Duolingo), clean typography and blocks (Notion), restraint and polish (Apple).
 - **DB**: Postgres (Supabase or Neon) + Drizzle ORM.
-- **Auth**: Better Auth or Supabase Auth (Google + email).
+- **Auth**: none. Every install belongs to one person, and Lite keeps data in the browser (accounts were built with Better Auth, then removed).
 - **Storage**: Supabase Storage / Vercel Blob for uploaded CVs and generated PDFs.
 - **AI**: Anthropic SDK with structured outputs. Use a fast, cheap model (`claude-haiku-5-5`) for bulk match scoring and `claude-sonnet-5-5` for drafting, reviewing, and interviews. Port the reference prompts into `lib/ai/prompts/`.
 - **Background jobs**: Inngest or Trigger.dev for batch ranking and the multi-step apply pipeline (each run takes longer than one request).

@@ -71,13 +71,11 @@ export const aiInput = z.object({
 });
 export type AiSettingsInput = z.infer<typeof aiInput>;
 
-const PRIVATE_HOST = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.0\.0\.0|\[?::1\]?|host\.docker\.internal)/i;
-
 /**
- * Only http(s). `allowPrivateHosts` is false on a shared server, so users can't point it at
- * internal addresses; true for local mode and for the lite edition (the user's own browser).
+ * Only http(s). Local addresses are fine: HireMe runs on the user's own computer or in their
+ * browser, and that's where Ollama and LM Studio live.
  */
-export function checkBaseUrl(raw: string | null, allowPrivateHosts: boolean): string | null {
+export function checkBaseUrl(raw: string | null): string | null {
   if (!raw) return null;
   let url: URL;
   try {
@@ -86,18 +84,11 @@ export function checkBaseUrl(raw: string | null, allowPrivateHosts: boolean): st
     throw new Error("Base URL isn't a valid URL.");
   }
   if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error("Base URL must start with http:// or https://");
-  if (!allowPrivateHosts && PRIVATE_HOST.test(url.hostname)) {
-    throw new Error("Local addresses are only allowed when HireMe runs in local mode.");
-  }
   return url.toString().replace(/\/+$/, "");
 }
 
 /** Turn form input into a provider config, reusing `savedKey` when the key field was left blank. */
-export function resolveAiInput(
-  input: AiSettingsInput,
-  savedKey: string | null,
-  allowPrivateHosts: boolean,
-): { config: AiConfig; apiKey: string | null } {
+export function resolveAiInput(input: AiSettingsInput, savedKey: string | null): { config: AiConfig; apiKey: string | null } {
   const preset = AI_PRESETS[input.preset as keyof typeof AI_PRESETS];
   const apiKey = input.clearApiKey ? null : input.apiKey || savedKey;
   const model = input.model || preset.defaultModel;
@@ -107,7 +98,7 @@ export function resolveAiInput(
     return { config: { provider: "anthropic", apiKey, model: model || DEFAULT_ANTHROPIC_MODEL, source: "settings" }, apiKey };
   }
 
-  const baseUrl = checkBaseUrl(input.baseUrl || preset.baseUrl, allowPrivateHosts);
+  const baseUrl = checkBaseUrl(input.baseUrl || preset.baseUrl);
   if (!baseUrl) throw new Error("Add the server's base URL.");
   if (preset.needsKey && !apiKey) throw new Error(`Add your ${preset.label} API key.`);
   return {

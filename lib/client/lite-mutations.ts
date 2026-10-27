@@ -284,7 +284,7 @@ export async function saveAnswerPrompt(prompt: string | null): Promise<Result> {
 /** Form input → provider config, reusing the saved key. Local addresses are fine: it's the user's own machine. */
 async function resolve(input: AiSettingsInput) {
   const saved = await readSettings(await getBrowserDb(), LOCAL_USER.id);
-  return resolveAiInput(input, readKey(saved?.aiApiKeyEnc), true);
+  return resolveAiInput(input, readKey(saved?.aiApiKeyEnc));
 }
 
 export async function saveAiSettings(raw: AiSettingsInput): Promise<Result> {
@@ -334,7 +334,7 @@ export async function fetchModels(raw: AiSettingsInput): Promise<Result<string[]
   try {
     const saved = await readSettings(await getBrowserDb(), LOCAL_USER.id);
     const apiKey = parsed.data.clearApiKey ? null : parsed.data.apiKey || readKey(saved?.aiApiKeyEnc);
-    baseUrl = preset.provider === "openai_compatible" ? checkBaseUrl(parsed.data.baseUrl || preset.baseUrl, true) : null;
+    baseUrl = preset.provider === "openai_compatible" ? checkBaseUrl(parsed.data.baseUrl || preset.baseUrl) : null;
     return { ok: true, data: await listModels({ provider: preset.provider, baseUrl, apiKey }) };
   } catch (error) {
     return { ok: false, error: await providerError(error, baseUrl, null) };

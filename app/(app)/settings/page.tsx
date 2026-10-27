@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { BackToGuide } from "@/components/app/back-to-guide";
 import { PageHeader } from "@/components/app/page-header";
 import { getAiConfig, getMySettingsRow } from "@/lib/ai/config";
-import { isLocalMode, jobSpyUrl } from "@/lib/env";
+import { jobSpyUrl } from "@/lib/env";
 import { isLite } from "@/lib/mode";
 import { maskSecret } from "@/lib/secret-hint";
 import { decryptSecret } from "@/lib/secrets";
@@ -49,7 +49,7 @@ async function jobSpyReachable(): Promise<boolean> {
 }
 
 async function SettingsContent() {
-  const showJobSpy = isLocalMode && Boolean(jobSpyUrl);
+  const showJobSpy = Boolean(jobSpyUrl);
   const [row, active, reachable] = await Promise.all([
     getMySettingsRow(),
     getAiConfig(),
@@ -59,7 +59,6 @@ async function SettingsContent() {
   return (
     <SettingsView
       ai={aiSettingsView(row, decryptSecret, active)}
-      localMode={isLocalMode}
       rapidApiKeyHint={maskSecret(decryptSecret(row?.rapidApiKeyEnc))}
       jobSpy={showJobSpy ? { enabled: Boolean(row?.jobspyEnabled), reachable } : null}
       cvPrompt={row?.cvPrompt ?? null}

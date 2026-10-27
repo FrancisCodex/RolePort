@@ -28,8 +28,8 @@ type Status = { tone: "success" | "error" | "info"; text: string } | null;
  * `aiInBrowser`: the lite edition, where AI calls go from this browser to the provider, so
  * Ollama needs to allow this site (setup steps instead of the self-hosted Docker hint).
  */
-export function AiSettingsForm({ initial, localMode, aiInBrowser = false }: { initial: AiSettingsView; localMode: boolean; aiInBrowser?: boolean }) {
-  const [preset, setPreset] = useState<AiPresetId>(initial.preset ?? (localMode ? "ollama" : "anthropic"));
+export function AiSettingsForm({ initial, aiInBrowser = false }: { initial: AiSettingsView; aiInBrowser?: boolean }) {
+  const [preset, setPreset] = useState<AiPresetId>(initial.preset ?? "ollama");
   const config = AI_PRESETS[preset];
   const samePreset = preset === initial.preset;
 

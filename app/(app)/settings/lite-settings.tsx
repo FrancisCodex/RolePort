@@ -14,8 +14,6 @@ export function LiteSettings() {
       {({ jobspyEnabled, ...data }) => (
         <SettingsView
           {...data}
-          // Lite's story is a model on the user's own machine, so suggest Ollama first.
-          localMode
           aiInBrowser
           // JobSpy runs on the user's computer; the browser calls it (lib/client/lite-jobspy.ts).
           jobSpy={null}

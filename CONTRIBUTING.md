@@ -10,7 +10,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-No keys or database server are needed. Local mode uses an embedded database in `.data/pglite`. To try the AI features for free, install [Ollama](https://ollama.com), pull a model (`ollama pull gemma4:12b`), and pick **Ollama** in Settings.
+No keys or database server are needed. It uses an embedded database in `.data/pglite`. To try the AI features for free, install [Ollama](https://ollama.com), pull a model (`ollama pull gemma4:12b`), and pick **Ollama** in Settings.
 
 Before opening a pull request:
 
@@ -29,7 +29,7 @@ npm run build
 | `lib/jobs` | Job sources, dedup, quick match, job storage |
 | `lib/ai` | Provider config, `generateStructured()`, prompts |
 | `lib/db` | Drizzle schema and the PGlite/Postgres switch |
-| `lib/session.ts` | The only place that resolves the current user (local mode or Better Auth) |
+| `lib/session.ts` | The only place that resolves the current user (one built-in user, no sign-in) |
 | `components/ui` | Design system primitives (use the color tokens in `app/globals.css`, never raw hex) |
 
 ## Ground rules

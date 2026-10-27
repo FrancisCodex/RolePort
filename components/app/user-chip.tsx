@@ -1,6 +1,4 @@
-import { isLocalMode } from "@/lib/env";
 import { getCurrentUser } from "@/lib/session";
-import { SignOutButton } from "./sign-out-button";
 
 export function Avatar({ name, image, className = "size-7" }: { name: string; image: string | null; className?: string }) {
   const initials = name
@@ -26,9 +24,8 @@ export async function UserChip() {
       <Avatar name={user.name} image={user.image} />
       <div className="min-w-0 flex-1">
         <p className="truncate text-[13px] font-medium">{user.name || "You"}</p>
-        <p className="truncate text-[11px] text-subtle">{isLocalMode ? "Local mode · no sign-in" : user.email}</p>
+        <p className="truncate text-[11px] text-subtle">Self-hosted · no sign-in</p>
       </div>
-      {!isLocalMode && <SignOutButton />}
     </div>
   );
 }

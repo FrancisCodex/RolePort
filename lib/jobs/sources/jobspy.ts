@@ -1,5 +1,5 @@
 import { cacheLife } from "next/cache";
-import { isLocalMode, jobSpyUrl } from "@/lib/env";
+import { jobSpyUrl } from "@/lib/env";
 import { countryOrDefault } from "@/lib/geo/countries";
 import type { JobSource } from "../types";
 import { SOURCE_CREDITS } from "./credits";
@@ -23,7 +23,7 @@ export const jobSpySources: JobSource[] = JOBSPY_BOARDS.map(({ board, label, cov
   id: board,
   label,
   attribution: SOURCE_CREDITS[board],
-  enabled: (ctx) => isLocalMode && Boolean(jobSpyUrl) && ctx.jobspyEnabled,
+  enabled: (ctx) => Boolean(jobSpyUrl) && ctx.jobspyEnabled,
   disabledNote: "Turn on JobSpy in Settings (self-hosted only) to search this board",
   covers,
   async search(params) {

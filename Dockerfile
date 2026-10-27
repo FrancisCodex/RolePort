@@ -13,7 +13,7 @@ RUN npm run build
 
 FROM node:22-bookworm-slim
 WORKDIR /app
-ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 HIREME_LOCAL_MODE=true PORT=3000
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000
 COPY --from=build /app/package.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/.next ./.next

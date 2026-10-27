@@ -16,7 +16,7 @@ The rule: **no user data on the server**. The profile, CV, saved jobs, evaluatio
 | Ollama | Server → Ollama | Browser → Ollama on the user's machine |
 | JobSpy | Bundled sidecar | Optional: user runs it locally, browser connects to it |
 | Job sources | Called from the server | Through a stateless proxy route |
-| Accounts | None (local mode) or Better Auth (hosted mode) | None |
+| Accounts | None | None |
 | Sync between devices | Same machine | None; export/import backup |
 
 ## 2. Data: PGlite in the browser
@@ -25,7 +25,7 @@ HireMe already runs on PGlite (`lib/db/index.ts`). PGlite also runs in the brows
 
 Run PGlite in a Web Worker (PGlite's `PGliteWorker`) so queries don't block the UI and several open tabs share one database.
 
-There is one built-in user, as in local mode today. `user_id` columns stay, filled with a fixed id, so rows move between lite and self-hosted without changes.
+There is one built-in user, as in the self-hosted install. `user_id` columns stay, filled with a fixed id, so rows move between lite and self-hosted without changes.
 
 ### Limits to design around
 
@@ -113,7 +113,7 @@ Today the database is read in server components and server actions:
 3. **Same split for AI** (server or browser client) and **for search** (server sources or proxy route + local JobSpy).
 4. **Client-side loading in lite mode.** The server has no data to render, so app pages render a client shell that loads from the browser database. Keep server rendering for self-hosted; the page components take data as props so both paths reuse them.
 5. **CV import in the browser.** `unpdf` runs in the browser, so PDF text extraction moves client-side in lite mode.
-6. **No auth in lite.** `proxy.ts`, Better Auth and `/sign-in` / `/sign-up` are excluded from the lite build.
+6. **No auth.** Neither edition has accounts (they were removed from the self-hosted install too).
 7. **Secrets.** `lib/secrets.ts` is server-only and not used in lite.
 
 ## 9. Phases

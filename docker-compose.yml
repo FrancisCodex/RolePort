@@ -4,7 +4,6 @@ services:
     ports:
       - "3000:3000"
     environment:
-      HIREME_LOCAL_MODE: "true"
       # LinkedIn, Indeed and more via the JobSpy service below. Off until you turn it on in Settings.
       JOBSPY_URL: "http://jobspy:8000"
       # Optional — you can also set these in the app under Settings.

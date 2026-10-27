@@ -142,7 +142,7 @@ Keys are encrypted before they're saved and never sent back to the browser.
 
 It needs no key, but these sites' terms don't allow automated access, so HireMe treats it as a personal tool:
 
-- It runs on your own computer and stays off until you turn it on in **Settings**. A self-hosted install (`HIREME_LOCAL_MODE=true`) calls it from its server; HireMe Lite calls it from your browser ([below](#in-hireme-lite)).
+- It runs on your own computer and stays off until you turn it on in **Settings**. A self-hosted install calls it from its server; HireMe Lite calls it from your browser ([below](#in-hireme-lite)).
 - Results are cached for a few hours, so repeating a search doesn't hit the boards again. The first search takes 30-60 seconds.
 - Boards change often and may rate-limit you. When one fails, the others still return results.
 - Don't turn it on for a server that hosts HireMe for other people.
@@ -167,7 +167,7 @@ Then click **Test** in Settings and turn it on. Results go from JobSpy straight 
 | --- | --- |
 | Lite: "JobSpy is running but doesn't allow this site" | Restart JobSpy with `JOBSPY_ALLOWED_ORIGINS` set to the address in your browser's address bar (no trailing slash). |
 | Lite: "Couldn't reach JobSpy" | Start it (see above) and check the address in Settings. If the browser asked to let the site access devices on your local network, allow it. |
-| Settings has no JobSpy section | Option B: set `JOBSPY_URL` in `.env.local` and check `HIREME_LOCAL_MODE=true`, then restart `npm run dev`. |
+| Settings has no JobSpy section | Option B: set `JOBSPY_URL` in `.env.local`, then restart `npm run dev`. |
 | "The JobSpy service isn't responding" | Start it: `npm run jobspy` (Option B) or `docker compose up -d` (Option A). Check `npm run jobspy:logs`. |
 | A board shows **unavailable** in search results | The board blocked or rate-limited you, or changed its pages. Wait a while and try again; the other sources still work. |
 | Google Jobs is always **unavailable** | Known: JobSpy's Google scraper is broken at the moment. |
@@ -186,7 +186,7 @@ Lite is a static site plus one stateless route (`POST /api/lite/search`), so any
 
 ## Hosting for others
 
-Set `DATABASE_URL` (Postgres, Supabase or Neon) and run `npm run db:migrate`. Set `HIREME_LOCAL_MODE=false`, `BETTER_AUTH_SECRET` and a stable `HIREME_SECRET` to turn on accounts. See [.env.example](.env.example). JobSpy is switched off in this mode.
+HireMe has no accounts: every install belongs to one person. To give other people a hosted version, deploy HireMe Lite ([above](#hosting-hireme-lite)), where each visitor's data stays in their own browser.
 
 ## Contributing
 
