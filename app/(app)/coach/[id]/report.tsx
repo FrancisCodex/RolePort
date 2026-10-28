@@ -7,6 +7,7 @@ import { useState, type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/ui/dialog";
 import { deleteInterview } from "@/lib/client/mutations";
 import { averageScore, RUBRIC, verdictOf, type InterviewView, type QuestionResult, type RubricKey } from "@/lib/interview/types";
 import { cn } from "@/lib/utils";
@@ -258,22 +259,46 @@ function Fold({ title, children }: { title: string; children: ReactNode }) {
 
 function DeleteButton({ id }: { id: string }) {
   const router = useRouter();
+  const [open, setOpen] = useState(false);
   const [working, setWorking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
   async function remove() {
-    if (!window.confirm("Delete this interview and its report?")) return;
     setWorking(true);
+    setError(null);
     const result = await deleteInterview(id);
     if (!result.ok) {
       setWorking(false);
-      window.alert(result.error);
+      setError(result.error);
       return;
     }
     router.push("/coach");
     router.refresh();
   }
+
   return (
-    <Button variant="ghost" onClick={() => void remove()} disabled={working} className="hover:text-danger">
-      <Trash2 /> Delete
-    </Button>
+    <>
+      <Button variant="ghost" onClick={() => setOpen(true)} className="hover:text-danger">
+        <Trash2 /> Delete
+      </Button>
+      <ConfirmDialog
+        open={open}
+        title="Delete this interview?"
+        body={
+          <>
+            The transcript and report are deleted for good.
+            {error && <span className="mt-2 block text-danger">{error}</span>}
+          </>
+        }
+        confirmLabel={working ? "Deleting…" : "Delete interview"}
+        tone="danger"
+        busy={working}
+        onConfirm={() => void remove()}
+        onCancel={() => {
+          setOpen(false);
+          setError(null);
+        }}
+      />
+    </>
   );
 }

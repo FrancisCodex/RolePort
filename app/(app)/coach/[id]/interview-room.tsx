@@ -2,10 +2,12 @@
 
 import { ArrowLeft, ChevronDown, CornerDownLeft, Loader2, SkipForward, Square } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useEffectEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useEffectEvent, useState, type MouseEvent } from "react";
 import type { InterviewResult } from "@/app/(app)/coach/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useConfirm } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/fields";
 import { answerInterviewQuestion, endInterview, gradeInterview, skipInterviewTurn } from "@/lib/client/mutations";
 import { FOCUS_INFO, INTERVIEW_LENGTHS, interviewState, MAX_INTERVIEW_ANSWER, type InterviewPageData, type InterviewTurn, type InterviewView } from "@/lib/interview/types";
@@ -25,6 +27,8 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
   const [busy, setBusy] = useState<Busy>(null);
   const [error, setError] = useState<string | null>(null);
   const [needsSetup, setNeedsSetup] = useState(false);
+  const [confirm, confirmDialog] = useConfirm();
+  const router = useRouter();
 
   const state = interviewState(view);
   const total = view.plan.length;
@@ -52,13 +56,43 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
 
   async function skip() {
     if (busy) return;
-    if (draft.trim() && !window.confirm("Skip this question? What you wrote isn't sent.")) return;
+    if (
+      draft.trim() &&
+      !(await confirm({
+        title: state.inClosing ? "Finish without asking?" : "Skip this question?",
+        body: "What you've written isn't sent, and the interviewer moves on.",
+        confirmLabel: state.inClosing ? "Finish" : "Skip question",
+      }))
+    ) {
+      return;
+    }
     if (await act("skip", () => skipInterviewTurn(view.id))) setDraft("");
   }
 
   async function end() {
-    if (!window.confirm("End the interview now? The questions you answered still get graded.")) return;
-    await act("end", () => endInterview(view.id));
+    const ok = await confirm({
+      title: "End the interview now?",
+      body: "The questions you've answered still get graded. The rest are marked as not reached, and you can't continue this interview afterwards.",
+      confirmLabel: "End interview",
+      cancelLabel: "Keep going",
+      tone: "danger",
+    });
+    if (ok) await act("end", () => endInterview(view.id));
+  }
+
+  /** Leaving mid-interview is safe (every turn is saved), but say so, and warn about an unsent answer. */
+  async function leave(e: MouseEvent<HTMLAnchorElement>) {
+    if (view.status !== "active") return;
+    e.preventDefault();
+    const ok = await confirm({
+      title: "Leave the interview?",
+      body: draft.trim()
+        ? "Your progress is saved and you can pick up where you left off, but the answer you're writing now isn't sent."
+        : "Your progress is saved. Open it from Coach to pick up where you left off.",
+      confirmLabel: "Leave",
+      cancelLabel: "Keep going",
+    });
+    if (ok) router.push("/coach");
   }
 
   /** Grade question by question until the report is done; each step is one model call. */
@@ -90,7 +124,8 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
 
   const header = (
     <div className="mb-6 flex flex-col gap-4">
-      <Link href="/coach" className="inline-flex w-fit items-center gap-1.5 text-sm font-semibold text-muted hover:text-fg">
+      {confirmDialog}
+      <Link href="/coach" onClick={(e) => void leave(e)} className="inline-flex w-fit items-center gap-1.5 text-sm font-semibold text-muted hover:text-fg">
         <ArrowLeft className="size-4" /> Back to Coach
       </Link>
       <div className="flex flex-wrap items-end justify-between gap-3">
