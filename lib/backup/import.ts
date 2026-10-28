@@ -18,6 +18,7 @@ export type ImportSummary = {
   applications: number;
   events: number;
   documents: number;
+  interviews: number;
 };
 
 function omit<T extends object, K extends keyof T>(row: T, keys: readonly K[]): Omit<T, K> {
@@ -39,9 +40,10 @@ export async function importBackup(db: AnyDb, userId: string, backup: Backup, mo
     merge ? sql`excluded.${sql.raw(excluded)} > ${column}` : undefined;
 
   return db.transaction(async (tx) => {
-    const summary: ImportSummary = { profile: false, settings: false, jobs: 0, evaluations: 0, applications: 0, events: 0, documents: 0 };
+    const summary: ImportSummary = { profile: false, settings: false, jobs: 0, evaluations: 0, applications: 0, events: 0, documents: 0, interviews: 0 };
 
     if (!merge) {
+      await tx.delete(schema.interviewSession).where(eq(schema.interviewSession.userId, userId));
       // Events and application documents go with their applications (cascade).
       await tx.delete(schema.application).where(eq(schema.application.userId, userId));
       await tx.delete(schema.document).where(eq(schema.document.userId, userId));
@@ -193,6 +195,24 @@ export async function importBackup(db: AnyDb, userId: string, backup: Backup, mo
       if (existing) continue;
       await tx.insert(schema.document).values({ ...omit(row, ["id", "userId", "applicationId"]), userId, applicationId });
       summary.documents++;
+    }
+
+    for (const row of t.interviewSession) {
+      const applicationId = row.applicationId ? (appIds.get(row.applicationId) ?? null) : null;
+      // Same title started at the same moment: the same interview, already here.
+      const [existing] = await tx
+        .select({ id: schema.interviewSession.id })
+        .from(schema.interviewSession)
+        .where(
+          and(
+            eq(schema.interviewSession.userId, userId),
+            eq(schema.interviewSession.title, row.title),
+            eq(schema.interviewSession.createdAt, row.createdAt),
+          ),
+        );
+      if (existing) continue;
+      await tx.insert(schema.interviewSession).values({ ...omit(row, ["id", "userId", "applicationId"]), userId, applicationId });
+      summary.interviews++;
     }
 
     return summary;

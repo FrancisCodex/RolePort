@@ -27,7 +27,11 @@ export const BACKUP_TABLES = {
   application: schema.application,
   applicationEvent: schema.applicationEvent,
   document: schema.document,
+  interviewSession: schema.interviewSession,
 } satisfies Record<string, Table>;
+
+/** Tables added after the first backup version: a backup made before them simply has none. */
+const LATER_TABLES = new Set<string>(["interviewSession"]);
 
 type BackupTables = typeof BACKUP_TABLES;
 export type BackupRows = { [K in keyof BackupTables]: InferSelectModel<BackupTables[K]>[] };
@@ -53,7 +57,9 @@ const backupSchema = z.object({
   schemaVersion: z.number(),
   exportedAt: z.string(),
   user: z.object({ name: z.string() }),
-  tables: z.object(Object.fromEntries(Object.keys(BACKUP_TABLES).map((k) => [k, rows])) as Record<keyof BackupTables, typeof rows>),
+  tables: z.object(
+    Object.fromEntries(Object.keys(BACKUP_TABLES).map((k) => [k, LATER_TABLES.has(k) ? rows.default([]) : rows])) as Record<keyof BackupTables, typeof rows>,
+  ),
 });
 
 /** Check rows against a table: only known columns, timestamps back to Dates. */

@@ -3,7 +3,7 @@
 import { ArrowRight, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { useAnchoredPanel, useDismiss } from "@/components/ui/popover";
+import { useAnchoredPanel, useDismiss, usePortalTarget } from "@/components/ui/popover";
 import {
   MIN_YEAR,
   MONTH_NAMES,
@@ -55,6 +55,7 @@ export function MonthPicker({
   const panelRef = useRef<HTMLDivElement>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const panelStyle = useAnchoredPanel(open, triggerRef, { width: 296, maxHeight: 420, roomNeeded: 340 });
+  const portalTarget = usePortalTarget(open, triggerRef);
   useDismiss(open, [triggerRef, panelRef], () => setOpen(false));
 
   function openPanel() {
@@ -136,6 +137,7 @@ export function MonthPicker({
 
       {open &&
         panelStyle &&
+        portalTarget &&
         createPortal(
           <div
             ref={panelRef}
@@ -228,7 +230,7 @@ export function MonthPicker({
               )}
             </div>
           </div>,
-          document.body,
+          portalTarget,
         )}
     </>
   );

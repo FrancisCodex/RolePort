@@ -2,7 +2,7 @@
 
 import { refresh } from "next/cache";
 import { getDb } from "@/lib/db";
-import { markApplied, removeApplication, writeNotes } from "@/lib/jobs/applications";
+import { markApplied, removeApplication, writeInterviewDate, writeNotes } from "@/lib/jobs/applications";
 import type { Result } from "@/lib/result";
 import { getCurrentUser } from "@/lib/session";
 import { MAX_NOTES } from "./view-data";
@@ -20,6 +20,16 @@ export async function saveApplicationNotes(applicationId: string, notes: string)
   if (typeof notes !== "string" || notes.length > MAX_NOTES) return { ok: false, error: "Notes are too long." };
   const user = await getCurrentUser();
   if (!(await writeNotes(await getDb(), user.id, applicationId, notes))) return { ok: false, error: "Application not found." };
+  return { ok: true, data: undefined };
+}
+
+/** Set when the interview is (an ISO date-time), or clear it with null. */
+export async function setInterviewDate(applicationId: string, at: string | null): Promise<Result> {
+  const date = at === null ? null : new Date(at);
+  if (date && Number.isNaN(date.getTime())) return { ok: false, error: "That date isn't valid." };
+  const user = await getCurrentUser();
+  if (!(await writeInterviewDate(await getDb(), user.id, applicationId, date))) return { ok: false, error: "Application not found." };
+  refresh();
   return { ok: true, data: undefined };
 }
 

@@ -27,6 +27,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { TagInput, ToggleGroup } from "@/components/ui/fields";
 import { Input, Label } from "@/components/ui/input";
+import { SpeechSettings } from "@/components/speech/speech-settings";
 import { Select } from "@/components/ui/select";
 import { importCv, saveProfile, setOnboardingStep } from "@/lib/client/mutations";
 import { countryName } from "@/lib/geo/countries";
@@ -36,8 +37,8 @@ import { cn } from "@/lib/utils";
 
 /** profile.onboarding_step when the guide is finished or skipped (lib/profile/queries.ts). */
 const DONE = 100;
-const LAST = 5;
-const STEP_NAMES = ["About you", "What you want", "Your CV", "AI", "Ready"];
+const LAST = 6;
+const STEP_NAMES = ["About you", "What you want", "Your CV", "AI", "Voice", "Ready"];
 
 type Status = { tone: "error" | "info" | "success"; text: string } | null;
 
@@ -45,7 +46,7 @@ export type OnboardingData = {
   profile: ProfileInput;
   cvFileName: string | null;
   aiEnabled: boolean;
-  /** Where the user left off (0-5), or 0 when revisiting a finished guide. */
+  /** Where the user left off (0-6), or 0 when revisiting a finished guide. */
   startStep: number;
   /** The guide was finished or skipped before: this is a revisit. */
   done: boolean;
@@ -212,6 +213,15 @@ export function OnboardingFlow({ profile: initial, cvFileName: initialCv, aiEnab
 
         {step === 4 && <AiStep aiEnabled={aiEnabled} inBrowser={inBrowser} />}
 
+        {step === 5 && (
+          <Step
+            title="Answering out loud (optional)"
+            description="The Interview Coach lets you answer mock interviews by speaking. Choose how your speech becomes text. You can change this any time in Settings."
+          >
+            <SpeechSettings intro={false} />
+          </Step>
+        )}
+
         {step === LAST && (
           <Ready
             role={role}
@@ -244,7 +254,7 @@ export function OnboardingFlow({ profile: initial, cvFileName: initialCv, aiEnab
               <ArrowLeft /> Back
             </Button>
             <div className="flex items-center gap-1.5">
-              {(step === 3 || step === 4) && (
+              {(step === 3 || step === 4 || step === 5) && (
                 <Button variant="ghost" onClick={() => go(step + 1)} disabled={pending || importing}>
                   Skip
                 </Button>

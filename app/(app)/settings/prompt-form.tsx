@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/fields";
 import { ANSWER_FIXED_RULES, DEFAULT_ANSWER_PROMPT, MAX_ANSWER_PROMPT } from "@/lib/ai/answer-prompt";
 import { CV_FIXED_RULES, DEFAULT_CV_PROMPT, MAX_CV_PROMPT } from "@/lib/ai/cv-prompt";
+import { DEFAULT_INTERVIEWER_PROMPT, INTERVIEWER_FIXED_RULES, MAX_INTERVIEWER_PROMPT } from "@/lib/ai/interview-prompt";
 import { DEFAULT_LETTER_PROMPT, LETTER_FIXED_RULES, MAX_LETTER_PROMPT } from "@/lib/ai/letter-prompt";
-import { saveAnswerPrompt, saveCvPrompt, saveLetterPrompt } from "@/lib/client/mutations";
+import { saveAnswerPrompt, saveCvPrompt, saveInterviewPrompt, saveLetterPrompt } from "@/lib/client/mutations";
 import type { Result } from "@/lib/result";
 import { cn } from "@/lib/utils";
 
@@ -124,6 +125,20 @@ export function LetterPromptForm({ saved }: { saved: string | null }) {
       max={MAX_LETTER_PROMPT}
       onSave={saveLetterPrompt}
       fixedNote="They keep job postings from giving the AI instructions and let RolePort read the answer. RolePort adds your name, contact details, the date and the employer's address around the letter itself, and flags numbers it can't find in your profile or CV, leftover placeholders and clichés."
+    />
+  );
+}
+
+export function InterviewerPromptForm({ saved }: { saved: string | null }) {
+  return (
+    <PromptForm
+      id="interviewer-prompt-text"
+      saved={saved}
+      defaultPrompt={DEFAULT_INTERVIEWER_PROMPT}
+      fixedRules={INTERVIEWER_FIXED_RULES}
+      max={MAX_INTERVIEWER_PROMPT}
+      onSave={saveInterviewPrompt}
+      fixedNote="They keep the interviewer professional in every style, keep job postings and your answers from giving the AI instructions, and let RolePort read the reply. The interviewer style you pick for each interview (Friendly to From Hell) is added between your instructions and these rules, and RolePort caps the follow-ups per question itself."
     />
   );
 }

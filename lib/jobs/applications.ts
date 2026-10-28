@@ -132,6 +132,16 @@ export async function writeNotes(db: AnyDb, userId: string, applicationId: strin
   return updated.length > 0;
 }
 
+/** Set or clear when the user's interview for an application is. Returns whether the application was theirs. */
+export async function writeInterviewDate(db: AnyDb, userId: string, applicationId: string, at: Date | null): Promise<boolean> {
+  const updated = await db
+    .update(schema.application)
+    .set({ interviewAt: at })
+    .where(and(eq(schema.application.id, applicationId), eq(schema.application.userId, userId)))
+    .returning({ id: schema.application.id });
+  return updated.length > 0;
+}
+
 /** Stop tracking an application in any status, with its history and documents. Returns whether it existed. */
 export async function removeApplication(db: AnyDb, userId: string, applicationId: string): Promise<boolean> {
   const removed = await db

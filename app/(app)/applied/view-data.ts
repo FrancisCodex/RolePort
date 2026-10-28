@@ -36,6 +36,8 @@ export type ApplicationData = {
   notes: string;
   url: string | null;
   appliedOn: string | null;
+  /** When the interview is scheduled (ISO), or null. */
+  interviewAt: string | null;
   events: { id: string; status: ApplicationStatus; on: string }[];
   /** Null when the stored posting is gone; the application keeps its role and company. */
   job: JobListItem | null;
@@ -81,6 +83,7 @@ export function toApplicationData(
     notes: application.notes ?? "",
     url: job?.url ?? null,
     appliedOn: application.appliedAt ? formatDay(application.appliedAt) : null,
+    interviewAt: application.interviewAt?.toISOString() ?? null,
     // Newest first, like an activity feed.
     events: application.events.map((e) => ({ id: e.id, status: e.status, on: formatDay(e.occurredAt) })).reverse(),
     job,

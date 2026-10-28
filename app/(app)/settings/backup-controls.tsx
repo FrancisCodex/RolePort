@@ -3,6 +3,7 @@
 import { Download, HardDrive, Loader2, ShieldCheck, Upload } from "lucide-react";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
+import { Radio } from "@/components/ui/checkbox";
 import { backupFileName } from "@/lib/backup/format";
 import type { ImportMode, ImportSummary } from "@/lib/backup/import";
 import { exportData, importData } from "@/lib/client/mutations";
@@ -18,6 +19,7 @@ function describe(s: ImportSummary): string {
     s.applications && `${s.applications} application${s.applications === 1 ? "" : "s"}`,
     s.evaluations && `${s.evaluations} evaluation${s.evaluations === 1 ? "" : "s"}`,
     s.jobs && `${s.jobs} job${s.jobs === 1 ? "" : "s"}`,
+    s.interviews && `${s.interviews} mock interview${s.interviews === 1 ? "" : "s"}`,
   ].filter(Boolean);
   return parts.length ? `Imported ${parts.join(", ")}.` : "Everything in that backup is already here.";
 }
@@ -110,7 +112,7 @@ export function BackupControls({ browserStorage = false }: { browserStorage?: bo
                   mode === value ? "border-brand/50 bg-brand-soft" : "border-border hover:border-border-strong",
                 )}
               >
-                <input type="radio" name="restore-mode" value={value} checked={mode === value} onChange={() => setMode(value)} className="mt-1 accent-[var(--brand)]" />
+                <Radio name="restore-mode" value={value} checked={mode === value} onChange={() => setMode(value)} className="mt-0.5" />
                 <span>
                   <span className="block font-medium text-fg">{label}</span>
                   <span className="text-xs">{hint}</span>

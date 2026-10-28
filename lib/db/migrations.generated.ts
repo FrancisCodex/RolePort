@@ -120,5 +120,43 @@ export const migrations: MigrationMeta[] = [
     "bps": true,
     "folderMillis": 1793031987683,
     "hash": "cdf9c2cc6c9cbdad1b229dfe685a98c017775df09b85df5595c4df2129c58496"
+  },
+  {
+    "sql": [
+      "CREATE TABLE \"interview_session\" (\n\t\"id\" text PRIMARY KEY NOT NULL,\n\t\"user_id\" text NOT NULL,\n\t\"application_id\" text,\n\t\"title\" text NOT NULL,\n\t\"target_role\" text NOT NULL,\n\t\"company\" text,\n\t\"focus\" text NOT NULL,\n\t\"length\" text NOT NULL,\n\t\"status\" text DEFAULT 'active' NOT NULL,\n\t\"context\" jsonb NOT NULL,\n\t\"plan\" jsonb NOT NULL,\n\t\"turns\" jsonb DEFAULT '[]'::jsonb NOT NULL,\n\t\"report\" jsonb,\n\t\"created_at\" timestamp with time zone DEFAULT now() NOT NULL,\n\t\"updated_at\" timestamp with time zone DEFAULT now() NOT NULL\n);\n",
+      "\nALTER TABLE \"interview_session\" ADD CONSTRAINT \"interview_session_user_id_user_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"user\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nALTER TABLE \"interview_session\" ADD CONSTRAINT \"interview_session_application_id_application_id_fk\" FOREIGN KEY (\"application_id\") REFERENCES \"public\".\"application\"(\"id\") ON DELETE set null ON UPDATE no action;",
+      "\nCREATE INDEX \"interview_session_user_idx\" ON \"interview_session\" USING btree (\"user_id\",\"created_at\");"
+    ],
+    "bps": true,
+    "folderMillis": 1793173863928,
+    "hash": "b8d4177516faa875e42963bf74b63c1b806a51049c9f98ce1eca75f214cc112f"
+  },
+  {
+    "sql": [
+      "ALTER TABLE \"interview_session\" ADD COLUMN \"briefing\" jsonb;"
+    ],
+    "bps": true,
+    "folderMillis": 1793179516797,
+    "hash": "042cb3f4c3616ce043420ef9edfd7382cfd0459d8fb5ac2a6c8ae06e6ce563b6"
+  },
+  {
+    "sql": [
+      "ALTER TABLE \"application\" ADD COLUMN \"interview_at\" timestamp with time zone;",
+      "\nALTER TABLE \"interview_session\" ADD COLUMN \"style\" text DEFAULT 'standard' NOT NULL;",
+      "\nALTER TABLE \"interview_session\" ADD COLUMN \"drill\" jsonb;",
+      "\nALTER TABLE \"user_settings\" ADD COLUMN \"interview_prompt\" text;"
+    ],
+    "bps": true,
+    "folderMillis": 1793180375947,
+    "hash": "b54b393b53930c8dab9000355b5449dedbe86d82cd00557e3dd25e24082186e4"
+  },
+  {
+    "sql": [
+      "ALTER TABLE \"interview_session\" ADD COLUMN \"panel\" jsonb;"
+    ],
+    "bps": true,
+    "folderMillis": 1793184219384,
+    "hash": "8c46bd0477251c50c6058af093a8eb3044e19d78b29749bc315711b92ce826b6"
   }
 ];

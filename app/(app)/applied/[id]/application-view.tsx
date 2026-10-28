@@ -1,6 +1,7 @@
 "use client";
 
-import { ExternalLink, Trash2 } from "lucide-react";
+import { CalendarClock, ExternalLink, MessagesSquare, Trash2, X } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useOptimistic, useRef, useState, useTransition } from "react";
 import { CompanyLogo } from "@/components/jobs/job-card";
@@ -8,7 +9,9 @@ import { JobDetailView } from "@/components/jobs/job-detail";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/fields";
-import { deleteApplication, saveApplicationNotes, setApplicationStatus } from "@/lib/client/mutations";
+import { Input } from "@/components/ui/input";
+import { deleteApplication, saveApplicationNotes, setApplicationStatus, setInterviewDate } from "@/lib/client/mutations";
+import { daysUntil } from "@/lib/interview/types";
 import { cn } from "@/lib/utils";
 import { STATUS_LABEL, StatusBadge, StatusSelect, type Status } from "../../pipeline/status-select";
 import { MAX_NOTES, type ApplicationData } from "../view-data";
@@ -45,6 +48,7 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
   const aside = (
     <>
       <ProgressCard data={data} status={status} />
+      <InterviewCard id={data.id} status={status} interviewAt={data.interviewAt} />
       <NotesCard id={data.id} initial={data.notes} />
     </>
   );
@@ -137,6 +141,89 @@ function ProgressCard({ data, status }: { data: ApplicationData; status: Status 
 
 
 /** Saves when the field loses focus, so there's no button to forget. */
+/** `YYYY-MM-DDTHH:mm` in local time, for a datetime-local input. */
+function localInput(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/**
+ * The interview: when it is (with a countdown) and a way into the Interview Coach, made
+ * prominent once the application reaches a screen or interview.
+ */
+function InterviewCard({ id, status, interviewAt }: { id: string; status: Status; interviewAt: string | null }) {
+  const soon = status === "screening" || status === "interview" || interviewAt !== null;
+  const [value, setValue] = useState(localInput(interviewAt));
+  const [saved, setSaved] = useState(interviewAt);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+
+  function save(next: string | null) {
+    setError(null);
+    startTransition(async () => {
+      const result = await setInterviewDate(id, next);
+      if (!result.ok) return setError(result.error);
+      setSaved(next);
+      if (next === null) setValue("");
+    });
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-1.5">
+          <MessagesSquare className="size-4 text-muted" /> Interview
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        {saved && (
+          // Relative to the viewer's clock, which can differ from the server's.
+          <p className="flex items-center gap-1.5 text-[13px] font-medium" suppressHydrationWarning>
+            <CalendarClock className="size-4 text-brand-ink" />
+            {new Date(saved) < new Date() && daysUntil(new Date(saved)) !== "today" ? "Was" : "Coming up"} {daysUntil(new Date(saved))}
+          </p>
+        )}
+        <div className="flex flex-col gap-1.5">
+          <label htmlFor={`interview-at-${id}`} className="text-xs text-muted">
+            When is it?
+          </label>
+          <div className="flex gap-1.5">
+            <Input
+              id={`interview-at-${id}`}
+              type="datetime-local"
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              className="min-w-0 flex-1 text-[13px]"
+            />
+            {value && localInput(saved) !== value ? (
+              <Button variant="secondary" onClick={() => save(new Date(value).toISOString())} disabled={pending}>
+                Save
+              </Button>
+            ) : (
+              saved && (
+                <Button variant="ghost" onClick={() => save(null)} disabled={pending} aria-label="Clear the interview date">
+                  <X />
+                </Button>
+              )
+            )}
+          </div>
+          {error && <p className="text-xs text-danger">{error}</p>}
+        </div>
+        <p className="text-[13px] text-muted">
+          {soon
+            ? "Run a mock interview built from this posting and what you sent, then see how your answers landed."
+            : "A mock interview built from this posting and what you sent, for when they call."}
+        </p>
+        <Link href={`/coach/new?application=${id}`} className={buttonVariants({ variant: soon ? "primary" : "secondary" })}>
+          Practise the interview
+        </Link>
+      </CardContent>
+    </Card>
+  );
+}
+
 function NotesCard({ id, initial }: { id: string; initial: string }) {
   const saved = useRef(initial);
   const [state, setState] = useState<"idle" | "saving" | "saved" | { error: string }>("idle");

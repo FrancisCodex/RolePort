@@ -18,6 +18,8 @@
 /.next-lite/
 # lite starter database, rebuilt by scripts/build-seed-db.mjs
 /public/pglite/
+# ONNX Runtime for on-device Whisper, copied by scripts/copy-ort.mjs
+/public/ort/
 /out/
 
 # production

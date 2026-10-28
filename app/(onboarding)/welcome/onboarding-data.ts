@@ -14,7 +14,7 @@ export function toOnboardingData(
     cvFileName,
     aiEnabled,
     done: onboarding.done,
-    startStep: onboarding.done ? 0 : Math.max(0, Math.min(5, onboarding.step)),
+    startStep: onboarding.done ? 0 : Math.max(0, Math.min(6, onboarding.step)),
     inBrowser,
   };
 }

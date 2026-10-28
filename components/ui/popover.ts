@@ -46,6 +46,22 @@ export function useAnchoredPanel(
   return open ? style : null;
 }
 
+/**
+ * Where to portal a floating panel: the trigger's modal <dialog> if it's in one (a modal dialog
+ * sits in the browser's top layer, above anything portaled to <body>), else <body>.
+ */
+export function usePortalTarget(open: boolean, triggerRef: RefObject<HTMLElement | null>): HTMLElement | null {
+  const [target, setTarget] = useState<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    if (!open) return;
+    function find() {
+      setTarget(triggerRef.current?.closest("dialog") ?? document.body);
+    }
+    find();
+  }, [open, triggerRef]);
+  return open ? target : null;
+}
+
 /** Calls `onDismiss` on a pointer press outside every given element while `open`. */
 export function useDismiss(open: boolean, refs: RefObject<HTMLElement | null>[], onDismiss: () => void) {
   useEffect(() => {

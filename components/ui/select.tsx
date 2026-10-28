@@ -3,7 +3,7 @@
 import { Check, ChevronDown, Search } from "lucide-react";
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
-import { useAnchoredPanel, useDismiss } from "@/components/ui/popover";
+import { useAnchoredPanel, useDismiss, usePortalTarget } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 export type SelectOption = { value: string; label: string; disabled?: boolean };
@@ -161,6 +161,7 @@ export function Select({
   }
 
   const menuStyle = useAnchoredPanel(open, triggerRef, { minWidth: size === "sm" ? 176 : 0 });
+  const portalTarget = usePortalTarget(open, triggerRef);
   useDismiss(open, [triggerRef, menuRef], () => close(false));
 
   useEffect(() => {
@@ -205,6 +206,7 @@ export function Select({
 
       {open &&
         menuStyle &&
+        portalTarget &&
         createPortal(
           <div
             ref={menuRef}
@@ -263,7 +265,7 @@ export function Select({
               {filtered.length === 0 && <li className="px-3 py-5 text-center text-[13px] text-subtle">No matches</li>}
             </ul>
           </div>,
-          document.body,
+          portalTarget,
         )}
     </>
   );

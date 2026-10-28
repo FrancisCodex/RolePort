@@ -64,6 +64,34 @@
       "when": 1793031987683,
       "tag": "0008_answer_prompt",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1793173863928,
+      "tag": "0009_interview_coach",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1793179516797,
+      "tag": "0010_interview_briefing",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793180375947,
+      "tag": "0011_interview_practice",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793184219384,
+      "tag": "0012_interview_panel",
+      "breakpoints": true
     }
   ]
 }

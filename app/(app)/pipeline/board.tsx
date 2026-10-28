@@ -1,9 +1,10 @@
 "use client";
 
-import { GripVertical } from "lucide-react";
+import { CalendarClock, GripVertical } from "lucide-react";
 import Link from "next/link";
 import { useOptimistic, useState, useTransition, type DragEvent } from "react";
 import { setApplicationStatus } from "@/lib/client/mutations";
+import { daysUntil } from "@/lib/interview/types";
 import { cn } from "@/lib/utils";
 import { StatusSelect, type Status } from "./status-select";
 
@@ -14,6 +15,8 @@ export type BoardCard = {
   status: Status;
   /** Pre-formatted on the server so the label matches between server and client renders. */
   updated: string | null;
+  /** When the interview is scheduled (ISO), or null. */
+  interviewAt: string | null;
 };
 
 const COLUMNS: { title: string; dot: string; statuses: Status[] }[] = [
@@ -186,6 +189,20 @@ function PipelineCard({
         </div>
         <GripVertical aria-hidden className="-mr-1 size-4 shrink-0 text-subtle opacity-40 transition-opacity group-hover:opacity-100" />
       </div>
+      {(card.status === "interview" || card.interviewAt) && (
+        <div className="flex items-center justify-between gap-2 rounded-md bg-surface-2 px-2 py-1.5 text-xs">
+          <span className="flex min-w-0 items-center gap-1.5 text-muted">
+            <CalendarClock className="size-3.5 shrink-0" />
+            {/* Relative to the viewer's clock, which can differ from the server's. */}
+            <span className="truncate" suppressHydrationWarning>
+              {card.interviewAt ? `Interview ${daysUntil(new Date(card.interviewAt))}` : "No date set"}
+            </span>
+          </span>
+          <Link href={`/coach/new?application=${card.id}`} draggable={false} className="shrink-0 font-medium text-brand-ink hover:underline">
+            Prepare
+          </Link>
+        </div>
+      )}
       <StatusSelect status={card.status} onChange={onMove} />
     </article>
   );

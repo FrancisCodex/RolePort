@@ -1,4 +1,4 @@
-import { ArrowRight, BarChart3, Bot, FileText, Globe, Lock, Mail, MessageSquareText, MessagesSquare, ScrollText, Search, Send, UserRound } from "lucide-react";
+import { ArrowRight, BarChart3, Bot, FileText, Globe, Lock, Mail, MessageSquareText, Laptop, MessagesSquare, Mic, ScrollText, Search, Send, TrendingUp, UserRound } from "lucide-react";
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 import { CommandHint } from "@/components/marketing/command-menu";
@@ -26,8 +26,8 @@ const steps = [
   },
   {
     icon: Send,
-    title: "Apply with everything ready",
-    body: "Press Apply and get a page for that job: tailor your CV, write the cover letter, then track it from Applied to Offer.",
+    title: "Apply, then practise",
+    body: "Press Apply and get a page for that job: tailor your CV and cover letter, track it to Offer, and rehearse the interview with a mock one built from the posting.",
   },
 ];
 
@@ -55,8 +55,28 @@ const moreFeatures = [
     body: "See exactly what's sent to the AI, change how your CV, letters and answers are written, or go back to the default.",
   },
   { icon: MessageSquareText, title: "Application answers", body: "Paste a question from the application form and get an answer from your real experience, with what it leans on and what to check." },
-  { icon: MessagesSquare, title: "Interview coach", body: "Coming next: prep packs and mock interviews built from the job you applied to.", soon: true },
+  {
+    icon: MessagesSquare,
+    title: "Interview coach",
+    body: "A briefing, then a mock interview one question at a time: follow-ups when you're vague, a tough “from Hell” mode or a panel, and a graded report that checks your claims against your CV.",
+  },
+  {
+    icon: Mic,
+    title: "Practise out loud",
+    body: "Answer by speaking with your browser's speech-to-text, or download Whisper to keep your voice on your device. Get your pace and filler words back.",
+  },
+  {
+    icon: TrendingUp,
+    title: "Track your progress",
+    body: "Interview scores over time, your weakest topics and one-click drills to practise them. Add your interview date and get a countdown.",
+  },
   { icon: BarChart3, title: "Skill gap insights", body: "Planned: the skills employers keep asking for, and a plan to learn them.", soon: true },
+  {
+    icon: Laptop,
+    title: "Desktop app",
+    body: "Planned: one installer for Windows, macOS and Linux with JobSpy built in, so there's no Docker or Python to set up.",
+    soon: true,
+  },
   {
     icon: Lock,
     title: "Private by default",
@@ -118,8 +138,8 @@ export default function LandingPage() {
             <p
               className="mt-5 max-w-xl animate-[rise_0.8s_var(--ease-snappy)_both] text-base text-muted text-pretty [animation-delay:400ms] sm:text-[17px] sm:leading-relaxed"
             >
-              RolePort finds jobs in your country or abroad, scores how well each one fits you, tailors your CV and cover letter for each one, and
-              tracks every application.{" "}
+              RolePort finds jobs in your country or abroad, scores how well each one fits you, tailors your CV and cover letter for each one, tracks
+              every application, and coaches you through mock interviews.{" "}
               {isLite ? "Nothing to install: your data stays in your browser." : "Your CV and data never leave your computer."}
             </p>
           </div>
