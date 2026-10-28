@@ -1,6 +1,6 @@
 # RolePort
 
-A free, open-source job search app you run yourself. Find jobs in the Philippines or abroad, see how well each one fits you, tailor your CV and cover letter for each one, and track every application, with your CV and data staying on your own machine.
+A free, open-source job search app you run yourself. Find jobs in the Philippines or abroad, see how well each one fits you, tailor your CV and cover letter for each one, track every application, and practise for the interview with an AI mock interviewer, with your CV and data staying on your own machine.
 
 Bring your own AI: Claude, OpenAI, OpenRouter, Groq, or a free local model through [Ollama](https://ollama.com).
 Don't want to install anything? [RolePort Lite](#roleport-lite-in-your-browser) runs the same app in your browser.
@@ -113,7 +113,10 @@ Run Lite yourself with `npm run dev:lite` (port 3100), or build it with `npm run
 | Cover letters: drafted from your profile for one posting, checked for numbers it can't back up, placeholders and clichés, then copied into a form or downloaded as a PDF. The prompt is in Settings to read and change | An AI provider (or write it yourself) |
 | Application questions: paste a question from an application form and get an answer from your profile and CV, with the facts it leans on and what to check. Answers can be edited and copied, and the prompt is in Settings to read and change | An AI provider (or write them yourself) |
 | Prompts you can read: Settings shows the full CV tailoring, cover letter and application question prompts to change or reset, and each page shows exactly what's sent to your AI | An AI provider |
-| Coming next: follow-ups, interview coach | An AI provider |
+| Interview Coach: mock interviews for a job you applied to (its posting plus the CV, letter and answers you sent) or for any role. A briefing first (what the role needs, your story bank, where you might be pressed, questions to ask), then one question at a time with follow-ups on vague answers. Pick the focus (recruiter screen, behavioral, role-specific or a job posting), quick (3 questions) or full (6), an interviewer style (Friendly, Standard, Tough or "from Hell") and optionally a two-person panel | An AI provider |
+| Interview reports: rubric scores per answer, a summary and a practice verdict, consistency flags when what you said doesn't match what you sent (each quoting both sides, checked in code), a stronger version of each answer, and a cheat sheet to rehearse from. Redo any question and compare the score, track progress across interviews and drill your weakest topics, and add your interview date for a countdown. The interviewer prompt is in Settings to read and change | An AI provider |
+| Answer out loud: built-in browser speech-to-text by default, or an optional on-device Whisper download that works in every browser ([details](#answering-out-loud)). Questions can be read aloud, and the report shows your pace and filler words | Nothing (Chrome, Edge or Safari for built-in speech) |
+| Coming next: follow-ups, skill-gap insights | An AI provider |
 
 ## Choosing an AI provider
 
@@ -123,6 +126,23 @@ Open **Settings** in the app, pick a provider, and click **Test connection**.
 - **Claude, OpenAI, OpenRouter, Groq:** paste your own API key. You pay the provider directly. RolePort charges nothing.
 
 Keys are encrypted before they're saved and never sent back to the browser.
+
+## Answering out loud
+
+The Interview Coach lets you answer by speaking. **Settings → Voice** (or **Voice settings** in any interview) picks and tests the microphone, chooses the interviewer's voice, and sets how speech becomes text:
+
+- **Built-in browser speech (the default):** nothing to download. Works in Chrome, Edge and Safari, but not in Brave, Firefox or most in-app browsers. Chrome and Edge send the audio to Google or Microsoft to transcribe it.
+- **Whisper on this device (optional):** a one-time download that works in every modern browser and keeps your voice on your computer. The text appears when you stop speaking, not while you talk.
+
+| Model | Download | Notes |
+| --- | --- | --- |
+| Tiny | about 44 MB | Fastest; fine for clear speech in a quiet room |
+| Base | about 80 MB | Recommended |
+| Small | about 252 MB | Most accurate; slower on older computers |
+
+Before anything downloads, RolePort lists every file, its size and where it comes from (the model from huggingface.co, the 27 MB speech runtime from RolePort itself). Nothing downloads until you press **Download**. The model is kept in that browser's storage for the site, in both the self-hosted and Lite versions: not in `.data/` and not in backups. Each browser or device downloads its own copy, and clearing the site's data removes it. Remove a model any time in **Settings → Voice**.
+
+Moving to a browser where built-in speech works? Download a backup in **Settings → Your data** and import it there.
 
 ## JobSpy: LinkedIn, Indeed and more
 
@@ -183,10 +203,22 @@ Lite is a static site plus one stateless route (`POST /api/lite/search`), so any
 - **Rate limiting:** the search route allows about 20 searches a minute per address, keyed on `X-Forwarded-For`. Each server instance counts on its own, so keep the host's own rate limiting or firewall on as well.
 - **Caching:** `/_next/static/*` and the PGlite files are content-hashed and can be cached for a year. `/pglite/seed.tar.gz` keeps its name between builds, so leave it on revalidation. Serving with Brotli cuts the first visit's download noticeably (the PGlite runtime and the starter database are about 10 MB gzipped together).
 - **Logs:** turn off request-body logging if your host offers it. The route itself logs nothing about users.
+- **On-device Whisper:** the build copies ONNX Runtime's WebAssembly files (about 41 MB) into `public/ort/` (`scripts/copy-ort.mjs`), so your deployment serves them rather than a CDN. The security headers allow huggingface.co and its `*.hf.co` storage hosts for the model files, which users download only if they choose to, and allow the microphone for the site itself.
 
 ## Hosting for others
 
 RolePort has no accounts: every install belongs to one person. To give other people a hosted version, deploy RolePort Lite ([above](#hosting-roleport-lite)), where each visitor's data stays in their own browser.
+
+## Roadmap: a desktop app
+
+Next on the roadmap is wrapping RolePort in a desktop app built with [Tauri](https://tauri.app) or [Electron](https://www.electronjs.org): one installer for Windows, macOS and Linux, with no Docker, Node.js or Python to set up.
+
+- **Everything included:** the app and JobSpy are packaged together, with JobSpy as a bundled helper program, so LinkedIn, Indeed and the other boards work without starting a separate service.
+- **Local by default:** your data stays in a database on your computer, as in the self-hosted version. Optional downloads such as Whisper can ship with the app, so answering out loud works offline.
+- **The web versions stay:** the self-hosted install and RolePort Lite in the browser remain for anyone who doesn't want to install anything, and backups move between all three.
+- **Tauri or Electron:** Tauri is much smaller but doesn't run Node.js, so it would package the Lite build (data in the app's own browser storage) with JobSpy alongside. Electron is larger but can run the full self-hosted server inside the app. The choice is still open.
+
+To keep that possible, new features run in the browser where they can (the Interview Coach's voice features do) and avoid depending on outside CDNs.
 
 ## Contributing
 
@@ -198,6 +230,7 @@ RolePort builds on the work of others:
 
 - [ai-job-search](https://github.com/MadsLorentzen/ai-job-search) by Mads Lorentzen (MIT): the workflow, job keys and the fit evaluation framework.
 - [JobSpy](https://github.com/speedyapply/JobSpy) by Cullen Watson and contributors (MIT): the LinkedIn, Indeed, Glassdoor, Bayt, Naukri, BDJobs, ZipRecruiter and HelloWork scrapers behind the JobSpy service.
+- [Transformers.js](https://github.com/huggingface/transformers.js) by Hugging Face (Apache-2.0), [ONNX Runtime](https://github.com/microsoft/onnxruntime) by Microsoft (MIT) and OpenAI's [Whisper](https://github.com/openai/whisper) (MIT): the optional on-device speech-to-text.
 - Job data from [freehire](https://freehire.me), [Jobicy](https://jobicy.com) and [JSearch](https://rapidapi.com/letscrunch/api/jsearch). Every job links back to its original posting.
 
 ## License

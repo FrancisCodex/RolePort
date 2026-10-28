@@ -1,10 +1,11 @@
 "use client";
 
 import { AnimatePresence, LayoutGroup, motion, useReducedMotion } from "motion/react";
-import { ArrowRight, Bot, Check, Cloud, Copy, Cpu, Download, FileText, KanbanSquare, Laptop, Loader2, Lock, Mail, MessageSquareText, ShieldCheck, Sparkles, Target, X } from "lucide-react";
+import { ArrowRight, Bot, Check, Cloud, Copy, Cpu, Download, FileText, KanbanSquare, Laptop, Loader2, Lock, Mail, MessageSquareText, MessagesSquare, ShieldCheck, Sparkles, Target, X } from "lucide-react";
 import { useState, type DragEvent, type ReactNode } from "react";
 import { MatchRing } from "@/components/ui/match-ring";
 import { cn } from "@/lib/utils";
+import { CoachDemo } from "./coach-demo";
 import { fitLabel } from "./demo-data";
 
 const ease = [0.2, 0, 0, 1] as const;
@@ -15,6 +16,12 @@ const TABS: Tab[] = [
   { id: "match", icon: Target, title: "Honest match scores", body: "Toggle the skills on your profile and watch the score, strengths and gaps change." },
   { id: "kit", icon: FileText, title: "Tailor & apply in one place", body: "Tailor your CV and write the cover letter for a job in a click, then download or copy them." },
   { id: "answers", icon: MessageSquareText, title: "Answers to form questions", body: "Paste a question from the application form and get an answer written from your real experience." },
+  {
+    id: "coach",
+    icon: MessagesSquare,
+    title: "Mock interviews that push back",
+    body: "Answer vaguely and the interviewer asks for more. Then see your scores, and anything that doesn't match your CV.",
+  },
   { id: "pipeline", icon: KanbanSquare, title: "A pipeline you can drag", body: "Move applications from Saved to Offer. Your response rate keeps itself up to date." },
   { id: "privacy", icon: Lock, title: "Your AI, your data", body: "Pick a provider and see exactly where your CV goes. With Ollama, nowhere at all." },
 ];
@@ -79,6 +86,7 @@ export function FeatureTabs() {
             {active === "match" && <MatchDemo />}
             {active === "kit" && <KitDemo />}
             {active === "answers" && <AnswersDemo />}
+            {active === "coach" && <CoachDemo />}
             {active === "pipeline" && <PipelineDemo />}
             {active === "privacy" && <PrivacyDemo />}
           </motion.div>
