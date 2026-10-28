@@ -1,4 +1,5 @@
 import * as applied from "@/app/(app)/applied/actions";
+import * as coach from "@/app/(app)/coach/actions";
 import * as letter from "@/app/(app)/applied/[id]/cover-letter/actions";
 import * as questions from "@/app/(app)/applied/[id]/questions/actions";
 import * as cv from "@/app/(app)/applied/[id]/cv/actions";
@@ -68,3 +69,12 @@ export const saveAnswerPrompt: typeof questions.saveAnswerPrompt = isLite
 export const answerApplicationQuestion: typeof questions.answerApplicationQuestion = isLite
   ? async (...a) => (await lite()).answerApplicationQuestion(...a)
   : questions.answerApplicationQuestion;
+
+export const startInterview: typeof coach.startInterview = isLite ? async (...a) => (await lite()).startInterview(...a) : coach.startInterview;
+export const answerInterviewQuestion: typeof coach.answerInterviewQuestion = isLite
+  ? async (...a) => (await lite()).answerInterviewQuestion(...a)
+  : coach.answerInterviewQuestion;
+export const skipInterviewTurn: typeof coach.skipInterviewTurn = isLite ? async (...a) => (await lite()).skipInterviewTurn(...a) : coach.skipInterviewTurn;
+export const endInterview: typeof coach.endInterview = isLite ? async (...a) => (await lite()).endInterview(...a) : coach.endInterview;
+export const gradeInterview: typeof coach.gradeInterview = isLite ? async (...a) => (await lite()).gradeInterview(...a) : coach.gradeInterview;
+export const deleteInterview: typeof coach.deleteInterview = isLite ? async (...a) => (await lite()).deleteInterview(...a) : coach.deleteInterview;

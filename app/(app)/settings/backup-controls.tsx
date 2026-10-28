@@ -18,6 +18,7 @@ function describe(s: ImportSummary): string {
     s.applications && `${s.applications} application${s.applications === 1 ? "" : "s"}`,
     s.evaluations && `${s.evaluations} evaluation${s.evaluations === 1 ? "" : "s"}`,
     s.jobs && `${s.jobs} job${s.jobs === 1 ? "" : "s"}`,
+    s.interviews && `${s.interviews} mock interview${s.interviews === 1 ? "" : "s"}`,
   ].filter(Boolean);
   return parts.length ? `Imported ${parts.join(", ")}.` : "Everything in that backup is already here.";
 }

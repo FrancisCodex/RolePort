@@ -1,6 +1,7 @@
 "use client";
 
-import { ExternalLink, Trash2 } from "lucide-react";
+import { ExternalLink, MessagesSquare, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useOptimistic, useRef, useState, useTransition } from "react";
 import { CompanyLogo } from "@/components/jobs/job-card";
@@ -45,6 +46,7 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
   const aside = (
     <>
       <ProgressCard data={data} status={status} />
+      <InterviewCard id={data.id} status={status} />
       <NotesCard id={data.id} initial={data.notes} />
     </>
   );
@@ -137,6 +139,30 @@ function ProgressCard({ data, status }: { data: ApplicationData; status: Status 
 
 
 /** Saves when the field loses focus, so there's no button to forget. */
+/** A way into the Interview Coach, made prominent once the application reaches a screen or interview. */
+function InterviewCard({ id, status }: { id: string; status: Status }) {
+  const soon = status === "screening" || status === "interview";
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-1.5">
+          <MessagesSquare className="size-4 text-muted" /> Interview practice
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <p className="text-[13px] text-muted">
+          {soon
+            ? "Run a mock interview built from this posting and what you sent, then see how your answers landed."
+            : "A mock interview built from this posting and what you sent, for when they call."}
+        </p>
+        <Link href={`/coach/new?application=${id}`} className={buttonVariants({ variant: soon ? "primary" : "secondary" })}>
+          Practise the interview
+        </Link>
+      </CardContent>
+    </Card>
+  );
+}
+
 function NotesCard({ id, initial }: { id: string; initial: string }) {
   const saved = useRef(initial);
   const [state, setState] = useState<"idle" | "saving" | "saved" | { error: string }>("idle");

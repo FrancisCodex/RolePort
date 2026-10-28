@@ -11,6 +11,7 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import type { InterviewContext, InterviewReport, InterviewTurn, PlannedQuestion } from "@/lib/interview/types";
 
 const id = () =>
   text("id")
@@ -324,6 +325,37 @@ export const document = pgTable(
     ...timestamps,
   },
   (t) => [index("document_user_idx").on(t.userId)],
+);
+
+/* -------------------------------------------------------------------------- */
+/* Interview Coach — mock interviews, for an application or a role on its own */
+/* -------------------------------------------------------------------------- */
+
+export const interviewSession = pgTable(
+  "interview_session",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    /** The application practised for; null for a standalone practice. The context snapshot keeps the details. */
+    applicationId: text("application_id").references(() => application.id, { onDelete: "set null" }),
+    title: text("title").notNull(),
+    targetRole: text("target_role").notNull(),
+    company: text("company"),
+    /** InterviewFocus: screen | behavioral | role | posting. */
+    focus: text("focus").notNull(),
+    /** InterviewLength: quick | full. */
+    length: text("length").notNull(),
+    /** InterviewStatus: active | ended | done. */
+    status: text("status").default("active").notNull(),
+    context: jsonb("context").$type<InterviewContext>().notNull(),
+    plan: jsonb("plan").$type<PlannedQuestion[]>().notNull(),
+    turns: jsonb("turns").$type<InterviewTurn[]>().default([]).notNull(),
+    report: jsonb("report").$type<InterviewReport>(),
+    ...timestamps,
+  },
+  (t) => [index("interview_session_user_idx").on(t.userId, t.createdAt)],
 );
 
 /* -------------------------------------------------------------------------- */

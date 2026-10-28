@@ -12,6 +12,8 @@ import type { OnboardingData } from "@/app/(onboarding)/welcome/onboarding-flow"
 import { aiConfigFromRow } from "@/lib/ai/settings";
 import { readCvPage, type CvPageData } from "@/lib/cv/tailor";
 import { readLetterPage, type LetterPageData } from "@/lib/letter/letter";
+import { readInterview, readInterviewList, readInterviewSetup } from "@/lib/interview/sessions";
+import type { InterviewListItem, InterviewPageData, InterviewSetupData } from "@/lib/interview/types";
 import { readQuestionsPage } from "@/lib/questions/questions";
 import type { QuestionsData } from "@/lib/questions/types";
 import { getBrowserDb, type BrowserDb } from "@/lib/db/browser";
@@ -154,6 +156,22 @@ export async function loadCvPage(applicationId: string): Promise<CvPageData | nu
 export async function loadLetterPage(applicationId: string): Promise<LetterPageData | null> {
   const db = await getBrowserDb();
   return readLetterPage(db, await me(db), applicationId, await aiEnabled(db));
+}
+
+export async function loadInterviews(): Promise<InterviewListItem[]> {
+  const db = await getBrowserDb();
+  return readInterviewList(db, LOCAL_USER.id);
+}
+
+export async function loadInterview(id: string): Promise<InterviewPageData | null> {
+  const db = await getBrowserDb();
+  const [interview, ai] = await Promise.all([readInterview(db, LOCAL_USER.id, id), aiEnabled(db)]);
+  return interview && { interview, aiEnabled: ai };
+}
+
+export async function loadInterviewSetup(applicationId: string | null): Promise<InterviewSetupData> {
+  const db = await getBrowserDb();
+  return readInterviewSetup(db, await me(db), applicationId, await aiEnabled(db));
 }
 
 export async function loadQuestionsPage(applicationId: string): Promise<QuestionsData | null> {

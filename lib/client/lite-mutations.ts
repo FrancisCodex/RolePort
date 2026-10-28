@@ -3,6 +3,7 @@ import { MAX_NOTES } from "@/app/(app)/applied/view-data";
 import type { DraftLetterResult } from "@/app/(app)/applied/[id]/cover-letter/actions";
 import type { AnswerResult } from "@/app/(app)/applied/[id]/questions/actions";
 import type { TailorResult } from "@/app/(app)/applied/[id]/cv/actions";
+import type { InterviewResult } from "@/app/(app)/coach/actions";
 import type { EvaluateResult } from "@/app/(app)/jobs/actions";
 import { aiErrorMessage, isUnreachable } from "@/lib/ai/errors";
 import { explainLocalFailure, isLocalUrl, isOllamaUrl } from "@/lib/ai/local-server";
@@ -27,6 +28,15 @@ import { importBackup, type ImportSummary } from "@/lib/backup/import";
 import { discardApplicationCv, saveEditedCv, tailorApplicationCv } from "@/lib/cv/tailor";
 import { cvContentSchema, type CvContent } from "@/lib/cv/types";
 import { discardApplicationLetter, draftApplicationLetter, saveEditedLetter } from "@/lib/letter/letter";
+import {
+  answerInterview,
+  deleteInterview as removeInterview,
+  endInterview as stopInterview,
+  gradeInterviewStep,
+  skipInterviewQuestion,
+  startInterview as beginInterview,
+} from "@/lib/interview/sessions";
+import { interviewSetupSchema, MAX_INTERVIEW_ANSWER, type InterviewSetup } from "@/lib/interview/types";
 import { draftQuestionAnswer, saveQuestionList } from "@/lib/questions/questions";
 import { questionsSchema, type QuestionItem } from "@/lib/questions/types";
 import { letterContentSchema, type LetterContent } from "@/lib/letter/types";
@@ -276,6 +286,71 @@ export async function saveAnswerPrompt(prompt: string | null): Promise<Result> {
   }
   await writeSettings(await getBrowserDb(), LOCAL_USER.id, { answerPrompt: prompt?.trim() || null });
   await invalidate("user_settings");
+  return { ok: true, data: undefined };
+}
+
+/* Interview Coach ----------------------------------------------------------- */
+
+/** An AI call on the browser's provider config, with the lite edition's error messages. */
+async function withAi<T>(run: (db: BrowserDb, config: AiConfig) => Promise<T>, fallback: string): Promise<InterviewResult<T>> {
+  const db = await getBrowserDb();
+  const config = await savedAiConfig(db);
+  if (!config) return { ok: false, error: new AiUnavailableError().message, needsSetup: true };
+  try {
+    const data = await run(db, config);
+    void invalidate("interview_session");
+    return { ok: true, data };
+  } catch (error) {
+    console.error("[interview] model call failed", error);
+    const baseUrl = config.provider === "openai_compatible" ? config.baseUrl : null;
+    if (isUnreachable(error) && baseUrl && isLocalUrl(baseUrl)) return { ok: false, error: await explainLocalFailure(baseUrl) };
+    return { ok: false, error: aiErrorMessage(error, fallback) };
+  }
+}
+
+export async function startInterview(input: InterviewSetup): Promise<InterviewResult<string>> {
+  const parsed = interviewSetupSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Check the form." };
+  return withAi(async (db, config) => beginInterview(db, await me(db), parsed.data, config), "Preparing the interview failed. Please try again.");
+}
+
+export async function answerInterviewQuestion(id: string, answer: string): Promise<InterviewResult> {
+  const text = answer.trim();
+  if (!text) return { ok: false, error: "Write your answer first, or skip the question." };
+  if (text.length > MAX_INTERVIEW_ANSWER) return { ok: false, error: `Keep an answer under ${MAX_INTERVIEW_ANSWER} characters.` };
+  return withAi(
+    (db, config) => answerInterview(db, LOCAL_USER.id, id, text, config),
+    "The interviewer couldn't reply. Your answer is still here; try sending it again.",
+  );
+}
+
+export async function gradeInterview(id: string): Promise<InterviewResult> {
+  return withAi((db, config) => gradeInterviewStep(db, LOCAL_USER.id, id, config), "Grading the interview failed. Please try again.");
+}
+
+export async function skipInterviewTurn(id: string): Promise<InterviewResult> {
+  try {
+    const data = await skipInterviewQuestion(await getBrowserDb(), LOCAL_USER.id, id);
+    void invalidate("interview_session");
+    return { ok: true, data };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Couldn't skip the question." };
+  }
+}
+
+export async function endInterview(id: string): Promise<InterviewResult> {
+  try {
+    const data = await stopInterview(await getBrowserDb(), LOCAL_USER.id, id);
+    void invalidate("interview_session");
+    return { ok: true, data };
+  } catch (error) {
+    return { ok: false, error: error instanceof Error ? error.message : "Couldn't end the interview." };
+  }
+}
+
+export async function deleteInterview(id: string): Promise<Result> {
+  if (!(await removeInterview(await getBrowserDb(), LOCAL_USER.id, id))) return { ok: false, error: "Interview not found." };
+  await invalidate("interview_session");
   return { ok: true, data: undefined };
 }
 
