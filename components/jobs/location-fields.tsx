@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select } from "@/components/ui/select";
 
 /** Country and location filters for the job search form. The location control follows the chosen country. */
@@ -52,14 +53,7 @@ export function LocationFields({
             className="h-9 w-full min-w-0 rounded-md border border-border bg-surface px-3 text-sm shadow-[var(--shadow-soft)] outline-none transition-[border-color,box-shadow] placeholder:text-subtle hover:border-border-strong focus:border-brand focus:ring-3 focus:ring-brand/15 disabled:opacity-60"
           />
           <label className="flex shrink-0 items-center gap-1.5 text-[13px] text-muted">
-            <input
-              type="checkbox"
-              name="loc"
-              value="remote"
-              checked={remote}
-              onChange={(e) => setRemote(e.target.checked)}
-              className="size-3.5 accent-[var(--brand)]"
-            />
+            <Checkbox name="loc" value="remote" checked={remote} onCheckedChange={setRemote} size="sm" />
             Remote
           </label>
         </div>

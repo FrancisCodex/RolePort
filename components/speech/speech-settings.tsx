@@ -4,6 +4,7 @@ import { CircleCheck, Cpu, Download, Globe, HardDrive, Loader2, Trash2, Triangle
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Radio } from "@/components/ui/checkbox";
 import { useConfirm } from "@/components/ui/dialog";
 import { useSpeechEngine, useWhisperModel } from "@/lib/speech/settings";
 import { downloadWhisper } from "@/lib/speech/whisper";
@@ -211,7 +212,7 @@ export function WhisperManager({ onDownloaded }: { onDownloaded?: () => void }) 
               busy && "pointer-events-none opacity-60",
             )}
           >
-            <input type="radio" name="whisper-model" checked={m.id === chosen.id} onChange={() => setModel(m.id)} className="mt-0.5 accent-[var(--brand)]" />
+            <Radio name="whisper-model" checked={m.id === chosen.id} onChange={() => setModel(m.id)} className="mt-0.5" />
             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
               <span className="flex flex-wrap items-center gap-1.5 text-[13px] font-medium">
                 {m.label} <span className="font-normal text-muted tabular-nums">about {modelMb(m)} MB</span>

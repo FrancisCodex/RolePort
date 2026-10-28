@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { SpeechSettings } from "@/components/speech/speech-settings";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog } from "@/components/ui/dialog";
 import { Select } from "@/components/ui/select";
 import { useSpeechEngine, useWhisperModel } from "@/lib/speech/settings";
@@ -271,7 +272,7 @@ function VoicePicker() {
     <section className="flex flex-col gap-2">
       <h3 className="text-xs font-medium tracking-wide text-subtle uppercase">3 · Interviewer voice</h3>
       <label className="flex cursor-pointer items-start gap-2.5">
-        <input type="checkbox" checked={readAloud} onChange={(e) => setReadAloud(e.target.checked)} className="mt-0.5 size-4 accent-[var(--brand)]" />
+        <Checkbox checked={readAloud} onCheckedChange={setReadAloud} className="mt-0.5" />
         <span className="flex flex-col gap-0.5">
           <span className="text-[13px] font-medium">Read questions aloud</span>
           <span className="text-xs text-muted">The interviewer speaks each question. Also switchable from the interview itself. Voices come from your device, so nothing is sent anywhere.</span>

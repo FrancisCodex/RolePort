@@ -7,6 +7,7 @@ import { useState } from "react";
 import { EmptyState } from "@/components/app/empty-state";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/fields";
 import { Input, Label } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
@@ -201,7 +202,7 @@ export function SetupForm({ data }: { data: InterviewSetupData }) {
               />
             ))}
             <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-border p-3 sm:col-span-2">
-              <input type="checkbox" checked={panel} onChange={(e) => setPanel(e.target.checked)} className="mt-0.5 size-4 accent-[var(--brand)]" />
+              <Checkbox checked={panel} onCheckedChange={setPanel} className="mt-0.5" />
               <span className="flex flex-col gap-0.5">
                 <span className="flex items-center gap-1.5 text-[13px] font-medium">
                   <Users className="size-3.5" /> Panel interview
