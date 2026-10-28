@@ -154,7 +154,7 @@ const ERRORS: Record<string, string> = {
   "service-not-allowed": NO_SERVICE,
   "audio-capture": "The browser couldn't capture audio from the microphone. Check it in Voice settings.",
   network: NO_SERVICE,
-  "language-not-supported": "Speech recognition doesn't support your browser's language. Try setting the browser language to English.",
+  "language-not-supported": "Chrome's speech recognition rejected every language setup it was given. Switch to Whisper in Voice settings, or type your answer.",
 };
 
 /** Seconds of listening with sound but no words before the page says transcription seems stuck. */
@@ -297,55 +297,91 @@ export function useDictation(onText: (text: string) => void, { deviceId, engine,
       return;
     }
 
-    const r = new Ctor!();
-    r.lang = navigator.language || "en-US";
-    r.continuous = true;
-    r.interimResults = true;
-    if ("processLocally" in r) r.processLocally = true;
-    heard.current = false;
-    quickEnds.current = 0;
-
-    r.onresult = (e) => {
-      heard.current = true;
-      setStalled(false);
-      if (stallTimer.current) clearTimeout(stallTimer.current);
-      let now = "";
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        const result = e.results[i];
-        const text = result[0]?.transcript ?? "";
-        if (result.isFinal) onTextRef.current(text.trim());
-        else now += text;
+    const lang = navigator.language || "en-US";
+    // Chrome's on-device recognition only works for languages whose pack is installed, and
+    // reports "language-not-supported" otherwise, so it's used only when Chrome says it's ready.
+    let local = false;
+    const SR = Ctor as unknown as { available?: (o: { langs: string[]; processLocally: boolean }) => Promise<string> };
+    if (typeof SR.available === "function") {
+      try {
+        local = (await SR.available({ langs: [lang], processLocally: true })) === "available";
+      } catch {
+        local = false;
       }
-      setInterim(now.trim());
-    };
-    r.onerror = (e) => {
-      if (e.error === "no-speech" || e.error === "aborted") return;
-      finish(ERRORS[e.error] ?? "Speech recognition stopped. Try again, or type your answer.");
-    };
-    const run = () => {
-      runStartedAt.current = Date.now();
-      // Newer Chrome can listen to the chosen microphone; older browsers ignore the track and use the default.
-      r.start(mic.getAudioTracks()[0]);
-    };
-    r.onend = () => {
-      if (!wanted.current) return;
-      // Ending again and again within a second, having heard nothing, means there's no working service.
-      quickEnds.current = !heard.current && Date.now() - runStartedAt.current < 1000 ? quickEnds.current + 1 : 0;
-      if (quickEnds.current >= 3) return finish(NO_SERVICE);
+    }
+    // What to try, in order, if the browser rejects a setup: Chrome's own service instead of
+    // on-device, then the default microphone instead of the chosen one, then plain English.
+    const attempts: { lang: string; local: boolean; track: boolean }[] = [
+      ...(local ? [{ lang, local: true, track: true }] : []),
+      { lang, local: false, track: true },
+      { lang, local: false, track: false },
+      ...(lang !== "en-US" ? [{ lang: "en-US", local: false, track: false }] : []),
+    ];
+    heard.current = false;
+
+    const begin = (attempt: number): boolean => {
+      const setup = attempts[attempt];
+      if (!setup) return false;
+      recognition.current?.abort();
+      const r = new Ctor!();
+      r.lang = setup.lang;
+      r.continuous = true;
+      r.interimResults = true;
+      if ("processLocally" in r) r.processLocally = setup.local;
+      quickEnds.current = 0;
+
+      r.onresult = (e) => {
+        heard.current = true;
+        setStalled(false);
+        if (stallTimer.current) clearTimeout(stallTimer.current);
+        let now = "";
+        for (let i = e.resultIndex; i < e.results.length; i++) {
+          const result = e.results[i];
+          const text = result[0]?.transcript ?? "";
+          if (result.isFinal) onTextRef.current(text.trim());
+          else now += text;
+        }
+        setInterim(now.trim());
+      };
+      r.onerror = (e) => {
+        if (e.error === "no-speech" || e.error === "aborted") return;
+        // Not this setup: try the next one before telling the user anything.
+        if ((e.error === "language-not-supported" || e.error === "audio-capture") && !heard.current && begin(attempt + 1)) return;
+        finish(ERRORS[e.error] ?? "Speech recognition stopped. Try again, or type your answer.");
+      };
+      const run = () => {
+        runStartedAt.current = Date.now();
+        // Newer Chrome can listen to the chosen microphone; older browsers ignore the track and use the default.
+        if (setup.track) r.start(mic.getAudioTracks()[0]);
+        else r.start();
+      };
+      r.onend = () => {
+        if (!wanted.current || recognition.current !== r) return;
+        // Ending again and again within a second, having heard nothing, means there's no working service.
+        quickEnds.current = !heard.current && Date.now() - runStartedAt.current < 1000 ? quickEnds.current + 1 : 0;
+        if (quickEnds.current >= 3) {
+          if (begin(attempt + 1)) return;
+          return finish(NO_SERVICE);
+        }
+        try {
+          run();
+        } catch {
+          finish("Speech recognition stopped. Try again, or type your answer.");
+        }
+      };
+
+      recognition.current = r;
       try {
         run();
+        return true;
       } catch {
-        finish("Speech recognition stopped. Try again, or type your answer.");
+        // This setup can't even start (an older browser that rejects the track, say): try the next.
+        return begin(attempt + 1);
       }
     };
 
-    recognition.current = r;
     wanted.current = true;
-    try {
-      run();
-    } catch {
-      return finish("Couldn't start speech recognition. Try again, or type your answer.");
-    }
+    if (!begin(0)) return finish("Couldn't start speech recognition. Try again, or type your answer.");
     startedAt.current = Date.now();
     setListening(true);
     setStarting(false);
