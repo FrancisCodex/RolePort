@@ -5,7 +5,7 @@ import path from "node:path";
 
 /**
  * Encrypts API keys before they are stored (AES-256-GCM).
- * The key comes from HIREME_SECRET, else a random secret generated once into
+ * The key comes from ROLEPORT_SECRET, else a random secret generated once into
  * .data/secret.key next to the local database. BETTER_AUTH_SECRET is still read so keys
  * saved by installs from before accounts were removed stay readable.
  */
@@ -13,7 +13,7 @@ let cachedKey: Buffer | undefined;
 
 function encryptionKey(): Buffer {
   if (cachedKey) return cachedKey;
-  let secret = process.env.HIREME_SECRET || process.env.BETTER_AUTH_SECRET;
+  let secret = process.env.ROLEPORT_SECRET || process.env.BETTER_AUTH_SECRET;
   if (!secret) {
     const dir = path.dirname(process.env.PGLITE_DIR ?? ".data/pglite");
     const file = path.join(dir, "secret.key");

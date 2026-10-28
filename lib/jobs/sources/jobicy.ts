@@ -44,7 +44,7 @@ async function fetchJobicy(geo: string, tag: string): Promise<JobicyJob[]> {
   const q = new URLSearchParams({ count: "30", geo });
   if (tag) q.set("tag", tag);
   const res = await fetch(`https://jobicy.com/api/v2/remote-jobs?${q}`, {
-    headers: { Accept: "application/json", "User-Agent": "HireMe/0.1 (job search)" },
+    headers: { Accept: "application/json", "User-Agent": "RolePort/0.1 (job search)" },
     signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) throw new Error(`Jobicy responded ${res.status}`);

@@ -17,7 +17,7 @@ const steps = [
   {
     icon: UserRound,
     title: "Build your profile",
-    body: "Import your CV and HireMe picks out your skills, experience and languages. Set where you live and the countries you'd move to.",
+    body: "Import your CV and RolePort picks out your skills, experience and languages. Set where you live and the countries you'd move to.",
   },
   {
     icon: Search,
@@ -67,7 +67,7 @@ const moreFeatures = [
 ];
 
 const afterInstall = [
-  "Open localhost:3000 in your browser and click Open HireMe.",
+  "Open localhost:3000 in your browser and click Open RolePort.",
   "In Profile, import your CV and set the countries you're searching in.",
   "Optional: in Settings, pick an AI provider and turn on more job sources.",
 ];
@@ -118,7 +118,7 @@ export default function LandingPage() {
             <p
               className="mt-5 max-w-xl animate-[rise_0.8s_var(--ease-snappy)_both] text-base text-muted text-pretty [animation-delay:400ms] sm:text-[17px] sm:leading-relaxed"
             >
-              HireMe finds jobs in your country or abroad, scores how well each one fits you, tailors your CV and cover letter for each one, and
+              RolePort finds jobs in your country or abroad, scores how well each one fits you, tailors your CV and cover letter for each one, and
               tracks every application.{" "}
               {isLite ? "Nothing to install: your data stays in your browser." : "Your CV and data never leave your computer."}
             </p>
@@ -251,7 +251,7 @@ export default function LandingPage() {
           <Reveal className="min-w-0">
             <Eyebrow>04 · {isLite ? "Install" : "Get started"}</Eyebrow>
             <h2 className="mt-3 text-3xl font-semibold tracking-[-0.03em] text-balance sm:text-[2.6rem] sm:leading-[1.1]">
-              {isLite ? "Prefer your own install?" : "Run HireMe on your computer"}
+              {isLite ? "Prefer your own install?" : "Run RolePort on your computer"}
             </h2>
             <p className="mt-4 text-muted text-pretty sm:text-base">
               {isLite
@@ -274,7 +274,7 @@ export default function LandingPage() {
                 Full setup guide
               </a>
               <Link href="/home" className={buttonVariants({ variant: "ghost" })}>
-                Already installed? Open HireMe
+                Already installed? Open RolePort
                 <ArrowRight />
               </Link>
             </div>
@@ -297,7 +297,7 @@ export default function LandingPage() {
             </div>
             <div className="mt-8 flex flex-wrap justify-center gap-2">
               <Link href="/home" className={buttonVariants({ size: "lg" })}>
-                Open HireMe
+                Open RolePort
                 <ArrowRight />
               </Link>
               <a href={REPO_URL} className={buttonVariants({ size: "lg", variant: "secondary" })}>

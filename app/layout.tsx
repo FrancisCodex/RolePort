@@ -16,13 +16,13 @@ const mono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "HireMe — Open-source job search you run yourself",
-    template: "%s · HireMe",
+    default: "RolePort — Open-source job search you run yourself",
+    template: "%s · RolePort",
   },
   description:
     "Free, open-source job search that runs on your own machine. Find jobs in your country or abroad, score your fit with your own AI, and track every application.",
   // Installed to the home screen (app/manifest.ts); iOS also keeps a home-screen app's storage.
-  appleWebApp: { capable: true, title: "HireMe", statusBarStyle: "default" },
+  appleWebApp: { capable: true, title: "RolePort", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {

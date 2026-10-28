@@ -404,7 +404,7 @@ function PrivacyDemo() {
             </p>
             <div className="flex flex-col gap-2">
               <Node icon={FileText} title="Your CV & profile" note="Stored on this device" />
-              <Node icon={Target} title="HireMe" note="Search, scores, pipeline" />
+              <Node icon={Target} title="RolePort" note="Search, scores, pipeline" />
               {hasAi && provider.local && aiNode}
             </div>
           </div>
@@ -431,7 +431,7 @@ function PrivacyDemo() {
       </LayoutGroup>
 
       <p className="flex items-center gap-1.5 border-t border-border px-4 py-2.5 text-[11px] text-muted">
-        <Lock className="size-3 shrink-0 text-brand" /> HireMe has no servers that see your data, in every mode. {provider.note}.
+        <Lock className="size-3 shrink-0 text-brand" /> RolePort has no servers that see your data, in every mode. {provider.note}.
       </p>
     </div>
   );
@@ -488,7 +488,7 @@ function KitDemo() {
   const [letter, setLetter] = useState<Step>("idle");
   const [copied, setCopied] = useState(false);
 
-  // Pretend generation: in HireMe this is your own AI provider, given your profile and the posting.
+  // Pretend generation: in RolePort this is your own AI provider, given your profile and the posting.
   const run = (set: (s: Step) => void) =>
     new Promise<void>((resolve) => {
       set("working");
@@ -642,7 +642,7 @@ function AnswersDemo() {
   const q = QUESTIONS.find((x) => x.id === picked) ?? QUESTIONS[0];
   const step = state[q.id] ?? "idle";
 
-  // Pretend generation: in HireMe this is your own AI provider, given your profile, the posting and the question.
+  // Pretend generation: in RolePort this is your own AI provider, given your profile, the posting and the question.
   function answer() {
     const id = q.id;
     setState((s) => ({ ...s, [id]: "working" }));

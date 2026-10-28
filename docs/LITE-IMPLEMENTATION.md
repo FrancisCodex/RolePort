@@ -1,4 +1,4 @@
-# HireMe Lite: implementation plan
+# RolePort Lite: implementation plan
 
 Companion to [LITE.md](LITE.md), which says *what* and *why*. This file says *how*, file by file, in the order to build it.
 
@@ -21,7 +21,7 @@ Open items carried from earlier phases: Safari and Firefox testing (§1.5 findin
 
 Ground rules for every phase:
 
-- **One codebase.** `NEXT_PUBLIC_HIREME_MODE=lite` at build time switches the build. No fork, no long-lived branch.
+- **One codebase.** `NEXT_PUBLIC_ROLEPORT_MODE=lite` at build time switches the build. No fork, no long-lived branch.
 - **Self-hosted keeps working exactly as today** after every phase. Each phase ends with a self-hosted smoke test (profile save, search, save job, pipeline drag, evaluate) on a dev server on a spare port.
 - **The lite server never touches a database.** Enforced in code (see 2.1), not just by convention.
 - Each phase is one PR.
@@ -50,7 +50,7 @@ Goal: prove the hard parts before restructuring anything. Throwaway-friendly, bu
 
 - `lib/mode.ts` (new, importable anywhere, no `server-only`):
   ```ts
-  export const isLite = process.env.NEXT_PUBLIC_HIREME_MODE === "lite";
+  export const isLite = process.env.NEXT_PUBLIC_ROLEPORT_MODE === "lite";
   ```
 - `scripts/lite.mjs` sets the flag and runs `next` on any OS (no `cross-env` dependency). `package.json`: `dev:lite` (port 3100), `build:lite`, `start:lite`.
 - `next.config.ts`: `distDir` is `.next-lite` in lite mode. Next 16 refuses a second `next dev` in the same folder, so without this the two modes can't run side by side. It also keeps their build caches apart.
@@ -67,7 +67,7 @@ Goal: prove the hard parts before restructuring anything. Throwaway-friendly, bu
   import { PGlite } from "@electric-sql/pglite";
   import { worker } from "@electric-sql/pglite/worker";
   // OPFS where available, IndexedDB otherwise; durable writes. See 1.5.
-  worker({ init: async () => new PGlite(hasOpfs ? "opfs-ahp://hireme" : "idb://hireme") });
+  worker({ init: async () => new PGlite(hasOpfs ? "opfs-ahp://roleport" : "idb://roleport") });
   ```
 - `lib/db/browser/index.ts` (new, `"use client"` consumers only):
   - `getBrowserDb()`: lazily creates `new PGliteWorker(new Worker(new URL("./worker.ts", import.meta.url), { type: "module" }))`, wraps it with `drizzle(pg, { schema })` from `drizzle-orm/pglite` (cast: `PGliteWorker` implements the PGlite interface), runs `db.dialect.migrate(migrations, db.session, {})`, inserts the built-in user `{ id: "local-user", ... }` with `onConflictDoNothing`, and caches the promise.
@@ -138,7 +138,7 @@ So the seed takes the first visit from about 11 s to about 5.7 s (about half). M
 What made it work, and what to keep:
 
 - **OPFS handle pool.** PGlite's OPFS backend opens one handle per file from a pool that starts at 1,000 and refills 100 at a time between queries. Unpacking the seed creates all ~1,040 files at once, so the default pool ran out ("No more file handles available in the pool"). The worker gives the seed load a starting pool of 1,100. Each pooled handle costs about 4 ms on a first visit (1,500 was 1.5 s slower), so the pool stays just above the seed, and the seed build fails if the seed's file count gets within 30 of it.
-- **Recovery from a failed first visit.** A failed load leaves the worker holding OPFS handles, so it can't clean up after itself. The worker writes a `hireme.ready` marker when a database is finished; at startup, a `hireme` folder without the marker is an interrupted first visit and is removed before any handle opens. If loading the seed fails, a `hireme.noseed` marker makes the next visit create the database the normal way. Both paths were tested (the no-seed path took 11.1 s, as expected).
+- **Recovery from a failed first visit.** A failed load leaves the worker holding OPFS handles, so it can't clean up after itself. The worker writes a `roleport.ready` marker when a database is finished; at startup, a `roleport` folder without the marker is an interrupted first visit and is removed before any handle opens. If loading the seed fails, a `roleport.noseed` marker makes the next visit create the database the normal way. Both paths were tested (the no-seed path took 11.1 s, as expected).
 - **Opening early.** `components/app/open-browser-db.tsx` starts opening the database when any app page loads (lite only). It doesn't change the numbers above, because Profile asks for data straight away; it pays off once other pages read data, by having the database ready on navigation.
 
 Findings to act on:
@@ -209,7 +209,7 @@ Storage-free logic is already shared (`fit.ts`, `quick-match.ts`, `job-key.ts`, 
 
 ### 2.3 Client-side plumbing (lite only)
 
-- `lib/client/bus.ts`: `invalidate(...tables)`, `useInvalidation(tables)`; mirrors to other tabs over `BroadcastChannel("hireme")`.
+- `lib/client/bus.ts`: `invalidate(...tables)`, `useInvalidation(tables)`; mirrors to other tabs over `BroadcastChannel("roleport")`.
 - `lib/client/use-lite-query.ts`: `useLiteQuery(key, (db) => readSomething(db, ...), tables)`, returns `{ data, error, loading }`, re-runs on invalidation.
 - `lib/client/mutations.ts`:
   ```ts
@@ -394,13 +394,13 @@ Exit: evaluate, CV import, test connection and model list work in lite with at l
 
 | Item | State | Where |
 | --- | --- | --- |
-| Backup format | ✅ | `lib/backup/format.ts`: `hireme-backup` v1 with app and schema version; every row checked against its table (unknown fields rejected, timestamps revived) |
+| Backup format | ✅ | `lib/backup/format.ts`: `roleport-backup` v1 with app and schema version; every row checked against its table (unknown fields rejected, timestamps revived) |
 | Export | ✅ | `lib/backup/export.ts`: the user's profile, settings, pipeline, events, evaluations and documents, plus only the jobs they saved or evaluated (jobs are a shared cache) |
 | Import | ✅ | `lib/backup/import.ts`: one transaction; merge (newer row wins, re-import is a no-op) or replace; job ids remapped by dedupe key |
 | Settings → Your data, both editions | ✅ | `app/(app)/settings/backup-controls.tsx`; server actions `exportData` / `importData` (5 MB, under the 6 MB action limit); lite versions in `lite-mutations.ts` |
 | Storage status and persistence | ✅ | `lib/client/storage.ts`: storage used / quota, "Protect my data" (`navigator.storage.persist()`), and an automatic request after each profile save |
 | Backup reminder | ✅ | `components/app/backup-reminder.tsx` in the lite layout: after 14 days without a backup once there's data; "Later" snoozes 3 days |
-| Installable app | ✅ | `app/manifest.ts` (both editions; "HireMe Lite" in lite), icons from `scripts/build-icons.mjs` in `public/icons`, Apple touch icon and web-app tags in `app/layout.tsx` |
+| Installable app | ✅ | `app/manifest.ts` (both editions; "RolePort Lite" in lite), icons from `scripts/build-icons.mjs` in `public/icons`, Apple touch icon and web-app tags in `app/layout.tsx` |
 
 Decisions that differ from the plan below:
 
@@ -421,7 +421,7 @@ Verified (2026-10-23):
   The 11 earlier checks still pass.
 - **Lite production build in the browser:**
   - The Your data card shows storage ("Using 39 MB of 5.x GB", not protected).
-  - Download backup produced `hireme-backup-2026-10-23.json` (11 KB: profile, settings without keys, 2 jobs, 2 applications, 2 events, 1 evaluation) and recorded the date.
+  - Download backup produced `roleport-backup-2026-10-23.json` (11 KB: profile, settings without keys, 2 jobs, 2 applications, 2 events, 1 evaluation) and recorded the date.
   - After changing the profile, restoring with merge kept the newer change ("Everything in that backup is already here"); replace restored the backup ("Imported your profile, settings, 2 applications, 1 evaluation"), and Profile and Pipeline reloaded with it.
   - The reminder shows after 20 days, hides with "Later" across reloads, and doesn't show after a recent backup.
   - "Protect my data" was declined by this browser, and the page explains why.
@@ -430,7 +430,7 @@ Verified (2026-10-23):
 
 Not done here: a real install (Chrome's install prompt, Safari home screen), and a lite → self-hosted import by hand (the same code path the script covers).
 
-- `lib/backup/format.ts`: zod schema `{ format: "hireme-backup", version: 1, appVersion, exportedAt, includesKeys, tables: { user, profile, job, job_match, application, application_event, document, user_settings } }`. Dates as ISO strings. Auth tables (`session`, `account`, `verification`) are never exported.
+- `lib/backup/format.ts`: zod schema `{ format: "roleport-backup", version: 1, appVersion, exportedAt, includesKeys, tables: { user, profile, job, job_match, application, application_event, document, user_settings } }`. Dates as ISO strings. Auth tables (`session`, `account`, `verification`) are never exported.
 - `lib/backup/export.ts` / `import.ts` take a `Db`, so they run in the browser **and** on the server.
   - Import: validate, then **replace** (wipe and load in one transaction) or **merge** (upsert by `job_key` for jobs, by id for the rest; remap `user_id` to the target's built-in user).
   - Self-hosted gets the same Settings → Data → Import/Export via server actions, so lite → self-hosted works on day one.
@@ -450,11 +450,11 @@ Exit: export from lite, import into a fresh self-hosted install, everything show
 | --- | --- | --- |
 | 6.1 CORS allow-list | ✅ | `services/jobspy/server.py`: `JOBSPY_ALLOWED_ORIGINS` (default none). An allowed origin gets CORS headers, and its preflight gets 204 with `Access-Control-Allow-Private-Network`. Any other site's preflight gets 403 |
 | 6.1 Refuse other sites' browser requests | ✅ | Same file: a request with a disallowed `Origin`, or `Sec-Fetch-Site` cross-site/same-site, gets 403 *before* searching (a page elsewhere could otherwise make this computer query the boards). Server-to-server calls send neither header and still work |
-| 6.1 Published image | ⏭ | Not published to GHCR. Settings and the docs use `docker build` straight from the repository (`…HireMe.git#main:services/jobspy`), which works once this branch is merged to `main` |
+| 6.1 Published image | ⏭ | Not published to GHCR. Settings and the docs use `docker build` straight from the repository (`…RolePort.git#main:services/jobspy`), which works once this branch is merged to `main` |
 | 6.2 Shared board logic | ✅ | `lib/jobs/sources/jobspy-boards.ts` (boards, coverage, query, normalize, response check); `jobspy.ts` keeps the server's cached fetch |
 | 6.2 Browser search and merge | ✅ | `lib/client/lite-jobspy.ts` (one request per covered board, straight from the browser), merged in `lite-search.ts` with the server's precedence (JSearch, JobSpy boards, then the rest). Counts are taken after dedupe, and a search is reused only while the JobSpy setting is unchanged |
 | 6.2 Settings | ✅ | `app/(app)/settings/local-jobspy.tsx`: address and Test, setup steps (Docker or Python, with this site's address), and the terms notice. Turning it on tests the connection first; "doesn't allow this site" and "couldn't reach" are told apart |
-| Docs | ✅ | README "In HireMe Lite" section and troubleshooting rows; `services/jobspy/README.md` with Lite commands and a settings table |
+| Docs | ✅ | README "In RolePort Lite" section and troubleshooting rows; `services/jobspy/README.md` with Lite commands and a settings table |
 
 Decision: the JobSpy **address is kept per browser in `localStorage`** (it describes this computer, not the user's data, and a new column would need a migration that breaks a running self-hosted dev server). The on/off switch uses the existing `jobspy_enabled` column.
 
@@ -475,7 +475,7 @@ Not done here: Chrome's local network access prompt from an HTTPS site (needs a 
 
 - `JOBSPY_ALLOWED_ORIGINS` (comma-separated, default empty). For an allowed `Origin`: `Access-Control-Allow-Origin: <origin>`, `Vary: Origin`, and `do_OPTIONS` answering preflights, including `Access-Control-Allow-Private-Network: true` for Chrome's local network checks. Disallowed origins get no CORS headers.
 - Keep binding to `127.0.0.1` by default; the Docker image keeps its internal `0.0.0.0` but every documented `docker run` maps `127.0.0.1:8765:8000`.
-- Publish the image to GHCR so lite users don't need to clone the repo: `docker run --rm -p 127.0.0.1:8765:8000 -e JOBSPY_ALLOWED_ORIGINS=https://<lite domain> ghcr.io/<owner>/hireme-jobspy`.
+- Publish the image to GHCR so lite users don't need to clone the repo: `docker run --rm -p 127.0.0.1:8765:8000 -e JOBSPY_ALLOWED_ORIGINS=https://<lite domain> ghcr.io/<owner>/roleport-jobspy`.
 
 ### 6.2 App
 
@@ -495,10 +495,10 @@ Exit: with the service running locally, lite search includes LinkedIn/Indeed res
 | Item | State | Where |
 | --- | --- | --- |
 | 7.1 Content Security Policy | ✅ | `lib/security-headers.ts`, applied by `next.config.ts` to every response of production lite builds. Strict `connect-src` (this site, Claude, OpenAI, OpenRouter, Groq, `localhost`/`127.0.0.1` on any port); `script-src self unsafe-inline wasm-unsafe-eval`. Also `frame-ancestors none`, `object-src none`, `Referrer-Policy`, `nosniff`, `Permissions-Policy` |
-| 7.2 Landing page | ✅ | Lite: "Try it in your browser" (→ `/home`) first, "Install on your computer" second, and lite copy. Self-hosted: unchanged, plus "Try it in your browser" when `NEXT_PUBLIC_HIREME_LITE_URL` is set |
+| 7.2 Landing page | ✅ | Lite: "Try it in your browser" (→ `/home`) first, "Install on your computer" second, and lite copy. Self-hosted: unchanged, plus "Try it in your browser" when `NEXT_PUBLIC_ROLEPORT_LITE_URL` is set |
 | 7.2 Privacy page | ✅ | `/privacy` in both editions: what stays in the browser, what the search route sees, AI and JobSpy going direct, self-hosted, backups. Linked from the landing footer |
 | 7.2 Settings copy | ✅ | Done in phases 2 and 4 (data and key notes in lite) |
-| 7.2 README | ✅ | "HireMe Lite (in your browser)" section with a comparison table, and "Hosting HireMe Lite" (build, environment, headers, rate limiting, caching, logs). LITE.md status updated |
+| 7.2 README | ✅ | "RolePort Lite (in your browser)" section with a comparison table, and "Hosting RolePort Lite" (build, environment, headers, rate limiting, caching, logs). LITE.md status updated |
 | 7.3 Hosting | ⏳ | Not deployed: needs a host account and a domain. The README section covers what a host needs |
 
 Decision on `script-src`: **unsafe-inline without nonces.** Next.js inlines each page's data as scripts, so a strict `script-src` would need nonces (every page rendered per request, which partial prerendering and lite's static pages rule out). SRI (experimental) only covers script files. The protection that matters for keys is `connect-src`: injected script still can't send anything to a site outside the list. `[::1]` isn't listed because CSP has no syntax for IPv6 addresses (Chrome rejected it in testing).
@@ -518,7 +518,7 @@ Verified (2026-10-24, lite production build in Chromium):
 
 ### Before launch
 
-- Pick a host and domain, deploy, and set `NEXT_PUBLIC_HIREME_LITE_URL` for self-hosted landing pages.
+- Pick a host and domain, deploy, and set `NEXT_PUBLIC_ROLEPORT_LITE_URL` for self-hosted landing pages.
 - On the deployment: Chrome's local network access prompt for Ollama and JobSpy; installing the app (Chrome install, Safari home screen); "Protect my data" in a real browser.
 - Safari and Firefox (§1.5 finding 3, including OPFS handle limits).
 - Brotli and long-lived caching for `/pglite/*` on the host; consider a content-hashed starter database name.
@@ -543,7 +543,7 @@ Verified (2026-10-24, lite production build in Chromium):
 
 ### 7.3 Hosting
 
-- Pick the host (LITE.md §10). Build command `NEXT_PUBLIC_HIREME_MODE=lite next build`. Turn off request logging of bodies if the host offers it.
+- Pick the host (LITE.md §10). Build command `NEXT_PUBLIC_ROLEPORT_MODE=lite next build`. Turn off request logging of bodies if the host offers it.
 
 ---
 
@@ -567,7 +567,7 @@ Added after phase 7, before the pull request.
 
 - **Welcome guide** (`app/(onboarding)/welcome`, its own quiet layout). It has six screens: welcome; about you (name, country, city); what you're looking for (roles, work setup, other countries); CV or skills (optional); AI (optional, links to Settings and back); and ready (search your first role, plus the tools to add later: AI, JobSpy, JSearch, backups).
   - **Progress:** saved in the existing `profile.onboarding_step` column (no migration): 1-5 while in progress, `ONBOARDING_DONE` (100) when finished or skipped. Leaving for Settings or closing the tab resumes where the user left off. Profiles saved before the guide existed count as done.
-  - **First run:** `NEXT_PUBLIC_HIREME_ONBOARDING` decides whether new users are sent from Home to the guide. It's on by default in lite and off for self-hosted. The guide stays reachable from Home ("Setup guide") either way, and a finished guide opens as a revisit.
+  - **First run:** `NEXT_PUBLIC_ROLEPORT_ONBOARDING` decides whether new users are sent from Home to the guide. It's on by default in lite and off for self-hosted. The guide stays reachable from Home ("Setup guide") either way, and a finished guide opens as a revisit.
 - **Home dashboard** (`app/(app)/home/home-view.tsx`), from `readDashboard` in `lib/jobs/dashboard.ts`, shared by both editions:
   - **Stat tiles:** applications sent (this week), response rate with a meter, interviews, offers.
   - **Funnel:** how far applications get, counted from each one's event history, so a rejected application still counts as applied. Closed outcomes are summarized below it.

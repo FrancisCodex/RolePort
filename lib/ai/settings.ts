@@ -72,7 +72,7 @@ export const aiInput = z.object({
 export type AiSettingsInput = z.infer<typeof aiInput>;
 
 /**
- * Only http(s). Local addresses are fine: HireMe runs on the user's own computer or in their
+ * Only http(s). Local addresses are fine: RolePort runs on the user's own computer or in their
  * browser, and that's where Ollama and LM Studio live.
  */
 export function checkBaseUrl(raw: string | null): string | null {

@@ -2,7 +2,7 @@ import { z } from "zod";
 import { formatMonthYear } from "@/lib/profile/dates";
 
 /*
- * A CV as HireMe renders it: plain, single-column content that both the editor and the
+ * A CV as RolePort renders it: plain, single-column content that both the editor and the
  * PDF read. Employers, titles, dates and schools are copied from the profile in code;
  * tailoring only rewrites the wording (lib/ai/tailor-cv.ts).
  */

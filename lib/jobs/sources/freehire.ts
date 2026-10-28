@@ -65,7 +65,7 @@ async function fetchFreehire(query: string): Promise<FreehireJob[]> {
   cacheLife("hours");
 
   const res = await fetch(`${BASE_URL}/api/v1/agent/jobs/search?${query}`, {
-    headers: { Accept: "application/json", "User-Agent": "HireMe/0.1 (job search)" },
+    headers: { Accept: "application/json", "User-Agent": "RolePort/0.1 (job search)" },
     signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) throw new Error(`freehire responded ${res.status}`);

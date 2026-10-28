@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /*
  * The questions an application form asks (why do you want this job, describe a project...)
- * and the answers HireMe drafted from the candidate's profile or the user wrote themselves.
+ * and the answers RolePort drafted from the candidate's profile or the user wrote themselves.
  */
 
 export const MAX_QUESTIONS = 30;

@@ -57,11 +57,11 @@ export function SiteHeader() {
         <div className="flex items-center gap-1">
           <CommandMenu />
           <ThemeToggle />
-          <a href={REPO_URL} aria-label="HireMe on GitHub" className={buttonVariants({ variant: "ghost", size: "icon" })}>
+          <a href={REPO_URL} aria-label="RolePort on GitHub" className={buttonVariants({ variant: "ghost", size: "icon" })}>
             <GitHubMark />
           </a>
           <Link href="/home" className={buttonVariants({ size: "sm" })}>
-            Open HireMe
+            Open RolePort
           </Link>
         </div>
       </nav>

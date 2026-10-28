@@ -1,10 +1,10 @@
-# HireMe Lite: a hosted web version with no user data on the server
+# RolePort Lite: a hosted web version with no user data on the server
 
 Status: built on the `feat/liveweb-update` branch, not deployed yet. [LITE-IMPLEMENTATION.md](LITE-IMPLEMENTATION.md) has the build plan, what each phase delivered and how it was verified, and what's still open.
 
 ## 1. Goal
 
-A version of HireMe anyone can open in a browser, with nothing to install. It is the easy way to try HireMe; the self-hosted install stays the full edition.
+A version of RolePort anyone can open in a browser, with nothing to install. It is the easy way to try RolePort; the self-hosted install stays the full edition.
 
 The rule: **no user data on the server**. The profile, CV, saved jobs, evaluations, settings and API keys all live in the user's browser. The deployment keeps only one stateless route that forwards public job searches. No database, no accounts, no logs of user data.
 
@@ -21,7 +21,7 @@ The rule: **no user data on the server**. The profile, CV, saved jobs, evaluatio
 
 ## 2. Data: PGlite in the browser
 
-HireMe already runs on PGlite (`lib/db/index.ts`). PGlite also runs in the browser, so the lite version keeps the same Drizzle schema (`lib/db/schema.ts`) and the migrations in `drizzle/`. They run in the browser on first load and after each update. Data is saved to OPFS (`opfs-ahp://hireme`) where the browser supports it, and to IndexedDB (`idb://hireme`) otherwise; [LITE-IMPLEMENTATION.md §1.5](LITE-IMPLEMENTATION.md) has the measurements.
+RolePort already runs on PGlite (`lib/db/index.ts`). PGlite also runs in the browser, so the lite version keeps the same Drizzle schema (`lib/db/schema.ts`) and the migrations in `drizzle/`. They run in the browser on first load and after each update. Data is saved to OPFS (`opfs-ahp://roleport`) where the browser supports it, and to IndexedDB (`idb://roleport`) otherwise; [LITE-IMPLEMENTATION.md §1.5](LITE-IMPLEMENTATION.md) has the measurements.
 
 Run PGlite in a Web Worker (PGlite's `PGliteWorker`) so queries don't block the UI and several open tabs share one database.
 
@@ -108,7 +108,7 @@ Today the database is read in server components and server actions:
 
 ### Approach
 
-1. **One codebase, a build mode.** `NEXT_PUBLIC_HIREME_MODE=lite` at build time. Not a fork.
+1. **One codebase, a build mode.** `NEXT_PUBLIC_ROLEPORT_MODE=lite` at build time. Not a fork.
 2. **Shared data interface.** Define the operations the UI needs (get profile, save profile, list saved jobs, set status, save evaluation…) as one interface with two implementations: the current server one, and a browser one on PGlite in a worker. Business logic that doesn't touch storage (`fit.ts`, `quick-match.ts`, `job-key.ts`, `detect-skills.ts`, `profile/dates.ts`) is shared as is.
 3. **Same split for AI** (server or browser client) and **for search** (server sources or proxy route + local JobSpy).
 4. **Client-side loading in lite mode.** The server has no data to render, so app pages render a client shell that loads from the browser database. Keep server rendering for self-hosted; the page components take data as props so both paths reuse them.

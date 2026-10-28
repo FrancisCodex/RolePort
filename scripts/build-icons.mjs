@@ -1,4 +1,4 @@
-// Draws the app icons from the logo mark (components/brand/logo.tsx): an ink tile with a white "H".
+// Draws the app icons from the logo mark (components/brand/logo.tsx): an ink tile with a white "R".
 // Writes the install icons in public/icons and the browser-tab icons in app/ (favicon.ico,
 // icon.svg, apple-icon.png), which Next.js links from every page.
 // Run after changing the mark: node scripts/build-icons.mjs
@@ -7,7 +7,7 @@ import sharp from "sharp";
 
 const INK = "#1b1b1d";
 const PAPER = "#ededef";
-const MARK = "M7 5v14M17 5v14M7 12h10";
+const MARK = "M7 19V5h5.5a4 4 0 0 1 0 8H7m5 0 5 6";
 
 /** `glyph` is the share of the canvas the 24×24 mark takes; `radius` rounds the tile (0 for full-bleed). */
 function svg(size, { glyph, radius }) {
@@ -71,7 +71,7 @@ for (const { file, size, ...shape } of icons) {
   console.log(`Wrote ${file}`);
 }
 
-// A bigger mark at tab sizes, so the "H" stays legible at 16 px.
+// A bigger mark at tab sizes, so the "R" stays legible at 16 px.
 const tab = { glyph: 0.7, radius: 0.22 };
 writeFileSync("app/favicon.ico", ico(await Promise.all([16, 32, 48].map(async (size) => ({ size, data: await png(size, tab) })))));
 console.log("Wrote app/favicon.ico");

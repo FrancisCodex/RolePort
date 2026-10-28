@@ -3,7 +3,7 @@
  * every response by next.config.ts in production lite builds.
  *
  * The API keys live in the page, so connect-src is the part that matters: even injected script
- * could only send data to HireMe itself, the AI providers, and the user's own computer (Ollama,
+ * could only send data to RolePort itself, the AI providers, and the user's own computer (Ollama,
  * JobSpy). Scripts allow 'unsafe-inline' because Next.js inlines the page data in every static
  * page; nonces would force every page to render per request, and SRI covers script files only.
  */

@@ -34,7 +34,7 @@ async function Dashboard() {
     isAiConfigured(),
     readOnboarding(db, user.id),
   ]);
-  // New users start on the welcome guide when it's turned on (NEXT_PUBLIC_HIREME_ONBOARDING).
+  // New users start on the welcome guide when it's turned on (NEXT_PUBLIC_ROLEPORT_ONBOARDING).
   if (onboardingEnabled && !onboarding.done) redirect("/welcome");
   return <HomeView {...toHomeData(view, stats, aiEnabled, onboarding)} />;
 }

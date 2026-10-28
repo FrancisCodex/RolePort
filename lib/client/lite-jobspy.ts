@@ -15,11 +15,11 @@ import { countryOrDefault } from "@/lib/geo/countries";
 /*
  * Lite edition: the JobSpy boards, searched from this browser through the JobSpy service on
  * the user's computer (services/jobspy, started with JOBSPY_ALLOWED_ORIGINS set to this site).
- * Results go straight from the service to the browser; HireMe's server never sees them.
+ * Results go straight from the service to the browser; RolePort's server never sees them.
  */
 
 export const DEFAULT_JOBSPY_URL = "http://127.0.0.1:8765";
-const URL_KEY = "hireme:jobspy-url";
+const URL_KEY = "roleport:jobspy-url";
 
 /** The service's address. Kept per browser: it's about this computer, not the user's data. */
 export function jobSpyUrl(): string {

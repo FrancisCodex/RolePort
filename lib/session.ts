@@ -14,7 +14,7 @@ export type CurrentUser = {
 
 /**
  * Data Access Layer entry point: the only place that resolves the current user.
- * HireMe has no sign-in: one built-in user owns all the data on this install.
+ * RolePort has no sign-in: one built-in user owns all the data on this install.
  */
 export const getCurrentUser = cache(async (): Promise<CurrentUser> => {
   // Request-time only: never touch the local database while prerendering at build time.

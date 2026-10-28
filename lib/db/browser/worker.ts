@@ -76,7 +76,7 @@ async function openIndexedDb(): Promise<PGlite> {
       await pg.waitReady;
       return pg;
     } catch (error) {
-      console.warn("[hireme] couldn't load the starter database; creating one instead", error);
+      console.warn("[roleport] couldn't load the starter database; creating one instead", error);
       await pg?.close().catch(() => {});
       await new Promise<void>((resolve) => {
         const req = indexedDB.deleteDatabase(IDB_NAME);

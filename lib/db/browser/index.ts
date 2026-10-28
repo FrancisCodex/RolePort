@@ -14,7 +14,7 @@ import * as schema from "../schema";
  */
 
 function open() {
-  const pg = new PGliteWorker(new Worker(new URL("./worker.ts", import.meta.url), { type: "module", name: "hireme-db" }));
+  const pg = new PGliteWorker(new Worker(new URL("./worker.ts", import.meta.url), { type: "module", name: "roleport-db" }));
   // PGliteWorker speaks the same query interface as PGlite.
   return { pg, db: drizzle(pg as unknown as PGlite, { schema }) };
 }

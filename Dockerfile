@@ -1,4 +1,4 @@
-# HireMe — self-hosted, single image. Data lives in the /app/.data volume.
+# RolePort — self-hosted, single image. Data lives in the /app/.data volume.
 FROM node:22-bookworm-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./

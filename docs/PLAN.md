@@ -1,4 +1,4 @@
-# HireMe — Feasibility & Build Plan
+# RolePort — Feasibility & Build Plan
 
 Reference: [MadsLorentzen/ai-job-search](https://github.com/MadsLorentzen/ai-job-search) (MIT — we can reuse its ideas and code, keeping the copyright notice for anything copied).
 
@@ -10,7 +10,7 @@ So porting it means: **turn each prompt into a server-side feature that calls an
 
 ## 2. Feature mapping
 
-| Reference command | What it does | HireMe feature | Feasible? / notes |
+| Reference command | What it does | RolePort feature | Feasible? / notes |
 |---|---|---|---|
 | `/setup` | Builds the candidate profile from a CV, LinkedIn export, or an interview | **Onboarding**: upload a CV PDF or answer step-by-step questions (Duolingo style). LLM pulls out skills, experience, languages, goals, and deal-breakers into a structured profile | ✅ PDF text extraction + LLM structured output |
 | `/scrape` + portal skills | Searches job boards, removes duplicates | **Discover feed**: one search across several job sources, with results deduplicated by a job key (port of `tools/job_key.py`) | ⚠️ Its sources are Danish portals plus LinkedIn scraping, which breaks LinkedIn's ToS, so we can't use that in a public app. Use legal APIs instead (see §3). The portal CLIs are already TypeScript, so their normalize/parse helpers can be adapted |

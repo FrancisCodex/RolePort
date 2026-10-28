@@ -11,7 +11,7 @@ import { CopyBlock } from "./ollama-setup";
 type Message = { ok: boolean; text: string } | null;
 
 // Built straight from the repository, so users don't need a copy of it.
-const IMAGE_SOURCE = "https://github.com/FrancisCodex/HireMe.git#main:services/jobspy";
+const IMAGE_SOURCE = "https://github.com/FrancisCodex/RolePort.git#main:services/jobspy";
 
 /**
  * Lite edition: connect the JobSpy service on this computer. The browser calls it directly;
@@ -87,13 +87,13 @@ export function LocalJobSpy({ enabled }: { enabled: boolean }) {
             <p>
               With <span className="font-medium text-fg">Docker</span>, build it once, then start it:
             </p>
-            <CopyBlock code={`docker build -t hireme-jobspy ${IMAGE_SOURCE}`} />
-            <CopyBlock code={`docker run -d --name hireme-jobspy -p 127.0.0.1:8765:8000 -e JOBSPY_ALLOWED_ORIGINS=${origin} hireme-jobspy`} />
+            <CopyBlock code={`docker build -t roleport-jobspy ${IMAGE_SOURCE}`} />
+            <CopyBlock code={`docker run -d --name roleport-jobspy -p 127.0.0.1:8765:8000 -e JOBSPY_ALLOWED_ORIGINS=${origin} roleport-jobspy`} />
           </div>
           <div className="flex flex-col gap-1.5">
             <p>
               Or with <span className="font-medium text-fg">Python 3.10+</span>, from the{" "}
-              <code className="font-mono text-xs">services/jobspy</code> folder of HireMe:
+              <code className="font-mono text-xs">services/jobspy</code> folder of RolePort:
             </p>
             <CopyBlock code="pip install -r requirements.txt" />
             <p>Then start it (PowerShell, or macOS and Linux):</p>

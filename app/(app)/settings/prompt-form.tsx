@@ -13,7 +13,7 @@ import type { Result } from "@/lib/result";
 import { cn } from "@/lib/utils";
 
 /**
- * An AI prompt shown in full: read the default, change it, or go back to it. The rules HireMe
+ * An AI prompt shown in full: read the default, change it, or go back to it. The rules RolePort
  * always adds are shown below, read-only, so nothing sent is hidden. Used for the CV tailoring
  * and cover letter prompts.
  */
@@ -89,7 +89,7 @@ export function PromptForm({
 
       <details className="group rounded-lg border border-border bg-surface-2">
         <summary className="cursor-pointer px-3 py-2 text-[13px] font-medium text-muted select-none hover:text-fg">
-          Rules HireMe always adds (can&apos;t be changed)
+          Rules RolePort always adds (can&apos;t be changed)
         </summary>
         <div className="border-t border-border px-3 py-2.5">
           <p className="mb-2 text-xs text-muted">{fixedNote}</p>
@@ -109,7 +109,7 @@ export function CvPromptForm({ saved }: { saved: string | null }) {
       fixedRules={CV_FIXED_RULES}
       max={MAX_CV_PROMPT}
       onSave={saveCvPrompt}
-      fixedNote="They keep job postings from giving the AI instructions and let HireMe read the answer. HireMe also copies your employers, job titles, dates, education and contact details from your profile itself, and flags skills or numbers that aren't in your profile or CV."
+      fixedNote="They keep job postings from giving the AI instructions and let RolePort read the answer. RolePort also copies your employers, job titles, dates, education and contact details from your profile itself, and flags skills or numbers that aren't in your profile or CV."
     />
   );
 }
@@ -123,7 +123,7 @@ export function LetterPromptForm({ saved }: { saved: string | null }) {
       fixedRules={LETTER_FIXED_RULES}
       max={MAX_LETTER_PROMPT}
       onSave={saveLetterPrompt}
-      fixedNote="They keep job postings from giving the AI instructions and let HireMe read the answer. HireMe adds your name, contact details, the date and the employer's address around the letter itself, and flags numbers it can't find in your profile or CV, leftover placeholders and clichés."
+      fixedNote="They keep job postings from giving the AI instructions and let RolePort read the answer. RolePort adds your name, contact details, the date and the employer's address around the letter itself, and flags numbers it can't find in your profile or CV, leftover placeholders and clichés."
     />
   );
 }
@@ -137,7 +137,7 @@ export function AnswerPromptForm({ saved }: { saved: string | null }) {
       fixedRules={ANSWER_FIXED_RULES}
       max={MAX_ANSWER_PROMPT}
       onSave={saveAnswerPrompt}
-      fixedNote="They keep job postings and questions from giving the AI instructions and let HireMe read the answer. HireMe also flags numbers it can't find in your profile or CV and leftover placeholders."
+      fixedNote="They keep job postings and questions from giving the AI instructions and let RolePort read the answer. RolePort also flags numbers it can't find in your profile or CV and leftover placeholders."
     />
   );
 }

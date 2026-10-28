@@ -317,7 +317,7 @@ function Intro({ done, inBrowser, onStart, onSkip, pending }: { done: boolean; i
     <div className="flex flex-col items-start gap-5">
       <LogoMark className="size-10 rounded-lg" />
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight text-balance">{done ? "Your setup guide" : "Welcome to HireMe"}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight text-balance">{done ? "Your setup guide" : "Welcome to RolePort"}</h1>
         <p className="mt-1.5 text-muted">
           {done
             ? "Go through it again to update what you're looking for, or to set up more tools."
@@ -340,7 +340,7 @@ function Intro({ done, inBrowser, onStart, onSkip, pending }: { done: boolean; i
       {inBrowser && (
         <p className="flex gap-2 text-[13px] text-muted">
           <Lock className="mt-0.5 size-3.5 shrink-0 text-subtle" />
-          Everything you add stays in this browser, on this device. No account, and nothing is kept on HireMe&apos;s servers.
+          Everything you add stays in this browser, on this device. No account, and nothing is kept on RolePort&apos;s servers.
         </p>
       )}
       <div className="flex w-full flex-col gap-2 sm:flex-row">
@@ -413,7 +413,7 @@ function Dropzone({ importing, cvFileName, aiEnabled, onFile }: { importing: boo
 function AiStep({ aiEnabled, inBrowser }: { aiEnabled: boolean; inBrowser: boolean }) {
   if (aiEnabled) {
     return (
-      <Step title="AI is ready" description="HireMe can read your CV and explain how well each job fits you.">
+      <Step title="AI is ready" description="RolePort can read your CV and explain how well each job fits you.">
         <p className="flex items-center gap-2 rounded-md border border-success/20 bg-success-soft px-3 py-2 text-[13px] font-medium text-success">
           <Check className="size-3.5" /> Your AI provider is set up. You can change it any time in Settings.
         </p>
@@ -423,7 +423,7 @@ function AiStep({ aiEnabled, inBrowser }: { aiEnabled: boolean; inBrowser: boole
   return (
     <Step
       title="Want AI to do the reading?"
-      description="Optional. With AI, HireMe fills in your profile from your CV and explains how well each job fits. Everything else works without it."
+      description="Optional. With AI, RolePort fills in your profile from your CV and explains how well each job fits. Everything else works without it."
     >
       <div className="grid gap-3 sm:grid-cols-2">
         <OptionCard

@@ -3,7 +3,7 @@
 import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-export const SIDEBAR_STORAGE_KEY = "hireme-sidebar";
+export const SIDEBAR_STORAGE_KEY = "roleport-sidebar";
 
 /** Runs before first paint (see app/layout.tsx) so a hidden sidebar never flashes open. */
 export const sidebarInitScript = `(function(){try{if(localStorage.getItem("${SIDEBAR_STORAGE_KEY}")==="hidden")document.documentElement.dataset.sidebar="hidden"}catch(e){}})()`;

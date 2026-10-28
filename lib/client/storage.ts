@@ -29,8 +29,8 @@ export async function requestPersistence(): Promise<boolean> {
 
 /* When the user last downloaded a backup, for the reminder. Per browser, like the data itself. */
 
-const LAST_BACKUP = "hireme:last-backup";
-const REMINDER_SNOOZED_UNTIL = "hireme:backup-reminder-snoozed-until";
+const LAST_BACKUP = "roleport:last-backup";
+const REMINDER_SNOOZED_UNTIL = "roleport:backup-reminder-snoozed-until";
 
 export function recordBackup(at = new Date()): void {
   try {

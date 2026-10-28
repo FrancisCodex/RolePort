@@ -45,7 +45,7 @@ export function SettingsView({ ai, aiInBrowser, rapidApiKeyHint, jobSpy, localJo
         <CardHeader>
           <CardTitle>CV tailoring prompt</CardTitle>
           <CardDescription>
-            Exactly what HireMe asks the AI when it tailors your CV to a job. Read it, change it to suit how you like your CV written, or
+            Exactly what RolePort asks the AI when it tailors your CV to a job. Read it, change it to suit how you like your CV written, or
             go back to the default at any time.
           </CardDescription>
         </CardHeader>
@@ -58,7 +58,7 @@ export function SettingsView({ ai, aiInBrowser, rapidApiKeyHint, jobSpy, localJo
         <CardHeader>
           <CardTitle>Cover letter prompt</CardTitle>
           <CardDescription>
-            Exactly what HireMe asks the AI when it writes a cover letter. Change the tone, length or structure to suit you, or go back to
+            Exactly what RolePort asks the AI when it writes a cover letter. Change the tone, length or structure to suit you, or go back to
             the default at any time.
           </CardDescription>
         </CardHeader>
@@ -71,7 +71,7 @@ export function SettingsView({ ai, aiInBrowser, rapidApiKeyHint, jobSpy, localJo
         <CardHeader>
           <CardTitle>Application questions prompt</CardTitle>
           <CardDescription>
-            Exactly what HireMe asks the AI when it answers a question from an application form. Change the tone, length or approach to
+            Exactly what RolePort asks the AI when it answers a question from an application form. Change the tone, length or approach to
             suit you, or go back to the default at any time.
           </CardDescription>
         </CardHeader>

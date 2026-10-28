@@ -12,7 +12,7 @@ import * as schema from "./schema";
  * Two backends behind one Drizzle API:
  * - DATABASE_URL set → a real Postgres server (local, Supabase, Neon…). Run `npm run db:migrate`.
  * - DATABASE_URL unset → embedded PGlite stored in .data/pglite, migrated automatically.
- *   Zero setup, single process — ideal for trying HireMe on your own machine.
+ *   Zero setup, single process — ideal for trying RolePort on your own machine.
  *
  * Created lazily on first use so build workers never open the database.
  */
@@ -38,10 +38,10 @@ function createDb(): DbState {
 }
 
 // One instance per process, surviving dev hot reloads (PGlite holds a lock on its folder).
-const globalForDb = globalThis as unknown as { hiremeDb?: DbState };
+const globalForDb = globalThis as unknown as { roleportDb?: DbState };
 
 function state(): DbState {
-  return (globalForDb.hiremeDb ??= createDb());
+  return (globalForDb.roleportDb ??= createDb());
 }
 
 /** Resolves once the schema is migrated. */
