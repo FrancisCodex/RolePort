@@ -15,6 +15,7 @@ import {
   type RefinedAnswer,
 } from "@/lib/interview/types";
 import { quoteInPosting } from "./evaluate-job";
+import { interviewerSystemPrompt, STYLE_INFO, STYLE_NOTES, type InterviewStyle } from "./interview-prompt";
 import type { AiConfig } from "./settings";
 import { generateStructured } from "./structured";
 import { numbersIn } from "./tailor-cv";
@@ -70,12 +71,21 @@ export const planSchema = z.object({
   ),
 });
 
-export function planSystemPrompt(focus: InterviewFocus, count: number): string {
+/** Weak spots from past interviews to build a drill around. */
+export type DrillTarget = { competencies: string[]; dimensions: string[] };
+
+export function planSystemPrompt(focus: InterviewFocus, count: number, style: InterviewStyle = "standard", drill: DrillTarget | null = null): string {
+  const styleNote = STYLE_NOTES[style].plan;
+  const drillNote = drill
+    ? `\nTHIS IS A DRILL ON THE CANDIDATE'S WEAK SPOTS. Every question must test one of these: ${drill.competencies.join("; ")}.${
+        drill.dimensions.length ? ` In past interviews their answers were weakest on: ${drill.dimensions.join("; ")}. Ask questions that make them practise exactly that.` : ""
+      }\n`
+    : "";
   return `You are an experienced interviewer preparing a realistic job interview.
 
 INTERVIEW TYPE: ${FOCUS_INFO[focus].label}
 ${FOCUS_GUIDE[focus]}
-
+${styleNote ? `\nINTERVIEWER STYLE: ${STYLE_INFO[style].label}. ${styleNote}\n` : ""}${drillNote}
 WRITE EXACTLY ${count} MAIN QUESTIONS, in the order a real interviewer would ask them.
 - Each is one question, spoken naturally, under 35 words. Never two questions in one.
 - Make them specific to this role and this candidate: refer to their actual roles, projects or skills where it fits, and to the posting's requirements if there is one.
@@ -97,11 +107,20 @@ export function buildPlanPrompt(context: InterviewContext, role: string, company
 }
 
 export async function planInterview(
-  input: { context: InterviewContext; role: string; company: string | null; cvText: string | null; focus: InterviewFocus; count: number },
+  input: {
+    context: InterviewContext;
+    role: string;
+    company: string | null;
+    cvText: string | null;
+    focus: InterviewFocus;
+    count: number;
+    style: InterviewStyle;
+    drill: DrillTarget | null;
+  },
   config: AiConfig,
 ): Promise<PlannedQuestion[]> {
   const raw = await generateStructured({
-    system: planSystemPrompt(input.focus, input.count),
+    system: planSystemPrompt(input.focus, input.count, input.style, input.drill),
     prompt: buildPlanPrompt(input.context, input.role, input.company, input.cvText, input.count),
     schema: planSchema,
     effort: "medium",
@@ -130,25 +149,6 @@ export const turnSchema = z.object({
   acknowledgement: z.string(),
 });
 
-export const TURN_SYSTEM_PROMPT = `You are the interviewer in a live job interview. The candidate just answered. Decide whether to ask one follow-up on this same question or move on.
-
-ASK A FOLLOW-UP when the answer:
-- is vague or generic, with no concrete situation, details or numbers;
-- says "we" but never what the candidate did themselves;
-- has no outcome or result;
-- misses part of what the question asked;
-- makes a claim worth pressing on (a big result, a strong opinion, a skill central to the role).
-The follow-up is one short, open, spoken question about what actually happened ("What did you do yourself?", "How did you measure that?", "Why that approach over the alternatives?"). Never leading, never hypothetical, never two questions at once, and never a repeat of an earlier follow-up.
-
-MOVE ON when the answer is complete enough for this question, or the candidate said they don't know or can't answer.
-
-STAY IN ROLE: never coach, praise, grade or give hints during the interview.
-- assessment: one private sentence on the answer (not shown to the candidate).
-- followUp: the follow-up question, or "" when moving on.
-- acknowledgement: a short neutral spoken reaction of 2-8 words, such as "Okay, thanks." or "Got it." No praise like "Great answer".
-
-${FIXED_RULES}`;
-
 const exchangeText = (turns: InterviewTurn[]) =>
   turns.map((t) => `${t.from === "interviewer" ? "Interviewer" : "Candidate"}: ${t.kind === "skip" ? "(skipped)" : fence(t.text)}`).join("\n");
 
@@ -175,14 +175,20 @@ export function buildTurnPrompt(input: {
 }
 
 export async function decideTurn(
-  input: Parameters<typeof buildTurnPrompt>[0],
+  input: Parameters<typeof buildTurnPrompt>[0] & { style: InterviewStyle; customPrompt: string | null },
   config: AiConfig,
 ): Promise<{ followUp: string | null; acknowledgement: string }> {
-  const raw = await generateStructured({ system: TURN_SYSTEM_PROMPT, prompt: buildTurnPrompt(input), schema: turnSchema, effort: "low", config });
+  const raw = await generateStructured({
+    system: interviewerSystemPrompt(input.customPrompt, input.style),
+    prompt: buildTurnPrompt(input),
+    schema: turnSchema,
+    effort: "low",
+    config,
+  });
   const followUp = tidy(raw.followUp);
-  // Short and neutral, whatever the model wrote.
+  // Short and never a grade, whatever the model wrote: praise would give the score away.
   const ack = tidy(raw.acknowledgement);
-  const acknowledgement = ack && ack.split(" ").length <= 10 && !/great|excellent|perfect|amazing|impressive/i.test(ack) ? ack : "Okay, thanks.";
+  const acknowledgement = ack && ack.split(" ").length <= 12 && !/great|excellent|perfect|amazing|impressive|brilliant|fantastic/i.test(ack) ? ack : "Okay, thanks.";
   return { followUp: raw.action === "follow_up" && followUp.length > 5 ? followUp : null, acknowledgement };
 }
 
@@ -294,6 +300,21 @@ export function buildCoachPrompt(input: {
 
 const PLACEHOLDER = /\[[^\]]{1,60}\]/g;
 
+const NUMBER_WORDS = /\b(one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|fifteen|twenty|thirty|fifty|hundred|thousand|million|dozen|half|double|triple|percent)\b/i;
+
+/**
+ * Whether a sentence makes a checkable claim: a number, or a name or tool (a capitalised word
+ * past the first). "I think it was something with the config" isn't one; small models flag
+ * vague answers as claims even when told not to.
+ */
+function isCheckable(said: string): boolean {
+  if (/\d/.test(said) || NUMBER_WORDS.test(said)) return true;
+  return said
+    .split(/\s+/)
+    .slice(1)
+    .some((w) => /^[A-Z][\w.#+-]*/.test(w) && w !== "I" && !/^I['’]/.test(w));
+}
+
 /**
  * Keep only flags whose quotes are real: `said` must be in the candidate's answers and, for a
  * contradiction or inflation, `sourceQuote` in the named document. A conflict whose source
@@ -314,6 +335,8 @@ export function reviewCoaching(
     const docText = docs.get(tidy(c.source).toLowerCase());
     const sourceQuote = tidy(c.sourceQuote);
     const verified = c.kind !== "unbacked" && docText != null && quoteInPosting(sourceQuote, docText);
+    // "Not in what you sent" only means something for a specific, checkable claim.
+    if (!verified && !isCheckable(said)) continue;
     if (c.kind !== "unbacked" && !verified) {
       // The model saw a conflict it can't point to: keep it only as an unbacked claim.
       flags.push({ kind: "unbacked", said, source: null, sourceQuote: null, note: "Your documents don't mention this, so be ready to back it up." });

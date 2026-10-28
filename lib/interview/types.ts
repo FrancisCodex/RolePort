@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { INTERVIEW_STYLES, type InterviewStyle } from "@/lib/ai/interview-prompt";
+
+export { INTERVIEW_STYLES, STYLE_INFO, type InterviewStyle } from "@/lib/ai/interview-prompt";
 
 /*
  * Mock interviews (the Interview Coach): one interview_session row holds the setup, a frozen
@@ -34,9 +37,6 @@ export const INTERVIEW_LENGTHS = {
 } as const;
 export type InterviewLength = keyof typeof INTERVIEW_LENGTHS;
 
-/** Follow-ups the interviewer may ask on one question before it has to move on. */
-export const MAX_FOLLOW_UPS = 2;
-
 export const MAX_ROLE = 120;
 export const MAX_JOB_DESCRIPTION = 15000;
 export const MAX_INTERVIEW_ANSWER = 5000;
@@ -51,6 +51,14 @@ export const interviewSetupSchema = z
     jobDescription: z.string().trim().max(MAX_JOB_DESCRIPTION, `Keep the job description under ${MAX_JOB_DESCRIPTION} characters.`),
     focus: z.enum(INTERVIEW_FOCUSES),
     length: z.enum(["quick", "full"]),
+    style: z.enum(INTERVIEW_STYLES),
+    /** Weak spots from past interviews to build every question around, or null for a normal interview. */
+    drill: z
+      .object({
+        competencies: z.array(z.string().trim().min(1).max(80)).min(1).max(5),
+        dimensions: z.array(z.string().trim().min(1).max(80)).max(3),
+      })
+      .nullable(),
   })
   .superRefine((v, ctx) => {
     if (v.applicationId) return;
@@ -141,6 +149,12 @@ export const FLAG_INFO: Record<ConsistencyFlag["kind"], { label: string; tone: "
   unbacked: { label: "Not in what you sent", tone: "neutral" },
 };
 
+/** Another go at one question after the interview, graded on the same rubric. */
+export type RedoAttempt = { answer: string; at: string; words: number } & AnswerGrade;
+
+/** The average of one grade's five rubric scores. */
+export const gradeScore = (grade: Pick<AnswerGrade, "scores">) => Object.values(grade.scores).reduce((a, b) => a + b, 0) / 5;
+
 /** A stronger version of the candidate's answer, built from what they said and their profile only. */
 export type RefinedAnswer = {
   answer: string;
@@ -191,6 +205,32 @@ export type InterviewReport = {
   summary: InterviewSummary | null;
   model: string | null;
   at: string | null;
+  /** Later attempts at a question from the report, by question index, newest last. Any question can be redone. */
+  redos?: Record<string, RedoAttempt[]>;
+};
+
+/** Most attempts kept per question. */
+export const MAX_REDOS = 5;
+
+/** Across all finished interviews: scores over time, rubric trends, weak spots and what's coming up. */
+export type InterviewProgress = {
+  /** Finished, graded interviews, oldest first (the latest 12). */
+  sessions: { id: string; title: string; date: Date; score: number }[];
+  /** Each rubric dimension over the last 3 interviews, and over the ones before for comparison. */
+  dimensions: { key: RubricKey; recent: number; earlier: number | null }[];
+  /** The lowest-scoring competencies in recent interviews. */
+  weakest: { competency: string; score: number }[];
+  /** What a weak-spot drill would practise, or null until there's enough to go on. */
+  drill: {
+    applicationId: string | null;
+    role: string;
+    company: string | null;
+    focus: InterviewFocus;
+    competencies: string[];
+    dimensions: string[];
+  } | null;
+  /** Applications with an interview date from yesterday on, soonest first. */
+  upcoming: { applicationId: string; role: string; company: string; interviewAt: Date }[];
 };
 
 export type InterviewStatus = "active" | "ended" | "done";
@@ -204,6 +244,9 @@ export type InterviewView = {
   company: string | null;
   focus: InterviewFocus;
   length: InterviewLength;
+  style: InterviewStyle;
+  /** A drill built from weak spots in past interviews. */
+  drill: boolean;
   status: InterviewStatus;
   plan: PlannedQuestion[];
   turns: InterviewTurn[];
@@ -223,6 +266,7 @@ export type InterviewListItem = {
   title: string;
   focus: InterviewFocus;
   length: InterviewLength;
+  style: InterviewStyle;
   status: InterviewStatus;
   questions: number;
   answered: number;
@@ -251,6 +295,16 @@ export function interviewState(view: Pick<InterviewView, "plan" | "turns" | "sta
   const followUps = view.turns.filter((t) => t.kind === "follow_up" && t.q === q).length;
   const awaitingAnswer = view.status === "active" && last?.from === "interviewer" && last.kind !== "wrap";
   return { q, followUps, awaitingAnswer, inClosing: q >= view.plan.length };
+}
+
+/** "today", "tomorrow", "in 3 days", "yesterday": calendar days from now until `date`. */
+export function daysUntil(date: Date, now = new Date()): string {
+  const day = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const days = Math.round((day(new Date(date)) - day(now)) / 86_400_000);
+  if (days === 0) return "today";
+  if (days === 1) return "tomorrow";
+  if (days === -1) return "yesterday";
+  return days > 0 ? `in ${days} days` : `${-days} days ago`;
 }
 
 /** Rough verdict from the average rubric score, labelled as practice, not a prediction. */

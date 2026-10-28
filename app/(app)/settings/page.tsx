@@ -64,6 +64,7 @@ async function SettingsContent() {
       cvPrompt={row?.cvPrompt ?? null}
       coverLetterPrompt={row?.coverLetterPrompt ?? null}
       answerPrompt={row?.answerPrompt ?? null}
+      interviewPrompt={row?.interviewPrompt ?? null}
       dataNote={
         process.env.DATABASE_URL
           ? "Your profile, jobs and applications are stored in the Postgres database set in DATABASE_URL."

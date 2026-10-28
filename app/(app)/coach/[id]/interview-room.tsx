@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/fields";
 import { answerInterviewQuestion, endInterview, gradeInterview, prepareBriefing, skipInterviewTurn } from "@/lib/client/mutations";
-import { FOCUS_INFO, INTERVIEW_LENGTHS, interviewState, MAX_INTERVIEW_ANSWER, type InterviewPageData, type InterviewTurn, type InterviewView } from "@/lib/interview/types";
+import { FOCUS_INFO, INTERVIEW_LENGTHS, interviewState, MAX_INTERVIEW_ANSWER, STYLE_INFO, type InterviewPageData, type InterviewTurn, type InterviewView } from "@/lib/interview/types";
 import { wordCount } from "@/lib/letter/types";
 import { cn } from "@/lib/utils";
 import { Briefing } from "./briefing";
@@ -142,6 +142,8 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
           <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
             <Badge>{FOCUS_INFO[view.focus].label}</Badge>
             <Badge>{INTERVIEW_LENGTHS[view.length].label}</Badge>
+            {view.style !== "standard" && <Badge tone={view.style === "hell" ? "danger" : "neutral"}>{STYLE_INFO[view.style].label}</Badge>}
+            {view.drill && <Badge tone="brand">Weak-spot drill</Badge>}
             {view.applicationId && (
               <Link href={`/applied/${view.applicationId}`} className="text-xs font-medium text-muted hover:text-fg">
                 Open the application
@@ -172,6 +174,7 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
           needsSetup={needsSetup}
           onRetry={() => void grade()}
           onBrief={() => void brief()}
+          onUpdate={setView}
         />
       </div>
     );

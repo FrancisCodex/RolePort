@@ -77,5 +77,12 @@ export const answerInterviewQuestion: typeof coach.answerInterviewQuestion = isL
 export const skipInterviewTurn: typeof coach.skipInterviewTurn = isLite ? async (...a) => (await lite()).skipInterviewTurn(...a) : coach.skipInterviewTurn;
 export const endInterview: typeof coach.endInterview = isLite ? async (...a) => (await lite()).endInterview(...a) : coach.endInterview;
 export const gradeInterview: typeof coach.gradeInterview = isLite ? async (...a) => (await lite()).gradeInterview(...a) : coach.gradeInterview;
+export const redoQuestion: typeof coach.redoQuestion = isLite ? async (...a) => (await lite()).redoQuestion(...a) : coach.redoQuestion;
+export const saveInterviewPrompt: typeof coach.saveInterviewPrompt = isLite
+  ? async (...a) => (await lite()).saveInterviewPrompt(...a)
+  : coach.saveInterviewPrompt;
+export const setInterviewDate: typeof applied.setInterviewDate = isLite
+  ? async (...a) => (await lite()).setInterviewDate(...a)
+  : applied.setInterviewDate;
 export const prepareBriefing: typeof coach.prepareBriefing = isLite ? async (...a) => (await lite()).prepareBriefing(...a) : coach.prepareBriefing;
 export const deleteInterview: typeof coach.deleteInterview = isLite ? async (...a) => (await lite()).deleteInterview(...a) : coach.deleteInterview;

@@ -12,8 +12,8 @@ import type { OnboardingData } from "@/app/(onboarding)/welcome/onboarding-flow"
 import { aiConfigFromRow } from "@/lib/ai/settings";
 import { readCvPage, type CvPageData } from "@/lib/cv/tailor";
 import { readLetterPage, type LetterPageData } from "@/lib/letter/letter";
-import { readInterview, readInterviewList, readInterviewSetup } from "@/lib/interview/sessions";
-import type { InterviewListItem, InterviewPageData, InterviewSetupData } from "@/lib/interview/types";
+import { readInterview, readInterviewList, readInterviewProgress, readInterviewSetup } from "@/lib/interview/sessions";
+import type { InterviewListItem, InterviewPageData, InterviewProgress, InterviewSetupData } from "@/lib/interview/types";
 import { readQuestionsPage } from "@/lib/questions/questions";
 import type { QuestionsData } from "@/lib/questions/types";
 import { getBrowserDb, type BrowserDb } from "@/lib/db/browser";
@@ -102,6 +102,7 @@ export async function loadSettings(): Promise<{
   cvPrompt: string | null;
   coverLetterPrompt: string | null;
   answerPrompt: string | null;
+  interviewPrompt: string | null;
 }> {
   const db = await getBrowserDb();
   const row = await readSettings(db, LOCAL_USER.id);
@@ -112,6 +113,7 @@ export async function loadSettings(): Promise<{
     cvPrompt: row?.cvPrompt ?? null,
     coverLetterPrompt: row?.coverLetterPrompt ?? null,
     answerPrompt: row?.answerPrompt ?? null,
+    interviewPrompt: row?.interviewPrompt ?? null,
   };
 }
 
@@ -158,9 +160,10 @@ export async function loadLetterPage(applicationId: string): Promise<LetterPageD
   return readLetterPage(db, await me(db), applicationId, await aiEnabled(db));
 }
 
-export async function loadInterviews(): Promise<InterviewListItem[]> {
+export async function loadCoach(): Promise<{ items: InterviewListItem[]; progress: InterviewProgress }> {
   const db = await getBrowserDb();
-  return readInterviewList(db, LOCAL_USER.id);
+  const [items, progress] = await Promise.all([readInterviewList(db, LOCAL_USER.id), readInterviewProgress(db, LOCAL_USER.id)]);
+  return { items, progress };
 }
 
 export async function loadInterview(id: string): Promise<InterviewPageData | null> {

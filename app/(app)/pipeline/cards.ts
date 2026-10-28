@@ -10,5 +10,6 @@ export function toBoardCards(items: PipelineItem[]): BoardCard[] {
     company: i.company,
     status: i.status,
     updated: timeAgo(i.updatedAt),
+    interviewAt: i.interviewAt?.toISOString() ?? null,
   }));
 }

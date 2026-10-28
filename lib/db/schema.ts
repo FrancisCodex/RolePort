@@ -286,6 +286,8 @@ export const application = pgTable(
     nextFollowUpAt: timestamp("next_follow_up_at", { withTimezone: true }),
     followUpCount: integer("follow_up_count").default(0).notNull(),
     notes: text("notes"),
+    /** When the user's interview for this application is scheduled, for the countdown and prep prompts. */
+    interviewAt: timestamp("interview_at", { withTimezone: true }),
     ...timestamps,
   },
   (t) => [
@@ -347,6 +349,10 @@ export const interviewSession = pgTable(
     focus: text("focus").notNull(),
     /** InterviewLength: quick | full. */
     length: text("length").notNull(),
+    /** InterviewStyle: friendly | standard | tough | hell. */
+    style: text("style").default("standard").notNull(),
+    /** The weak spots a drill was built around, or null for a normal interview. */
+    drill: jsonb("drill").$type<{ competencies: string[]; dimensions: string[] }>(),
     /** InterviewStatus: active | ended | done. */
     status: text("status").default("active").notNull(),
     context: jsonb("context").$type<InterviewContext>().notNull(),
@@ -388,6 +394,8 @@ export const userSettings = pgTable("user_settings", {
   coverLetterPrompt: text("cover_letter_prompt"),
   /** The user's own instructions for application question answers, or null to use the default (lib/ai/answer-prompt.ts). */
   answerPrompt: text("answer_prompt"),
+  /** The user's own instructions for the mock interviewer, or null to use the default (lib/ai/interview-prompt.ts). */
+  interviewPrompt: text("interview_prompt"),
   ...timestamps,
 });
 

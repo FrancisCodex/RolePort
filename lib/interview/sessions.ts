@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { clip, jobBlock } from "@/lib/ai/evaluate-job";
 import { coachAnswer, decideTurn, gradeAnswer, planInterview, prepareBriefing, summarizeInterview } from "@/lib/ai/interview";
 import { describeAiConfig, type AiConfig } from "@/lib/ai/settings";
@@ -16,20 +16,26 @@ import { questionsSchema } from "@/lib/questions/types";
 import {
   averageScore,
   FOCUS_INFO,
+  gradeScore,
   INTERVIEW_LENGTHS,
   interviewState,
-  MAX_FOLLOW_UPS,
+  MAX_REDOS,
+  RUBRIC,
+  STYLE_INFO,
   type InterviewContext,
   type InterviewFocus,
   type InterviewLength,
   type InterviewListItem,
+  type InterviewProgress,
   type InterviewReport,
   type InterviewSetup,
   type InterviewSetupData,
   type InterviewStatus,
+  type InterviewStyle,
   type InterviewTurn,
   type InterviewView,
   type QuestionResult,
+  type RubricKey,
 } from "./types";
 
 /*
@@ -59,6 +65,8 @@ function toView(row: Row): InterviewView {
     company: row.company,
     focus: row.focus as InterviewFocus,
     length: row.length as InterviewLength,
+    style: row.style as InterviewStyle,
+    drill: row.drill !== null,
     status: row.status as InterviewStatus,
     plan: row.plan,
     turns: row.turns,
@@ -110,6 +118,7 @@ export async function readInterviewList(db: AnyDb, userId: string): Promise<Inte
       title: view.title,
       focus: view.focus,
       length: view.length,
+      style: view.style,
       status: view.status,
       questions: view.plan.length,
       answered: new Set(view.turns.filter((t) => t.kind === "answer" && t.q < view.plan.length).map((t) => t.q)).size,
@@ -193,18 +202,23 @@ export async function startInterview(db: AnyDb, user: User, setup: InterviewSetu
 
   const context: InterviewContext = { candidateName: profile.name || user.name, candidate: candidateBlock(profile, null), job, documents };
   const focus = setup.focus === "posting" && !job ? "behavioral" : setup.focus;
-  const plan = await planInterview({ context, role, company, cvText: profileCv, focus, count: INTERVIEW_LENGTHS[setup.length].questions }, config);
+  const plan = await planInterview(
+    { context, role, company, cvText: profileCv, focus, count: INTERVIEW_LENGTHS[setup.length].questions, style: setup.style, drill: setup.drill },
+    config,
+  );
 
   const [row] = await db
     .insert(schema.interviewSession)
     .values({
       userId: user.id,
       applicationId: setup.applicationId,
-      title: `${FOCUS_INFO[focus].label} · ${role}${company ? ` at ${company}` : ""}`,
+      title: `${setup.drill ? "Weak-spot drill" : FOCUS_INFO[focus].label} · ${role}${company ? ` at ${company}` : ""}`,
       targetRole: role,
       company,
       focus,
       length: setup.length,
+      style: setup.style,
+      drill: setup.drill,
       context,
       plan,
       turns: [turn({ from: "interviewer", kind: "question", q: 0, text: plan[0].question })],
@@ -259,12 +273,20 @@ export async function answerInterview(db: AnyDb, userId: string, id: string, ans
     return save(db, row, { turns: [...view.turns, reply, turn({ from: "interviewer", kind: "wrap", q, text: WRAP_UP })], status: "ended" });
   }
 
-  // Code holds the cap: past it the interviewer moves on whatever the model would say.
-  const left = MAX_FOLLOW_UPS - followUps;
+  // Code holds the cap (it depends on the style): past it the interviewer moves on whatever the model would say.
+  const left = STYLE_INFO[view.style].followUps - followUps;
   const decision =
     left > 0
       ? await decideTurn(
-          { role: view.targetRole, company: view.company, question: view.plan[q], exchange: [...view.turns.filter((t) => t.q === q), reply], followUpsLeft: left },
+          {
+            role: view.targetRole,
+            company: view.company,
+            question: view.plan[q],
+            exchange: [...view.turns.filter((t) => t.q === q), reply],
+            followUpsLeft: left,
+            style: view.style,
+            customPrompt: await readInterviewPrompt(db, userId),
+          },
           config,
         )
       : { followUp: null, acknowledgement: "Okay, thanks." };
@@ -355,6 +377,103 @@ export async function gradeInterviewStep(db: AnyDb, userId: string, id: string, 
         questionsFeedback: "",
       };
   return save(db, row, { report: { results, summary, model: graded ? describeAiConfig(config) : null, at: now() }, status: "done" });
+}
+
+export async function readInterviewPrompt(db: AnyDb, userId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ prompt: schema.userSettings.interviewPrompt })
+    .from(schema.userSettings)
+    .where(eq(schema.userSettings.userId, userId));
+  return row?.prompt ?? null;
+}
+
+/** Answer one question again after the interview and grade it on the same rubric, for comparison. */
+export async function redoInterviewQuestion(db: AnyDb, userId: string, id: string, q: number, answer: string, config: AiConfig): Promise<InterviewView> {
+  const row = await mustRead(db, userId, id);
+  const view = toView(row);
+  if (view.status !== "done") throw new Error("Wait for the report to finish first.");
+  const question = view.plan[q];
+  if (!question) throw new Error("That question isn't in this interview.");
+  const exchange = [
+    turn({ from: "interviewer", kind: "question", q, text: question.question }),
+    turn({ from: "candidate", kind: "answer", q, text: answer }),
+  ];
+  const grade = await gradeAnswer({ role: view.targetRole, company: view.company, question, exchange }, config);
+  const redos = { ...view.report.redos };
+  redos[q] = [...(redos[q] ?? []), { answer, at: now(), words: wordCount(answer), ...grade }].slice(-MAX_REDOS);
+  return save(db, row, { report: { ...view.report, redos } });
+}
+
+/** Scores over time, rubric trends, weak spots for a drill, and upcoming interview dates. */
+export async function readInterviewProgress(db: AnyDb, userId: string): Promise<InterviewProgress> {
+  const [rows, applications] = await Promise.all([
+    db
+      .select()
+      .from(schema.interviewSession)
+      .where(and(eq(schema.interviewSession.userId, userId), eq(schema.interviewSession.status, "done")))
+      .orderBy(asc(schema.interviewSession.createdAt)),
+    readApplications(db, userId),
+  ]);
+  const graded = rows
+    .map(toView)
+    .map((view) => ({ view, score: averageScore(view.report.results) }))
+    .filter((s): s is { view: InterviewView; score: number } => s.score !== null);
+
+  const avgOf = (sessions: typeof graded, key: RubricKey) => {
+    const scores = sessions.flatMap((s) => s.view.report.results.flatMap((r) => (r?.status === "graded" ? [r.scores[key]] : [])));
+    return scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
+  };
+  const recent = graded.slice(-3);
+  const earlier = graded.slice(0, -3);
+  const dimensions = (Object.keys(RUBRIC) as RubricKey[]).flatMap((key) => {
+    const r = avgOf(recent, key);
+    return r === null ? [] : [{ key, recent: r, earlier: avgOf(earlier, key) }];
+  });
+
+  // The lowest question scores in the last 5 interviews, one per competency.
+  const byCompetency = new Map<string, { competency: string; score: number }>();
+  for (const { view } of graded.slice(-5)) {
+    view.plan.forEach((question, i) => {
+      const r = view.report.results[i];
+      if (r?.status !== "graded") return;
+      const key = question.competency.toLowerCase();
+      const score = gradeScore(r);
+      const seen = byCompetency.get(key);
+      if (!seen || score < seen.score) byCompetency.set(key, { competency: question.competency, score });
+    });
+  }
+  const weakest = [...byCompetency.values()].filter((c) => c.score < 3).sort((a, b) => a.score - b.score).slice(0, 3);
+  const weakDimensions = dimensions
+    .filter((d) => d.recent < 3)
+    .sort((a, b) => a.recent - b.recent)
+    .slice(0, 2)
+    .map((d) => `${RUBRIC[d.key].label}: ${RUBRIC[d.key].hint}`);
+
+  const latest = graded.at(-1)?.view;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const yesterday = new Date(today.getTime() - 86_400_000);
+
+  return {
+    sessions: graded.slice(-12).map(({ view, score }) => ({ id: view.id, title: view.title, date: view.createdAt, score })),
+    dimensions,
+    weakest,
+    drill:
+      latest && weakest.length
+        ? {
+            applicationId: latest.applicationId,
+            role: latest.targetRole,
+            company: latest.company,
+            // A drill needs questions to drill: a screen has none worth repeating, and a pasted posting isn't kept for a new session.
+            focus: latest.focus === "screen" || (latest.focus === "posting" && !latest.applicationId) ? "behavioral" : latest.focus,
+            competencies: weakest.map((w) => w.competency),
+            dimensions: weakDimensions,
+          }
+        : null,
+    upcoming: applications
+      .flatMap((a) => (a.interviewAt && a.interviewAt >= yesterday ? [{ applicationId: a.id, role: a.role, company: a.company, interviewAt: a.interviewAt }] : []))
+      .sort((a, b) => a.interviewAt.getTime() - b.interviewAt.getTime()),
+  };
 }
 
 export async function deleteInterview(db: AnyDb, userId: string, id: string): Promise<boolean> {

@@ -1,6 +1,6 @@
 "use client";
 
-import { Briefcase, Loader2, Play, Target, UserRound } from "lucide-react";
+import { Briefcase, Flame, Loader2, Play, Target, UserRound } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -15,12 +15,14 @@ import {
   FOCUS_INFO,
   INTERVIEW_FOCUSES,
   INTERVIEW_LENGTHS,
-  MAX_FOLLOW_UPS,
+  INTERVIEW_STYLES,
   MAX_JOB_DESCRIPTION,
   MAX_ROLE,
+  STYLE_INFO,
   type InterviewFocus,
   type InterviewLength,
   type InterviewSetupData,
+  type InterviewStyle,
 } from "@/lib/interview/types";
 import { cn } from "@/lib/utils";
 
@@ -40,6 +42,7 @@ export function SetupForm({ data }: { data: InterviewSetupData }) {
   const [jobDescription, setJobDescription] = useState("");
   const [focus, setFocus] = useState<InterviewFocus>(data.selectedApplicationId ? "posting" : "behavioral");
   const [length, setLength] = useState<InterviewLength>("quick");
+  const [style, setStyle] = useState<InterviewStyle>("standard");
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [needsSetup, setNeedsSetup] = useState(false);
@@ -76,6 +79,8 @@ export function SetupForm({ data }: { data: InterviewSetupData }) {
       jobDescription: fromApplication ? "" : jobDescription,
       focus: chosenFocus,
       length,
+      style,
+      drill: null,
     });
     if (!result.ok) {
       setWorking(false);
@@ -174,6 +179,26 @@ export function SetupForm({ data }: { data: InterviewSetupData }) {
             ))}
           </CardContent>
         </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Interviewer</CardTitle>
+            <CardDescription>How hard they push. The report grades every style on the same rubric.</CardDescription>
+          </CardHeader>
+          <CardContent className="grid gap-2 sm:grid-cols-2">
+            {INTERVIEW_STYLES.map((s) => (
+              <Choice
+                key={s}
+                icon={s === "hell" ? Flame : undefined}
+                active={style === s}
+                title={STYLE_INFO[s].label}
+                body={STYLE_INFO[s].description}
+                onClick={() => setStyle(s)}
+                danger={s === "hell"}
+              />
+            ))}
+          </CardContent>
+        </Card>
       </div>
 
       <aside className="flex flex-col gap-3 lg:sticky lg:top-4 lg:self-start">
@@ -195,7 +220,9 @@ export function SetupForm({ data }: { data: InterviewSetupData }) {
             </div>
             <ul className="flex flex-col gap-1 text-xs text-muted">
               <li>One question at a time, like a real interview.</li>
-              <li>Up to {MAX_FOLLOW_UPS} follow-ups when an answer is vague.</li>
+              <li>
+                Up to {STYLE_INFO[style].followUps} follow-up{STYLE_INFO[style].followUps > 1 ? "s" : ""} per question when an answer is vague.
+              </li>
               <li>No scores until the end, then a graded report.</li>
             </ul>
             {!data.aiEnabled ? (
@@ -237,6 +264,7 @@ function Choice({
   title,
   body,
   onClick,
+  danger,
 }: {
   icon?: typeof Briefcase;
   active: boolean;
@@ -244,6 +272,8 @@ function Choice({
   title: string;
   body: string;
   onClick: () => void;
+  /** The "from Hell" choice, marked in the danger colour when picked. */
+  danger?: boolean;
 }) {
   return (
     <button
@@ -253,10 +283,10 @@ function Choice({
       onClick={onClick}
       className={cn(
         "flex flex-col gap-1 rounded-lg border p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50",
-        active ? "border-brand/50 bg-brand-soft" : "border-border bg-surface hover:border-border-strong",
+        active ? (danger ? "border-danger/50 bg-danger-soft" : "border-brand/50 bg-brand-soft") : "border-border bg-surface hover:border-border-strong",
       )}
     >
-      <span className={cn("flex items-center gap-1.5 text-[13px] font-medium", active && "text-brand-ink")}>
+      <span className={cn("flex items-center gap-1.5 text-[13px] font-medium", active && (danger ? "text-danger" : "text-brand-ink"))}>
         {Icon && <Icon className="size-3.5" />} {title}
       </span>
       <span className="text-xs text-muted">{body}</span>

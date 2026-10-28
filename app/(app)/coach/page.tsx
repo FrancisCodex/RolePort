@@ -4,10 +4,11 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/app/page-header";
 import { buttonVariants } from "@/components/ui/button";
-import { getMyInterviews } from "@/lib/interview/data";
+import { getMyInterviewProgress, getMyInterviews } from "@/lib/interview/data";
 import { isLite } from "@/lib/mode";
 import { InterviewList } from "./interview-list";
 import { LiteCoach } from "./lite-coach";
+import { ProgressPanel } from "./progress-panel";
 
 export const metadata: Metadata = { title: "Coach" };
 
@@ -35,5 +36,11 @@ export default function CoachPage() {
 }
 
 async function List() {
-  return <InterviewList items={await getMyInterviews()} />;
+  const [items, progress] = await Promise.all([getMyInterviews(), getMyInterviewProgress()]);
+  return (
+    <>
+      <ProgressPanel progress={progress} />
+      <InterviewList items={items} />
+    </>
+  );
 }

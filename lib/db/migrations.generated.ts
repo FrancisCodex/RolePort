@@ -139,5 +139,16 @@ export const migrations: MigrationMeta[] = [
     "bps": true,
     "folderMillis": 1793179516797,
     "hash": "042cb3f4c3616ce043420ef9edfd7382cfd0459d8fb5ac2a6c8ae06e6ce563b6"
+  },
+  {
+    "sql": [
+      "ALTER TABLE \"application\" ADD COLUMN \"interview_at\" timestamp with time zone;",
+      "\nALTER TABLE \"interview_session\" ADD COLUMN \"style\" text DEFAULT 'standard' NOT NULL;",
+      "\nALTER TABLE \"interview_session\" ADD COLUMN \"drill\" jsonb;",
+      "\nALTER TABLE \"user_settings\" ADD COLUMN \"interview_prompt\" text;"
+    ],
+    "bps": true,
+    "folderMillis": 1793180375947,
+    "hash": "b54b393b53930c8dab9000355b5449dedbe86d82cd00557e3dd25e24082186e4"
   }
 ];

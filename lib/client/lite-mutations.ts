@@ -21,6 +21,7 @@ import {
 import { AiUnavailableError, generateStructured, listModels } from "@/lib/ai/structured";
 import { MAX_CV_PROMPT } from "@/lib/ai/cv-prompt";
 import { MAX_ANSWER_PROMPT } from "@/lib/ai/answer-prompt";
+import { MAX_INTERVIEWER_PROMPT } from "@/lib/ai/interview-prompt";
 import { MAX_LETTER_PROMPT } from "@/lib/ai/letter-prompt";
 import { exportBackup } from "@/lib/backup/export";
 import { importErrorMessage, readBackupForm } from "@/lib/backup/form";
@@ -34,6 +35,7 @@ import {
   endInterview as stopInterview,
   gradeInterviewStep,
   prepareInterviewBriefing,
+  redoInterviewQuestion,
   skipInterviewQuestion,
   startInterview as beginInterview,
 } from "@/lib/interview/sessions";
@@ -48,6 +50,7 @@ import {
   removeApplication,
   setStatus,
   toggleSaved,
+  writeInterviewDate,
   writeNotes,
   type ApplicationStatus,
 } from "@/lib/jobs/applications";
@@ -142,6 +145,14 @@ export async function saveApplicationNotes(applicationId: string, notes: string)
   if (!(await writeNotes(await getBrowserDb(), LOCAL_USER.id, applicationId, notes))) return { ok: false, error: "Application not found." };
   // Other tabs pick the notes up; this one already shows them.
   void invalidate("application");
+  return { ok: true, data: undefined };
+}
+
+export async function setInterviewDate(applicationId: string, at: string | null): Promise<Result> {
+  const date = at === null ? null : new Date(at);
+  if (date && Number.isNaN(date.getTime())) return { ok: false, error: "That date isn't valid." };
+  if (!(await writeInterviewDate(await getBrowserDb(), LOCAL_USER.id, applicationId, date))) return { ok: false, error: "Application not found." };
+  await invalidate("application");
   return { ok: true, data: undefined };
 }
 
@@ -327,6 +338,22 @@ export async function answerInterviewQuestion(id: string, answer: string): Promi
 
 export async function gradeInterview(id: string): Promise<InterviewResult> {
   return withAi((db, config) => gradeInterviewStep(db, LOCAL_USER.id, id, config), "Grading the interview failed. Please try again.");
+}
+
+export async function redoQuestion(id: string, q: number, answer: string): Promise<InterviewResult> {
+  const text = answer.trim();
+  if (!text) return { ok: false, error: "Write your answer first." };
+  if (text.length > MAX_INTERVIEW_ANSWER) return { ok: false, error: `Keep an answer under ${MAX_INTERVIEW_ANSWER} characters.` };
+  return withAi((db, config) => redoInterviewQuestion(db, LOCAL_USER.id, id, q, text, config), "Grading your answer failed. It's still in the box; try again.");
+}
+
+export async function saveInterviewPrompt(prompt: string | null): Promise<Result> {
+  if (prompt != null && (typeof prompt !== "string" || prompt.length > MAX_INTERVIEWER_PROMPT)) {
+    return { ok: false, error: `Keep the prompt under ${MAX_INTERVIEWER_PROMPT} characters.` };
+  }
+  await writeSettings(await getBrowserDb(), LOCAL_USER.id, { interviewPrompt: prompt?.trim() || null });
+  await invalidate("user_settings");
+  return { ok: true, data: undefined };
 }
 
 export async function prepareBriefing(id: string): Promise<InterviewResult> {

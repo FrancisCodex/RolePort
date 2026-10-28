@@ -7,11 +7,15 @@ import { useState, type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ConfirmDialog } from "@/components/ui/dialog";
-import { deleteInterview } from "@/lib/client/mutations";
+import { ConfirmDialog, Dialog } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/fields";
+import { deleteInterview, redoQuestion } from "@/lib/client/mutations";
+import { wordCount } from "@/lib/letter/types";
 import {
   averageScore,
   FLAG_INFO,
+  gradeScore,
+  MAX_INTERVIEW_ANSWER,
   reportProgress,
   RUBRIC,
   verdictOf,
@@ -42,6 +46,7 @@ export function InterviewReport({
   needsSetup,
   onRetry,
   onBrief,
+  onUpdate,
 }: {
   view: InterviewView;
   grading: boolean;
@@ -51,6 +56,8 @@ export function InterviewReport({
   needsSetup: boolean;
   onRetry: () => void;
   onBrief: () => void;
+  /** A redo saved: show the session as it now is. */
+  onUpdate: (view: InterviewView) => void;
 }) {
   const [tab, setTab] = useState<"report" | "cheat">("report");
   const { results, summary } = view.report;
@@ -120,7 +127,7 @@ export function InterviewReport({
           {score != null && <RubricOverview results={results} />}
 
           {view.plan.map((_, i) => (
-            <QuestionCard key={i} index={i} view={view} result={results[i]} />
+            <QuestionCard key={i} index={i} view={view} result={results[i]} onUpdate={onUpdate} />
           ))}
 
           {summary?.questionsFeedback && (
@@ -430,7 +437,17 @@ function RubricOverview({ results }: { results: (QuestionResult | null)[] }) {
   );
 }
 
-function QuestionCard({ index, view, result }: { index: number; view: InterviewView; result: QuestionResult | null }) {
+function QuestionCard({
+  index,
+  view,
+  result,
+  onUpdate,
+}: {
+  index: number;
+  view: InterviewView;
+  result: QuestionResult | null;
+  onUpdate: (view: InterviewView) => void;
+}) {
   const question = view.plan[index];
   const turns = view.turns.filter((t) => t.q === index);
   return (
@@ -502,12 +519,111 @@ function QuestionCard({ index, view, result }: { index: number; view: InterviewV
             {question.redFlags.length > 0 && <p>Red flags: {question.redFlags.join(" · ")}</p>}
           </div>
         </Fold>
+        <RedoQuestion view={view} index={index} onUpdate={onUpdate} />
       </CardContent>
     </Card>
   );
 }
 
-function Fold({ title, open, children }: { title: string; open?: boolean; children: ReactNode }) {
+/** Another go at a question after the interview, graded on the same rubric and compared with the first answer. */
+function RedoQuestion({ view, index, onUpdate }: { view: InterviewView; index: number; onUpdate: (view: InterviewView) => void }) {
+  const [open, setOpen] = useState(false);
+  const [answer, setAnswer] = useState("");
+  const [working, setWorking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const attempts = view.report.redos?.[index] ?? [];
+  const first = view.report.results[index];
+  const firstScore = first?.status === "graded" ? gradeScore(first) : null;
+
+  async function submit() {
+    if (!answer.trim()) return;
+    setWorking(true);
+    setError(null);
+    const result = await redoQuestion(view.id, index, answer);
+    setWorking(false);
+    if (!result.ok) return setError(result.error);
+    onUpdate(result.data);
+    setAnswer("");
+    setOpen(false);
+  }
+
+  return (
+    <>
+      {attempts.length > 0 && (
+        <div className="flex flex-col gap-2">
+          {attempts.map((a, n) => {
+            const score = gradeScore(a);
+            const delta = firstScore === null ? null : score - firstScore;
+            return (
+              <Fold
+                key={a.at}
+                title={
+                  <span className="flex flex-wrap items-center gap-1.5">
+                    Redo {n + 1} · {score.toFixed(1)}/4
+                    {delta !== null && Math.abs(delta) >= 0.05 && (
+                      <Badge tone={delta > 0 ? "success" : "danger"}>
+                        {delta > 0 ? "+" : ""}
+                        {delta.toFixed(1)} vs first answer
+                      </Badge>
+                    )}
+                  </span>
+                }
+              >
+                <div className="flex flex-col gap-3">
+                  <p className="text-[13px]">{a.summary}</p>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Points icon={Check} title="Good" items={a.strengths} tone="text-success" />
+                    <Points icon={Target} title="Next time" items={a.improvements} tone="text-brand-ink" />
+                  </div>
+                  <p className="rounded-lg bg-surface-2 px-3 py-2 text-xs whitespace-pre-line text-muted">{a.answer}</p>
+                </div>
+              </Fold>
+            );
+          })}
+        </div>
+      )}
+      {view.status === "done" && (
+        <Button variant="secondary" size="sm" className="w-fit" onClick={() => setOpen(true)}>
+          <RotateCcw /> {attempts.length ? "Try it again" : "Redo this question"}
+        </Button>
+      )}
+      <Dialog open={open} onClose={() => !working && setOpen(false)} labelledBy={`redo-${index}`} className="w-[min(36rem,calc(100vw-2rem))]">
+        <div className="flex flex-col gap-3 p-5">
+          <p className="text-xs font-medium tracking-wide text-subtle uppercase">Redo Q{index + 1}</p>
+          <h2 id={`redo-${index}`} className="text-[15px] leading-relaxed font-semibold tracking-tight text-pretty">
+            {view.plan[index].question}
+          </h2>
+          <Textarea
+            value={answer}
+            onChange={(e) => setAnswer(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) void submit();
+            }}
+            maxLength={MAX_INTERVIEW_ANSWER}
+            placeholder="Answer it again as you would out loud. No follow-ups this time; it's graded on its own."
+            className="min-h-40 text-[13px] leading-relaxed"
+            disabled={working}
+            autoFocus
+            aria-label="Your new answer"
+          />
+          {error && <p className="text-xs text-danger">{error}</p>}
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-end">
+            <span className="text-xs text-subtle tabular-nums sm:mr-auto">{wordCount(answer)} words</span>
+            <Button variant="secondary" onClick={() => setOpen(false)} disabled={working}>
+              Cancel
+            </Button>
+            <Button onClick={() => void submit()} disabled={working || !answer.trim()}>
+              {working && <Loader2 className="animate-spin" />}
+              {working ? "Grading…" : "Grade my answer"}
+            </Button>
+          </div>
+        </div>
+      </Dialog>
+    </>
+  );
+}
+
+function Fold({ title, open, children }: { title: ReactNode; open?: boolean; children: ReactNode }) {
   return (
     <details className="group rounded-lg border border-border" open={open}>
       <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2 text-xs font-medium text-muted hover:text-fg">
