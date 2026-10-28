@@ -5,7 +5,8 @@ const isLite = process.env.NEXT_PUBLIC_ROLEPORT_MODE === "lite";
 
 const nextConfig: NextConfig = {
   // The lite edition (docs/LITE.md) builds into its own folder so both modes can run side by side.
-  distDir: isLite ? ".next-lite" : ".next",
+  // Not on Vercel (VERCEL=1): its post-build step expects .next, whatever the build's environment.
+  distDir: isLite && !process.env.VERCEL ? ".next-lite" : ".next",
   // PGlite ships WebAssembly + data files that must load from node_modules at runtime.
   serverExternalPackages: ["@electric-sql/pglite"],
   /* config options here */
