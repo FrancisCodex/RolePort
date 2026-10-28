@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, BookOpen, ChevronDown, CornerDownLeft, Loader2, Mic, MicOff, Play, RotateCcw, SkipForward, Square, Volume2, VolumeX } from "lucide-react";
+import { ArrowLeft, BookOpen, ChevronDown, CornerDownLeft, Loader2, Mic, MicOff, Play, RotateCcw, Settings2, SkipForward, Square, Volume2, VolumeX } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useEffectEvent, useRef, useState, type MouseEvent } from "react";
@@ -15,7 +15,8 @@ import { wordCount } from "@/lib/letter/types";
 import { cn } from "@/lib/utils";
 import { Briefing } from "./briefing";
 import { InterviewReport } from "./report";
-import { agreeToVoice, canSpeak, speak, useDictation, useDictationSupported, useReadAloudSetting, voiceAgreed } from "./voice";
+import { agreeToVoice, canSpeak, speak, useDictation, useDictationSupported, useMicLevel, useMicSetting, useReadAloudSetting, voiceAgreed } from "./voice";
+import { VoiceSettings } from "./voice-settings";
 
 type Busy = "answer" | "skip" | "end" | "grade" | "brief" | null;
 
@@ -38,8 +39,10 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
   const total = view.plan.length;
 
   // Voice: dictated phrases are added to the answer; seconds spoken go with it for pace feedback.
-  const dictation = useDictation((text) => text && setDraft((d) => (d.trim() ? `${d.trimEnd()} ${text}` : text)));
+  const [mic] = useMicSetting();
+  const dictation = useDictation((text) => text && setDraft((d) => (d.trim() ? `${d.trimEnd()} ${text}` : text)), mic);
   const canDictate = useDictationSupported();
+  const [voiceSettings, setVoiceSettings] = useState(false);
   const [readAloud, setReadAloud] = useReadAloudSetting();
   const spokenSeconds = useRef(0);
   const last = view.turns.at(-1);
@@ -66,7 +69,7 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
       return;
     }
     agreeToVoice();
-    dictation.start();
+    void dictation.start();
   }
 
   async function act(kind: Exclude<Busy, null>, run: () => Promise<InterviewResult>): Promise<boolean> {
@@ -343,13 +346,27 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
               variant={dictation.listening ? "danger" : "secondary"}
               size="sm"
               onClick={() => void toggleMic()}
-              disabled={busy !== null}
+              disabled={busy !== null || dictation.starting}
               aria-pressed={dictation.listening}
               title={dictation.listening ? "Stop the microphone" : "Answer out loud"}
             >
-              {dictation.listening ? <MicOff /> : <Mic />} {dictation.listening ? "Stop" : "Speak"}
+              {dictation.starting ? <Loader2 className="animate-spin" /> : dictation.listening ? <MicOff /> : <Mic />}{" "}
+              {dictation.listening ? "Stop" : "Speak"}
             </Button>
           )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              dictation.stop();
+              setVoiceSettings(true);
+            }}
+            disabled={busy !== null}
+            aria-label="Voice settings"
+            title="Voice settings: microphone, speech-to-text test, interviewer voice"
+          >
+            <Settings2 />
+          </Button>
           <AnswerTimer key={last?.id} />
           <span className="text-xs text-subtle tabular-nums">{wordCount(draft)} words</span>
           <div className="ml-auto flex items-center gap-1.5">
@@ -364,13 +381,16 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
           </div>
         </div>
       </div>
-      {dictation.listening && (
-        <p className="mt-2 flex items-center gap-1.5 px-1 text-xs text-muted" aria-live="polite">
-          <span className="size-2 shrink-0 animate-pulse rounded-full bg-danger" />
-          {dictation.interim ? <span className="truncate italic">{dictation.interim}</span> : "Listening… speak your answer, then press Stop or Send."}
+      {dictation.listening && <ListeningStatus dictation={dictation} onSettings={() => (dictation.stop(), setVoiceSettings(true))} />}
+      {dictation.error && (
+        <p className="mt-2 px-1 text-xs text-danger">
+          {dictation.error}{" "}
+          <button type="button" className="font-medium underline" onClick={() => setVoiceSettings(true)}>
+            Open voice settings
+          </button>
         </p>
       )}
-      {dictation.error && <p className="mt-2 px-1 text-xs text-danger">{dictation.error}</p>}
+      <VoiceSettings open={voiceSettings} onClose={() => setVoiceSettings(false)} />
       <p className="mt-2 px-1 text-xs text-subtle">Ctrl+Enter sends. No scores until the end, as in a real interview.</p>
 
       {errorNote}
@@ -421,6 +441,39 @@ export function Exchange({ turns, compact, panel = null }: { turns: InterviewTur
             {t.kind === "skip" ? <span className="italic">Skipped</span> : t.text}
           </div>
         ),
+      )}
+    </div>
+  );
+}
+
+/**
+ * While dictating: a live microphone level, what's being heard, and a nudge to voice settings
+ * when sound comes in but no words do, so a silent failure can't pass for "listening".
+ */
+function ListeningStatus({ dictation, onSettings }: { dictation: ReturnType<typeof useDictation>; onSettings: () => void }) {
+  const { level, peak } = useMicLevel(dictation.stream);
+  return (
+    <div className="mt-2 flex flex-col gap-1.5 px-1" aria-live="polite">
+      <p className="flex items-center gap-2 text-xs text-muted">
+        <span className="size-2 shrink-0 animate-pulse rounded-full bg-danger" />
+        <span className="h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-surface-3" aria-hidden>
+          <span className={cn("block h-full rounded-full", level > 0.08 ? "bg-success" : "bg-brand/50")} style={{ width: `${level * 100}%` }} />
+        </span>
+        {dictation.interim ? (
+          <span className="truncate italic">{dictation.interim}</span>
+        ) : (
+          <span>{peak > 0.08 ? "Listening… keep talking, then press Stop or Send." : "Listening… start talking."}</span>
+        )}
+      </p>
+      {dictation.stalled && (
+        <p className="text-xs text-warning">
+          {peak > 0.08
+            ? "Your microphone hears you, but no words are coming through: this browser's speech-to-text may not work."
+            : "No sound is reaching the microphone."}{" "}
+          <button type="button" className="font-medium underline" onClick={onSettings}>
+            Check voice settings
+          </button>
+        </p>
       )}
     </div>
   );
