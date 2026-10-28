@@ -52,6 +52,8 @@ export const interviewSetupSchema = z
     focus: z.enum(INTERVIEW_FOCUSES),
     length: z.enum(["quick", "full"]),
     style: z.enum(INTERVIEW_STYLES),
+    /** Two interviewers taking turns instead of one. */
+    panel: z.boolean(),
     /** Weak spots from past interviews to build every question around, or null for a normal interview. */
     drill: z
       .object({
@@ -78,7 +80,25 @@ export type PlannedQuestion = {
   intent: string;
   strongSignals: string[];
   redFlags: string[];
+  /** In a panel interview, which panelist asks it (an index into the session's panel). */
+  panelist?: number;
 };
+
+/** One interviewer on a panel. */
+export type Panelist = { role: string; focus: string };
+
+/** The two interviewers on a panel: who they are and what each listens for. */
+export function panelFor(focus: InterviewFocus): Panelist[] {
+  return focus === "screen"
+    ? [
+        { role: "Recruiter", focus: "background, motivation, salary and availability" },
+        { role: "Hiring manager", focus: "fit for the team and what you'd bring to the role" },
+      ]
+    : [
+        { role: "Hiring manager", focus: "ownership, results, judgement and motivation" },
+        { role: "Team lead", focus: "the day-to-day work, depth in the role and working with others" },
+      ];
+}
 
 export type InterviewTurn = {
   id: string;
@@ -90,8 +110,60 @@ export type InterviewTurn = {
   text: string;
   /** The interviewer's short reaction to the previous answer, said before this turn. */
   lead?: string;
+  /** In a panel interview, which panelist is speaking. */
+  speaker?: number;
+  /** An answer given out loud: how long the candidate spoke, for pace feedback. */
+  spoken?: { seconds: number };
   at: string;
 };
+
+/* Delivery (answers given out loud) ------------------------------------------ */
+
+/** Verbal fillers worth noticing. "Like" and "so" are left out: as often as not they're real words. */
+const FILLERS = ["um", "uh", "er", "ah", "hmm", "you know", "i mean", "basically", "actually", "literally", "kind of", "sort of"];
+
+export type Delivery = {
+  /** Spoken answers only. */
+  answers: number;
+  wordsPerMinute: number;
+  fillers: { word: string; count: number }[];
+  fillersPer100: number;
+  longestSeconds: number;
+};
+
+/** Pace and fillers across the answers given out loud, or null if none were. */
+export function deliveryOf(turns: InterviewTurn[]): Delivery | null {
+  const spoken = turns.filter((t) => t.from === "candidate" && t.kind === "answer" && t.spoken && t.spoken.seconds >= 3);
+  if (spoken.length === 0) return null;
+  const words = spoken.reduce((n, t) => n + (t.text.trim().match(/\S+/g) ?? []).length, 0);
+  const seconds = spoken.reduce((n, t) => n + t.spoken!.seconds, 0);
+  const text = ` ${spoken.map((t) => t.text.toLowerCase().replace(/[^\p{L}\s']/gu, " ")).join(" ")} `.replace(/\s+/g, " ");
+  // Lookarounds so back-to-back fillers ("um um") both count.
+  const fillers = FILLERS.map((word) => ({ word, count: text.match(new RegExp(`(?<= )${word}(?= )`, "g"))?.length ?? 0 }))
+    .filter((f) => f.count > 0)
+    .sort((a, b) => b.count - a.count);
+  const fillerTotal = fillers.reduce((n, f) => n + f.count, 0);
+  return {
+    answers: spoken.length,
+    wordsPerMinute: Math.round(words / (seconds / 60)),
+    fillers,
+    fillersPer100: words ? (fillerTotal / words) * 100 : 0,
+    longestSeconds: Math.max(...spoken.map((t) => t.spoken!.seconds)),
+  };
+}
+
+/** How long an answer was spoken for, if it was, kept within reason (an hour at most). Input comes from the client. */
+export function spokenTime(spoken: unknown): { seconds: number } | null {
+  const seconds = (spoken as { seconds?: unknown } | null)?.seconds;
+  return typeof seconds === "number" && Number.isFinite(seconds) && seconds > 0 ? { seconds: Math.min(Math.round(seconds), 3600) } : null;
+}
+
+/** Plain-language read on a speaking pace. Conversational English runs about 120-160 words a minute. */
+export function paceNote(wpm: number): { label: string; tone: "success" | "warning" } {
+  if (wpm < 105) return { label: "On the slow side: tighten pauses and get to the point sooner.", tone: "warning" };
+  if (wpm > 175) return { label: "Fast: slow down so key points land.", tone: "warning" };
+  return { label: "A comfortable pace.", tone: "success" };
+}
 
 /**
  * What the candidate had sent when the interview started, frozen so later checks compare the
@@ -247,6 +319,8 @@ export type InterviewView = {
   style: InterviewStyle;
   /** A drill built from weak spots in past interviews. */
   drill: boolean;
+  /** The two interviewers of a panel interview, or null for one interviewer. */
+  panel: Panelist[] | null;
   status: InterviewStatus;
   plan: PlannedQuestion[];
   turns: InterviewTurn[];

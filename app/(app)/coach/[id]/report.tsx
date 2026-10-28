@@ -1,6 +1,6 @@
 "use client";
 
-import { BookOpen, Check, ChevronDown, Copy, Eye, Loader2, Quote, RotateCcw, Target, Trash2, TrendingUp, TriangleAlert } from "lucide-react";
+import { BookOpen, Check, ChevronDown, Copy, Eye, Loader2, Mic, Quote, RotateCcw, Target, Trash2, TrendingUp, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
@@ -13,9 +13,11 @@ import { deleteInterview, redoQuestion } from "@/lib/client/mutations";
 import { wordCount } from "@/lib/letter/types";
 import {
   averageScore,
+  deliveryOf,
   FLAG_INFO,
   gradeScore,
   MAX_INTERVIEW_ANSWER,
+  paceNote,
   reportProgress,
   RUBRIC,
   verdictOf,
@@ -126,6 +128,8 @@ export function InterviewReport({
 
           {score != null && <RubricOverview results={results} />}
 
+          <DeliveryCard view={view} />
+
           {view.plan.map((_, i) => (
             <QuestionCard key={i} index={i} view={view} result={results[i]} onUpdate={onUpdate} />
           ))}
@@ -136,7 +140,7 @@ export function InterviewReport({
                 <CardTitle>Your questions for them</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
-                <Exchange turns={view.turns.filter((t) => t.q === view.plan.length && t.kind !== "wrap")} compact />
+                <Exchange turns={view.turns.filter((t) => t.q === view.plan.length && t.kind !== "wrap")} panel={view.panel} compact />
                 <p className="text-[13px] text-muted">{summary.questionsFeedback}</p>
               </CardContent>
             </Card>
@@ -380,6 +384,59 @@ function FlagItem({ flag, label }: { flag: ConsistencyFlag; label?: string }) {
   );
 }
 
+/** Pace and fillers for the answers given out loud. Shown only when some were. */
+function DeliveryCard({ view }: { view: InterviewView }) {
+  const delivery = deliveryOf(view.turns);
+  if (!delivery) return null;
+  const pace = paceNote(delivery.wordsPerMinute);
+  const minutes = Math.floor(delivery.longestSeconds / 60);
+  const seconds = Math.round(delivery.longestSeconds % 60);
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-1.5">
+          <Mic className="size-4 text-muted" /> How you sounded
+        </CardTitle>
+        <p className="text-[13px] text-muted">
+          From the {delivery.answers === 1 ? "answer" : `${delivery.answers} answers`} you gave out loud.
+        </p>
+      </CardHeader>
+      <CardContent className="grid gap-4 sm:grid-cols-3">
+        <Stat label="Pace" value={`${delivery.wordsPerMinute} wpm`} note={pace.label} tone={pace.tone} />
+        <Stat
+          label="Filler words"
+          value={`${delivery.fillersPer100.toFixed(1)} per 100 words`}
+          note={
+            delivery.fillers.length
+              ? `Most used: ${delivery.fillers
+                  .slice(0, 3)
+                  .map((f) => `“${f.word}” ×${f.count}`)
+                  .join(", ")}. Speech recognition often drops “um” and “uh”, so there may be more.`
+              : "None picked up. Speech recognition often drops “um” and “uh”, so listen back if you can."
+          }
+          tone={delivery.fillersPer100 > 3 ? "warning" : "success"}
+        />
+        <Stat
+          label="Longest answer"
+          value={minutes ? `${minutes} min ${seconds} s` : `${seconds} s`}
+          note={delivery.longestSeconds > 150 ? "Over two and a half minutes: interviewers start to drift. Aim for one to two." : "Within the one-to-two-minute range interviewers expect."}
+          tone={delivery.longestSeconds > 150 ? "warning" : "success"}
+        />
+      </CardContent>
+    </Card>
+  );
+}
+
+function Stat({ label, value, note, tone }: { label: string; value: string; note: string; tone: "success" | "warning" }) {
+  return (
+    <div className="flex flex-col gap-1">
+      <span className="text-xs text-muted">{label}</span>
+      <span className="text-lg font-semibold tracking-tight tabular-nums">{value}</span>
+      <span className={cn("text-xs", tone === "warning" ? "text-warning" : "text-muted")}>{note}</span>
+    </div>
+  );
+}
+
 function ScoreDial({ score }: { score: number }) {
   const verdict = verdictOf(score);
   return (
@@ -509,7 +566,7 @@ function QuestionCard({
         )}
         {turns.length > 0 && (
           <Fold title="Your answers">
-            <Exchange turns={turns.filter((t) => t.kind !== "question")} compact />
+            <Exchange turns={turns.filter((t) => t.kind !== "question")} panel={view.panel} compact />
           </Fold>
         )}
         <Fold title="What the interviewer listened for">

@@ -191,6 +191,7 @@ function WeakSpots({ progress }: { progress: InterviewProgress }) {
       focus: drill.focus,
       length: "quick",
       style: "standard",
+      panel: false,
       drill: { competencies: drill.competencies, dimensions: drill.dimensions },
     });
     if (!result.ok) {

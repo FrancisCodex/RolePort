@@ -19,6 +19,7 @@ import {
   gradeScore,
   INTERVIEW_LENGTHS,
   interviewState,
+  panelFor,
   MAX_REDOS,
   RUBRIC,
   STYLE_INFO,
@@ -34,6 +35,7 @@ import {
   type InterviewStyle,
   type InterviewTurn,
   type InterviewView,
+  type Panelist,
   type QuestionResult,
   type RubricKey,
 } from "./types";
@@ -67,6 +69,7 @@ function toView(row: Row): InterviewView {
     length: row.length as InterviewLength,
     style: row.style as InterviewStyle,
     drill: row.drill !== null,
+    panel: row.panel,
     status: row.status as InterviewStatus,
     plan: row.plan,
     turns: row.turns,
@@ -202,8 +205,9 @@ export async function startInterview(db: AnyDb, user: User, setup: InterviewSetu
 
   const context: InterviewContext = { candidateName: profile.name || user.name, candidate: candidateBlock(profile, null), job, documents };
   const focus = setup.focus === "posting" && !job ? "behavioral" : setup.focus;
+  const panel = setup.panel ? panelFor(focus) : null;
   const plan = await planInterview(
-    { context, role, company, cvText: profileCv, focus, count: INTERVIEW_LENGTHS[setup.length].questions, style: setup.style, drill: setup.drill },
+    { context, role, company, cvText: profileCv, focus, count: INTERVIEW_LENGTHS[setup.length].questions, style: setup.style, drill: setup.drill, panel },
     config,
   );
 
@@ -219,9 +223,10 @@ export async function startInterview(db: AnyDb, user: User, setup: InterviewSetu
       length: setup.length,
       style: setup.style,
       drill: setup.drill,
+      panel,
       context,
       plan,
-      turns: [turn({ from: "interviewer", kind: "question", q: 0, text: plan[0].question })],
+      turns: [turn({ from: "interviewer", kind: "question", q: 0, text: plan[0].question, speaker: plan[0].panelist })],
       report: emptyReport(plan.length),
     })
     .returning({ id: schema.interviewSession.id });
@@ -249,10 +254,17 @@ export async function prepareInterviewBriefing(db: AnyDb, user: User, id: string
 /* During the interview ------------------------------------------------------ */
 
 /** The interviewer's next turn after question `q` is done: the next question, the closing question, or the end. */
+/** In a panel interview, who asks question `q` and who else is on the panel. */
+function speakerOf(view: InterviewView, q: number): { as: Panelist; other: Panelist } | null {
+  if (!view.panel) return null;
+  const i = view.plan[q]?.panelist ?? 0;
+  return { as: view.panel[i], other: view.panel[1 - i] };
+}
+
 function moveOn(view: InterviewView, q: number, lead: string): { turns: InterviewTurn[]; status: InterviewStatus } {
   const next = q + 1;
-  if (next < view.plan.length) return { turns: [turn({ from: "interviewer", kind: "question", q: next, text: view.plan[next].question, lead })], status: "active" };
-  if (next === view.plan.length) return { turns: [turn({ from: "interviewer", kind: "closing", q: next, text: CLOSING_QUESTION, lead })], status: "active" };
+  if (next < view.plan.length) return { turns: [turn({ from: "interviewer", kind: "question", q: next, text: view.plan[next].question, lead, speaker: view.plan[next].panelist })], status: "active" };
+  if (next === view.plan.length) return { turns: [turn({ from: "interviewer", kind: "closing", q: next, text: CLOSING_QUESTION, lead, speaker: view.panel ? 0 : undefined })], status: "active" };
   return { turns: [turn({ from: "interviewer", kind: "wrap", q: view.plan.length, text: WRAP_UP, lead })], status: "ended" };
 }
 
@@ -264,10 +276,17 @@ function awaiting(row: Row): { view: InterviewView; q: number; followUps: number
 }
 
 /** Save the candidate's answer and get the interviewer's next turn: a follow-up, the next question, or the end. */
-export async function answerInterview(db: AnyDb, userId: string, id: string, answer: string, config: AiConfig): Promise<InterviewView> {
+export async function answerInterview(
+  db: AnyDb,
+  userId: string,
+  id: string,
+  answer: string,
+  config: AiConfig,
+  spoken: { seconds: number } | null = null,
+): Promise<InterviewView> {
   const row = await mustRead(db, userId, id);
   const { view, q, followUps, inClosing } = awaiting(row);
-  const reply = turn({ from: "candidate", kind: "answer", q, text: answer });
+  const reply = turn({ from: "candidate", kind: "answer", q, text: answer, ...(spoken ? { spoken } : {}) });
 
   if (inClosing) {
     return save(db, row, { turns: [...view.turns, reply, turn({ from: "interviewer", kind: "wrap", q, text: WRAP_UP })], status: "ended" });
@@ -284,6 +303,7 @@ export async function answerInterview(db: AnyDb, userId: string, id: string, ans
             question: view.plan[q],
             exchange: [...view.turns.filter((t) => t.q === q), reply],
             followUpsLeft: left,
+            speaker: speakerOf(view, q),
             style: view.style,
             customPrompt: await readInterviewPrompt(db, userId),
           },
@@ -292,7 +312,7 @@ export async function answerInterview(db: AnyDb, userId: string, id: string, ans
       : { followUp: null, acknowledgement: "Okay, thanks." };
 
   const next = decision.followUp
-    ? { turns: [turn({ from: "interviewer", kind: "follow_up", q, text: decision.followUp })], status: "active" as const }
+    ? { turns: [turn({ from: "interviewer", kind: "follow_up", q, text: decision.followUp, speaker: view.plan[q].panelist })], status: "active" as const }
     : moveOn(view, q, decision.acknowledgement);
   return save(db, row, { turns: [...view.turns, reply, ...next.turns], status: next.status });
 }

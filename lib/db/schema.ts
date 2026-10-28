@@ -11,7 +11,7 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
-import type { InterviewBriefing, InterviewContext, InterviewReport, InterviewTurn, PlannedQuestion } from "@/lib/interview/types";
+import type { InterviewBriefing, InterviewContext, InterviewReport, InterviewTurn, Panelist, PlannedQuestion } from "@/lib/interview/types";
 
 const id = () =>
   text("id")
@@ -353,6 +353,8 @@ export const interviewSession = pgTable(
     style: text("style").default("standard").notNull(),
     /** The weak spots a drill was built around, or null for a normal interview. */
     drill: jsonb("drill").$type<{ competencies: string[]; dimensions: string[] }>(),
+    /** The two interviewers of a panel interview, or null for one interviewer. */
+    panel: jsonb("panel").$type<Panelist[]>(),
     /** InterviewStatus: active | ended | done. */
     status: text("status").default("active").notNull(),
     context: jsonb("context").$type<InterviewContext>().notNull(),

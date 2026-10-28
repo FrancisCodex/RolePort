@@ -10,6 +10,7 @@ import {
   type InterviewFocus,
   type InterviewSummary,
   type InterviewTurn,
+  type Panelist,
   type PlannedQuestion,
   type QuestionResult,
   type RefinedAnswer,
@@ -67,6 +68,7 @@ export const planSchema = z.object({
       intent: z.string(),
       strongSignals: z.array(z.string()),
       redFlags: z.array(z.string()),
+      panelist: z.number().int(),
     }),
   ),
 });
@@ -74,8 +76,17 @@ export const planSchema = z.object({
 /** Weak spots from past interviews to build a drill around. */
 export type DrillTarget = { competencies: string[]; dimensions: string[] };
 
-export function planSystemPrompt(focus: InterviewFocus, count: number, style: InterviewStyle = "standard", drill: DrillTarget | null = null): string {
+export function planSystemPrompt(
+  focus: InterviewFocus,
+  count: number,
+  style: InterviewStyle = "standard",
+  drill: DrillTarget | null = null,
+  panel: Panelist[] | null = null,
+): string {
   const styleNote = STYLE_NOTES[style].plan;
+  const panelNote = panel
+    ? `\nTHIS IS A PANEL INTERVIEW with two interviewers who take turns:\n${panel.map((p, i) => `- ${i}: ${p.role}, who asks about ${p.focus}`).join("\n")}\nGive each question to the panelist it suits (panelist = 0 or 1). Share the questions roughly evenly and mostly alternate.\n`
+    : "\npanelist: always 0 (there is one interviewer).\n";
   const drillNote = drill
     ? `\nTHIS IS A DRILL ON THE CANDIDATE'S WEAK SPOTS. Every question must test one of these: ${drill.competencies.join("; ")}.${
         drill.dimensions.length ? ` In past interviews their answers were weakest on: ${drill.dimensions.join("; ")}. Ask questions that make them practise exactly that.` : ""
@@ -85,7 +96,7 @@ export function planSystemPrompt(focus: InterviewFocus, count: number, style: In
 
 INTERVIEW TYPE: ${FOCUS_INFO[focus].label}
 ${FOCUS_GUIDE[focus]}
-${styleNote ? `\nINTERVIEWER STYLE: ${STYLE_INFO[style].label}. ${styleNote}\n` : ""}${drillNote}
+${styleNote ? `\nINTERVIEWER STYLE: ${STYLE_INFO[style].label}. ${styleNote}\n` : ""}${drillNote}${panelNote}
 WRITE EXACTLY ${count} MAIN QUESTIONS, in the order a real interviewer would ask them.
 - Each is one question, spoken naturally, under 35 words. Never two questions in one.
 - Make them specific to this role and this candidate: refer to their actual roles, projects or skills where it fits, and to the posting's requirements if there is one.
@@ -116,11 +127,12 @@ export async function planInterview(
     count: number;
     style: InterviewStyle;
     drill: DrillTarget | null;
+    panel: Panelist[] | null;
   },
   config: AiConfig,
 ): Promise<PlannedQuestion[]> {
   const raw = await generateStructured({
-    system: planSystemPrompt(input.focus, input.count, input.style, input.drill),
+    system: planSystemPrompt(input.focus, input.count, input.style, input.drill, input.panel),
     prompt: buildPlanPrompt(input.context, input.role, input.company, input.cvText, input.count),
     schema: planSchema,
     effort: "medium",
@@ -137,7 +149,11 @@ export async function planInterview(
     .filter((q) => q.question.length > 5)
     .slice(0, input.count);
   if (questions.length === 0) throw new Error("The model didn't plan any questions. Please try again.");
-  return questions;
+  if (!input.panel) return questions;
+  // Both panelists must get a turn: if the model gave every question to one, alternate instead.
+  const picks = raw.questions.slice(0, questions.length).map((q) => (q.panelist === 1 ? 1 : 0));
+  const shared = new Set(picks).size === 2;
+  return questions.map((q, i) => ({ ...q, panelist: shared ? picks[i] : i % 2 }));
 }
 
 /* After each answer: probe or move on ---------------------------------------- */
@@ -158,8 +174,15 @@ export function buildTurnPrompt(input: {
   question: PlannedQuestion;
   exchange: InterviewTurn[];
   followUpsLeft: number;
+  /** In a panel interview: who is asking this question, and who else is on the panel. */
+  speaker?: { as: Panelist; other: Panelist } | null;
 }): string {
   return [
+    ...(input.speaker
+      ? [
+          `You are the ${input.speaker.as.role} on a two-person panel (the other interviewer is the ${input.speaker.other.role}). You care most about ${input.speaker.as.focus}. Speak as the ${input.speaker.as.role}.`,
+        ]
+      : []),
     `Role: ${input.role}${input.company ? ` at ${input.company}` : ""}`,
     `Main question: ${input.question.question}`,
     `It tests: ${input.question.competency}. ${input.question.intent}`,

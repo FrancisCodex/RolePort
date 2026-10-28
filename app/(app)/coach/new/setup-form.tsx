@@ -1,6 +1,6 @@
 "use client";
 
-import { Briefcase, Flame, Loader2, Play, Target, UserRound } from "lucide-react";
+import { Briefcase, Flame, Loader2, Play, Target, UserRound, Users } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -18,6 +18,7 @@ import {
   INTERVIEW_STYLES,
   MAX_JOB_DESCRIPTION,
   MAX_ROLE,
+  panelFor,
   STYLE_INFO,
   type InterviewFocus,
   type InterviewLength,
@@ -43,6 +44,7 @@ export function SetupForm({ data }: { data: InterviewSetupData }) {
   const [focus, setFocus] = useState<InterviewFocus>(data.selectedApplicationId ? "posting" : "behavioral");
   const [length, setLength] = useState<InterviewLength>("quick");
   const [style, setStyle] = useState<InterviewStyle>("standard");
+  const [panel, setPanel] = useState(false);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [needsSetup, setNeedsSetup] = useState(false);
@@ -80,6 +82,7 @@ export function SetupForm({ data }: { data: InterviewSetupData }) {
       focus: chosenFocus,
       length,
       style,
+      panel,
       drill: null,
     });
     if (!result.ok) {
@@ -197,6 +200,21 @@ export function SetupForm({ data }: { data: InterviewSetupData }) {
                 danger={s === "hell"}
               />
             ))}
+            <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-border p-3 sm:col-span-2">
+              <input type="checkbox" checked={panel} onChange={(e) => setPanel(e.target.checked)} className="mt-0.5 size-4 accent-[var(--brand)]" />
+              <span className="flex flex-col gap-0.5">
+                <span className="flex items-center gap-1.5 text-[13px] font-medium">
+                  <Users className="size-3.5" /> Panel interview
+                </span>
+                <span className="text-xs text-muted">
+                  Two interviewers take turns:{" "}
+                  {panelFor(chosenFocus)
+                    .map((p) => `the ${p.role.toLowerCase()} (${p.focus})`)
+                    .join(" and ")}
+                  .
+                </span>
+              </span>
+            </label>
           </CardContent>
         </Card>
       </div>

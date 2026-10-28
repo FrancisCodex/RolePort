@@ -17,7 +17,7 @@ import {
   skipInterviewQuestion,
   startInterview as beginInterview,
 } from "@/lib/interview/sessions";
-import { interviewSetupSchema, MAX_INTERVIEW_ANSWER, type InterviewSetup, type InterviewView } from "@/lib/interview/types";
+import { interviewSetupSchema, MAX_INTERVIEW_ANSWER, spokenTime, type InterviewSetup, type InterviewView } from "@/lib/interview/types";
 import type { Result } from "@/lib/result";
 import { getCurrentUser } from "@/lib/session";
 
@@ -39,7 +39,7 @@ export async function startInterview(input: InterviewSetup): Promise<InterviewRe
 }
 
 /** Answer the question in play; returns the session with the interviewer's next turn. */
-export async function answerInterviewQuestion(id: string, answer: string): Promise<InterviewResult> {
+export async function answerInterviewQuestion(id: string, answer: string, spoken: { seconds: number } | null = null): Promise<InterviewResult> {
   const text = typeof answer === "string" ? answer.trim() : "";
   if (!text) return { ok: false, error: "Write your answer first, or skip the question." };
   if (text.length > MAX_INTERVIEW_ANSWER) return { ok: false, error: `Keep an answer under ${MAX_INTERVIEW_ANSWER} characters.` };
@@ -47,7 +47,7 @@ export async function answerInterviewQuestion(id: string, answer: string): Promi
   const config = await getAiConfig();
   if (!config) return { ok: false, error: new AiUnavailableError().message, needsSetup: true };
   try {
-    return { ok: true, data: await answerInterview(await getDb(), user.id, id, text, config) };
+    return { ok: true, data: await answerInterview(await getDb(), user.id, id, text, config, spokenTime(spoken)) };
   } catch (error) {
     console.error("[interview] turn failed", error);
     return { ok: false, error: aiErrorMessage(error, "The interviewer couldn't reply. Your answer is still here; try sending it again.") };

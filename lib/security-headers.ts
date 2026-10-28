@@ -42,5 +42,6 @@ export const LITE_SECURITY_HEADERS = [
   { key: "Content-Security-Policy", value: CSP },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "X-Content-Type-Options", value: "nosniff" },
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
+  // The microphone is for answering mock interviews out loud, on this site only.
+  { key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=(), payment=()" },
 ];

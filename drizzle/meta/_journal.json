@@ -85,6 +85,13 @@
       "when": 1793180375947,
       "tag": "0011_interview_practice",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793184219384,
+      "tag": "0012_interview_panel",
+      "breakpoints": true
     }
   ]
 }

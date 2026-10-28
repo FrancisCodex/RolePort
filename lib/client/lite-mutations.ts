@@ -39,7 +39,7 @@ import {
   skipInterviewQuestion,
   startInterview as beginInterview,
 } from "@/lib/interview/sessions";
-import { interviewSetupSchema, MAX_INTERVIEW_ANSWER, type InterviewSetup } from "@/lib/interview/types";
+import { interviewSetupSchema, MAX_INTERVIEW_ANSWER, spokenTime, type InterviewSetup } from "@/lib/interview/types";
 import { draftQuestionAnswer, saveQuestionList } from "@/lib/questions/questions";
 import { questionsSchema, type QuestionItem } from "@/lib/questions/types";
 import { letterContentSchema, type LetterContent } from "@/lib/letter/types";
@@ -326,12 +326,12 @@ export async function startInterview(input: InterviewSetup): Promise<InterviewRe
   return withAi(async (db, config) => beginInterview(db, await me(db), parsed.data, config), "Preparing the interview failed. Please try again.");
 }
 
-export async function answerInterviewQuestion(id: string, answer: string): Promise<InterviewResult> {
+export async function answerInterviewQuestion(id: string, answer: string, spoken: { seconds: number } | null = null): Promise<InterviewResult> {
   const text = answer.trim();
   if (!text) return { ok: false, error: "Write your answer first, or skip the question." };
   if (text.length > MAX_INTERVIEW_ANSWER) return { ok: false, error: `Keep an answer under ${MAX_INTERVIEW_ANSWER} characters.` };
   return withAi(
-    (db, config) => answerInterview(db, LOCAL_USER.id, id, text, config),
+    (db, config) => answerInterview(db, LOCAL_USER.id, id, text, config, spokenTime(spoken)),
     "The interviewer couldn't reply. Your answer is still here; try sending it again.",
   );
 }

@@ -1,20 +1,21 @@
 "use client";
 
-import { ArrowLeft, BookOpen, ChevronDown, CornerDownLeft, Loader2, Play, RotateCcw, SkipForward, Square } from "lucide-react";
+import { ArrowLeft, BookOpen, ChevronDown, CornerDownLeft, Loader2, Mic, MicOff, Play, RotateCcw, SkipForward, Square, Volume2, VolumeX } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useEffectEvent, useState, type MouseEvent } from "react";
+import { useEffect, useEffectEvent, useRef, useState, type MouseEvent } from "react";
 import type { InterviewResult } from "@/app/(app)/coach/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/fields";
 import { answerInterviewQuestion, endInterview, gradeInterview, prepareBriefing, skipInterviewTurn } from "@/lib/client/mutations";
-import { FOCUS_INFO, INTERVIEW_LENGTHS, interviewState, MAX_INTERVIEW_ANSWER, STYLE_INFO, type InterviewPageData, type InterviewTurn, type InterviewView } from "@/lib/interview/types";
+import { FOCUS_INFO, INTERVIEW_LENGTHS, interviewState, MAX_INTERVIEW_ANSWER, STYLE_INFO, type InterviewPageData, type InterviewTurn, type InterviewView, type Panelist } from "@/lib/interview/types";
 import { wordCount } from "@/lib/letter/types";
 import { cn } from "@/lib/utils";
 import { Briefing } from "./briefing";
 import { InterviewReport } from "./report";
+import { agreeToVoice, canSpeak, speak, useDictation, useDictationSupported, useReadAloudSetting, voiceAgreed } from "./voice";
 
 type Busy = "answer" | "skip" | "end" | "grade" | "brief" | null;
 
@@ -36,6 +37,38 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
   const state = interviewState(view);
   const total = view.plan.length;
 
+  // Voice: dictated phrases are added to the answer; seconds spoken go with it for pace feedback.
+  const dictation = useDictation((text) => text && setDraft((d) => (d.trim() ? `${d.trimEnd()} ${text}` : text)));
+  const canDictate = useDictationSupported();
+  const [readAloud, setReadAloud] = useReadAloudSetting();
+  const spokenSeconds = useRef(0);
+  const last = view.turns.at(-1);
+
+  // A new interviewer turn is read out when that's switched on.
+  const sayLatest = useEffectEvent(() => {
+    if (!last || last.from !== "interviewer") return;
+    speak([last.lead, last.text].filter(Boolean).join(" "), last.speaker ?? 0);
+  });
+  useEffect(() => {
+    if (readAloud && started && view.status === "active") sayLatest();
+  }, [last?.id, readAloud, started, view.status]);
+
+  async function toggleMic() {
+    if (dictation.listening) return dictation.stop();
+    if (
+      !voiceAgreed() &&
+      !(await confirm({
+        title: "Answer out loud?",
+        body: "Your browser turns your speech into text in the answer box, where you can fix it before sending. RolePort never receives the audio, but Chrome and Edge send it to Google or Microsoft to transcribe unless your browser can do it on this device.",
+        confirmLabel: "Use the microphone",
+      }))
+    ) {
+      return;
+    }
+    agreeToVoice();
+    dictation.start();
+  }
+
   async function act(kind: Exclude<Busy, null>, run: () => Promise<InterviewResult>): Promise<boolean> {
     setBusy(kind);
     setError(null);
@@ -54,7 +87,16 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
   async function send() {
     const text = draft.trim();
     if (!text || busy) return;
-    if (await act("answer", () => answerInterviewQuestion(view.id, text))) setDraft("");
+    dictation.stop();
+    const seconds = spokenSeconds.current + dictation.takeSeconds();
+    // Count it as spoken only if the microphone was on for a real part of it.
+    const spoken = seconds >= 3 ? { seconds } : null;
+    if (await act("answer", () => answerInterviewQuestion(view.id, text, spoken))) {
+      setDraft("");
+      spokenSeconds.current = 0;
+    } else {
+      spokenSeconds.current = seconds;
+    }
   }
 
   async function skip() {
@@ -69,6 +111,9 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
     ) {
       return;
     }
+    dictation.stop();
+    dictation.takeSeconds();
+    spokenSeconds.current = 0;
     if (await act("skip", () => skipInterviewTurn(view.id))) setDraft("");
   }
 
@@ -144,6 +189,7 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
             <Badge>{INTERVIEW_LENGTHS[view.length].label}</Badge>
             {view.style !== "standard" && <Badge tone={view.style === "hell" ? "danger" : "neutral"}>{STYLE_INFO[view.style].label}</Badge>}
             {view.drill && <Badge tone="brand">Weak-spot drill</Badge>}
+            {view.panel && <Badge>Panel: {view.panel.map((p) => p.role).join(" & ")}</Badge>}
             {view.applicationId && (
               <Link href={`/applied/${view.applicationId}`} className="text-xs font-medium text-muted hover:text-fg">
                 Open the application
@@ -152,9 +198,22 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
           </div>
         </div>
         {view.status === "active" && (
-          <Button variant="ghost" onClick={() => void end()} disabled={busy !== null}>
-            <Square /> End interview
-          </Button>
+          <div className="flex items-center gap-1">
+            {canSpeak() && (
+              <Button
+                variant="ghost"
+                onClick={() => setReadAloud(!readAloud)}
+                aria-pressed={readAloud}
+                title={readAloud ? "Stop reading questions aloud" : "Read questions aloud"}
+                suppressHydrationWarning
+              >
+                {readAloud ? <Volume2 /> : <VolumeX />} <span className="max-sm:hidden">{readAloud ? "Reading aloud" : "Read aloud"}</span>
+              </Button>
+            )}
+            <Button variant="ghost" onClick={() => void end()} disabled={busy !== null}>
+              <Square /> End interview
+            </Button>
+          </div>
         )}
       </div>
       <Progress view={view} />
@@ -232,8 +291,6 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
 
   const current = view.turns.filter((t) => t.q === state.q);
   const earlier = view.plan.map((_, q) => view.turns.filter((t) => t.q === q)).slice(0, Math.min(state.q, total));
-  const last = view.turns.at(-1);
-
   return (
     <div className="mx-auto max-w-3xl">
       {header}
@@ -246,7 +303,7 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
           </summary>
           <div className="flex flex-col gap-5 border-t border-border px-4 py-4">
             {earlier.map((turns, q) => (
-              <Exchange key={q} turns={turns} compact />
+              <Exchange key={q} turns={turns} panel={view.panel} compact />
             ))}
           </div>
         </details>
@@ -257,7 +314,7 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
           {state.inClosing ? "Your questions" : `Question ${state.q + 1} of ${total}`}
           {state.followUps > 0 && ` · follow-up ${state.followUps}`}
         </p>
-        <Exchange turns={current} />
+        <Exchange turns={current} panel={view.panel} />
         {busy === "answer" && (
           <p className="flex items-center gap-2 text-[13px] text-muted">
             <Loader2 className="size-3.5 animate-spin" /> The interviewer is thinking…
@@ -281,6 +338,18 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
           aria-label="Your answer"
         />
         <div className="flex flex-wrap items-center gap-2 px-1">
+          {canDictate && (
+            <Button
+              variant={dictation.listening ? "danger" : "secondary"}
+              size="sm"
+              onClick={() => void toggleMic()}
+              disabled={busy !== null}
+              aria-pressed={dictation.listening}
+              title={dictation.listening ? "Stop the microphone" : "Answer out loud"}
+            >
+              {dictation.listening ? <MicOff /> : <Mic />} {dictation.listening ? "Stop" : "Speak"}
+            </Button>
+          )}
           <AnswerTimer key={last?.id} />
           <span className="text-xs text-subtle tabular-nums">{wordCount(draft)} words</span>
           <div className="ml-auto flex items-center gap-1.5">
@@ -295,6 +364,13 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
           </div>
         </div>
       </div>
+      {dictation.listening && (
+        <p className="mt-2 flex items-center gap-1.5 px-1 text-xs text-muted" aria-live="polite">
+          <span className="size-2 shrink-0 animate-pulse rounded-full bg-danger" />
+          {dictation.interim ? <span className="truncate italic">{dictation.interim}</span> : "Listening… speak your answer, then press Stop or Send."}
+        </p>
+      )}
+      {dictation.error && <p className="mt-2 px-1 text-xs text-danger">{dictation.error}</p>}
       <p className="mt-2 px-1 text-xs text-subtle">Ctrl+Enter sends. No scores until the end, as in a real interview.</p>
 
       {errorNote}
@@ -319,12 +395,15 @@ function Progress({ view }: { view: InterviewView }) {
 }
 
 /** A question's turns: the interviewer's question and follow-ups, the candidate's answers. */
-export function Exchange({ turns, compact }: { turns: InterviewTurn[]; compact?: boolean }) {
+export function Exchange({ turns, compact, panel = null }: { turns: InterviewTurn[]; compact?: boolean; panel?: Panelist[] | null }) {
   return (
     <div className={cn("flex flex-col", compact ? "gap-2" : "gap-4")}>
       {turns.map((t) =>
         t.from === "interviewer" ? (
           <div key={t.id} className="flex flex-col gap-1">
+            {panel && t.speaker !== undefined && panel[t.speaker] && (
+              <p className="text-[11px] font-medium tracking-wide text-subtle uppercase">{panel[t.speaker].role}</p>
+            )}
             {t.lead && !compact && <p className="text-[13px] text-muted">{t.lead}</p>}
             <p className={cn("text-pretty", compact ? "text-[13px] font-medium" : "text-[17px] leading-relaxed font-medium tracking-tight")}>
               {t.kind === "follow_up" && <span className="mr-1.5 text-xs font-medium text-brand-ink">Follow-up</span>}
