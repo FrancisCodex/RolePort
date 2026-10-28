@@ -15,6 +15,7 @@ import { wordCount } from "@/lib/letter/types";
 import { cn } from "@/lib/utils";
 import { Briefing } from "./briefing";
 import { InterviewReport } from "./report";
+import { useSpeechEngine, useWhisperModel } from "@/lib/speech/settings";
 import { agreeToVoice, canSpeak, speak, useDictation, useDictationSupported, useMicLevel, useMicSetting, useReadAloudSetting, voiceAgreed } from "./voice";
 import { VoiceSettings } from "./voice-settings";
 
@@ -40,8 +41,12 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
 
   // Voice: dictated phrases are added to the answer; seconds spoken go with it for pace feedback.
   const [mic] = useMicSetting();
-  const dictation = useDictation((text) => text && setDraft((d) => (d.trim() ? `${d.trimEnd()} ${text}` : text)), mic);
-  const canDictate = useDictationSupported();
+  const [engine] = useSpeechEngine();
+  const [model] = useWhisperModel();
+  const addText = (text: string) => text && setDraft((d) => (d.trim() ? `${d.trimEnd()} ${text}` : text));
+  const dictation = useDictation(addText, { deviceId: mic, engine, model });
+  // Whisper only needs a way to record; built-in recognition needs the browser to have it.
+  const canDictate = useDictationSupported() || engine === "whisper";
   const [voiceSettings, setVoiceSettings] = useState(false);
   const [readAloud, setReadAloud] = useReadAloudSetting();
   const spokenSeconds = useRef(0);
@@ -57,12 +62,15 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
   }, [last?.id, readAloud, started, view.status]);
 
   async function toggleMic() {
-    if (dictation.listening) return dictation.stop();
+    if (dictation.listening) return addText(await dictation.stop());
     if (
       !voiceAgreed() &&
       !(await confirm({
         title: "Answer out loud?",
-        body: "Your browser turns your speech into text in the answer box, where you can fix it before sending. RolePort never receives the audio, but Chrome and Edge send it to Google or Microsoft to transcribe unless your browser can do it on this device.",
+        body:
+          engine === "whisper"
+            ? "Your answer is recorded and turned into text on this device with Whisper, in the answer box where you can fix it before sending. The audio never leaves this computer."
+            : "Your browser turns your speech into text in the answer box, where you can fix it before sending. RolePort never receives the audio, but Chrome and Edge send it to Google or Microsoft to transcribe unless your browser can do it on this device. You can switch to on-device Whisper in Voice settings.",
         confirmLabel: "Use the microphone",
       }))
     ) {
@@ -88,9 +96,12 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
   }
 
   async function send() {
-    const text = draft.trim();
-    if (!text || busy) return;
-    dictation.stop();
+    if (busy || dictation.transcribing) return;
+    // With Whisper, stopping transcribes what was just said, and that goes with the answer.
+    const heard = dictation.listening ? await dictation.stop() : "";
+    const text = [draft.trim(), heard].filter(Boolean).join(" ");
+    if (heard) setDraft(text);
+    if (!text) return;
     const seconds = spokenSeconds.current + dictation.takeSeconds();
     // Count it as spoken only if the microphone was on for a real part of it.
     const spoken = seconds >= 3 ? { seconds } : null;
@@ -114,7 +125,7 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
     ) {
       return;
     }
-    dictation.stop();
+    dictation.cancel();
     dictation.takeSeconds();
     spokenSeconds.current = 0;
     if (await act("skip", () => skipInterviewTurn(view.id))) setDraft("");
@@ -346,7 +357,7 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
               variant={dictation.listening ? "danger" : "secondary"}
               size="sm"
               onClick={() => void toggleMic()}
-              disabled={busy !== null || dictation.starting}
+              disabled={busy !== null || dictation.starting || dictation.transcribing}
               aria-pressed={dictation.listening}
               title={dictation.listening ? "Stop the microphone" : "Answer out loud"}
             >
@@ -358,7 +369,7 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
             variant="ghost"
             size="sm"
             onClick={() => {
-              dictation.stop();
+              dictation.cancel();
               setVoiceSettings(true);
             }}
             disabled={busy !== null}
@@ -374,14 +385,22 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
               {busy === "skip" ? <Loader2 className="animate-spin" /> : <SkipForward />}
               {state.inClosing ? "No questions" : "Skip"}
             </Button>
-            <Button onClick={() => void send()} disabled={busy !== null || !draft.trim()}>
-              {busy === "answer" ? <Loader2 className="animate-spin" /> : <CornerDownLeft />}
+            <Button
+              onClick={() => void send()}
+              disabled={busy !== null || dictation.transcribing || (!draft.trim() && !(dictation.listening && dictation.engine === "whisper"))}
+            >
+              {busy === "answer" || dictation.transcribing ? <Loader2 className="animate-spin" /> : <CornerDownLeft />}
               {state.inClosing ? "Ask" : "Send answer"}
             </Button>
           </div>
         </div>
       </div>
-      {dictation.listening && <ListeningStatus dictation={dictation} onSettings={() => (dictation.stop(), setVoiceSettings(true))} />}
+      {dictation.transcribing && (
+        <p className="mt-2 flex items-center gap-1.5 px-1 text-xs text-muted" aria-live="polite">
+          <Loader2 className="size-3.5 animate-spin" /> Turning your answer into text on this device…
+        </p>
+      )}
+      {dictation.listening && <ListeningStatus dictation={dictation} onSettings={() => (dictation.cancel(), setVoiceSettings(true))} />}
       {dictation.error && (
         <p className="mt-2 px-1 text-xs text-danger">
           {dictation.error}{" "}
@@ -462,7 +481,15 @@ function ListeningStatus({ dictation, onSettings }: { dictation: ReturnType<type
         {dictation.interim ? (
           <span className="truncate italic">{dictation.interim}</span>
         ) : (
-          <span>{peak > 0.08 ? "Listening… keep talking, then press Stop or Send." : "Listening… start talking."}</span>
+          <span>
+            {dictation.engine === "whisper"
+              ? peak > 0.08
+                ? "Recording… press Stop to turn it into text, or Send to send it as it is."
+                : "Recording… start talking."
+              : peak > 0.08
+                ? "Listening… keep talking, then press Stop or Send."
+                : "Listening… start talking."}
+          </span>
         )}
       </p>
       {dictation.stalled && (

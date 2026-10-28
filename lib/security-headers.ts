@@ -15,6 +15,11 @@ const CONNECT = [
   "https://api.openai.com",
   "https://openrouter.ai",
   "https://api.groq.com",
+  // Whisper model files, fetched only when the user chooses to download one. Hugging Face
+  // redirects file downloads to its storage hosts under hf.co.
+  "https://huggingface.co",
+  "https://*.huggingface.co",
+  "https://*.hf.co",
   // Ollama, LM Studio and JobSpy on the user's own machine, on any port. (CSP has no syntax
   // for IPv6 addresses, so [::1] can't be listed; localhost covers it.)
   "http://localhost:*",

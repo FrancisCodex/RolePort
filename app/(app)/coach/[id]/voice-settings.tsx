@@ -1,10 +1,13 @@
 "use client";
 
 import { CircleCheck, CircleX, Loader2, Mic, MicOff, Play, TriangleAlert } from "lucide-react";
+import Link from "next/link";
 import { useEffect, useState } from "react";
+import { SpeechSettings } from "@/components/speech/speech-settings";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Select } from "@/components/ui/select";
+import { useSpeechEngine, useWhisperModel } from "@/lib/speech/settings";
 import { cn } from "@/lib/utils";
 import {
   agreeToVoice,
@@ -102,6 +105,8 @@ function VoiceSettingsBody({ onClose }: { onClose: () => void }) {
 
       <VoicePicker />
 
+      <SwitchBrowserNote />
+
       <div className="flex justify-end border-t border-border pt-4">
         <Button onClick={onClose}>Done</Button>
       </div>
@@ -109,25 +114,35 @@ function VoiceSettingsBody({ onClose }: { onClose: () => void }) {
   );
 }
 
-/** Speak a sentence and see it written out: proves the browser's speech-to-text works here. */
+/**
+ * Pick how speech becomes text, then speak a sentence and see it written out: proves the chosen
+ * engine works in this browser before an interview depends on it.
+ */
 function SpeechTest({ mic, disabled }: { mic: string; disabled: boolean }) {
-  const supported = useDictationSupported();
+  const [engine] = useSpeechEngine();
+  const [model] = useWhisperModel();
+  const builtInSupported = useDictationSupported();
   const [text, setText] = useState("");
-  const dictation = useDictation((t) => t && setText((s) => (s ? `${s} ${t}` : t)), mic);
+  const add = (t: string) => t && setText((s) => (s ? `${s} ${t}` : t));
+  const dictation = useDictation(add, { deviceId: mic, engine, model });
   const words = `${text} ${dictation.interim}`.trim();
+  const canTest = engine === "whisper" || builtInSupported;
 
   return (
     <section className="flex flex-col gap-2">
       <h3 className="text-xs font-medium tracking-wide text-subtle uppercase">2 · Speech to text</h3>
-      {!supported ? (
+      <SpeechSettings intro={false} />
+      {!canTest ? (
         <p className="flex gap-1.5 text-xs text-warning">
-          <TriangleAlert className="mt-0.5 size-3.5 shrink-0" /> This browser can&apos;t turn speech into text. Use Chrome or Edge to answer out loud, or type your answers.
+          <TriangleAlert className="mt-0.5 size-3.5 shrink-0" /> This browser has no built-in speech-to-text. Download Whisper above, use Chrome or Edge,
+          or type your answers.
         </p>
       ) : (
         <>
           <p className="text-xs text-muted">
-            Press Test and say a sentence. RolePort never receives the audio, but Chrome and Edge may send it to Google or Microsoft to transcribe. Some newer
-            browsers can transcribe on this device.
+            {engine === "whisper"
+              ? "Press Test, say a sentence, then press Stop: it's turned into text on this device."
+              : "Press Test and say a sentence. Chrome and Edge may send the audio to Google or Microsoft to transcribe."}
           </p>
           <div className="min-h-16 rounded-lg border border-border bg-surface-2 px-3 py-2 text-[13px]" aria-live="polite">
             {words ? (
@@ -135,34 +150,43 @@ function SpeechTest({ mic, disabled }: { mic: string; disabled: boolean }) {
                 {text} <span className="text-muted italic">{dictation.interim}</span>
               </>
             ) : (
-              <span className="text-subtle">{dictation.listening ? "Listening…" : "Your words appear here."}</span>
+              <span className="flex items-center gap-1.5 text-subtle">
+                {dictation.transcribing && <Loader2 className="size-3.5 animate-spin" />}
+                {dictation.transcribing
+                  ? "Turning it into text on this device…"
+                  : dictation.listening
+                    ? engine === "whisper"
+                      ? "Recording… press Stop when you're done."
+                      : "Listening…"
+                    : "Your words appear here."}
+              </span>
             )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <Button
               variant={dictation.listening ? "danger" : "secondary"}
               size="sm"
-              disabled={disabled || dictation.starting}
-              onClick={() => {
-                if (dictation.listening) return dictation.stop();
+              disabled={disabled || dictation.starting || dictation.transcribing}
+              onClick={async () => {
+                if (dictation.listening) return add(await dictation.stop());
                 agreeToVoice();
                 setText("");
                 void dictation.start();
               }}
             >
-              {dictation.starting ? <Loader2 className="animate-spin" /> : dictation.listening ? <MicOff /> : <Mic />}
+              {dictation.starting || dictation.transcribing ? <Loader2 className="animate-spin" /> : dictation.listening ? <MicOff /> : <Mic />}
               {dictation.listening ? "Stop" : "Test"}
             </Button>
-            {text && !dictation.listening && (
+            {text && !dictation.listening && !dictation.transcribing && (
               <span className="flex items-center gap-1.5 text-xs text-success">
-                <CircleCheck className="size-3.5" /> Speech-to-text works in this browser.
+                <CircleCheck className="size-3.5" /> {engine === "whisper" ? "Whisper works on this device." : "Speech-to-text works in this browser."}
               </span>
             )}
           </div>
           {dictation.stalled && (
             <p className="flex gap-1.5 text-xs text-warning">
               <TriangleAlert className="mt-0.5 size-3.5 shrink-0" /> Nothing has been transcribed yet. If the microphone bar moves but no words appear, this
-              browser&apos;s speech service isn&apos;t working: try Chrome or Edge, or set this microphone as your system default.
+              browser&apos;s speech service isn&apos;t working: switch to Whisper above, try Chrome or Edge, or set this microphone as your system default.
             </p>
           )}
           {dictation.error && (
@@ -173,6 +197,20 @@ function SpeechTest({ mic, disabled }: { mic: string; disabled: boolean }) {
         </>
       )}
     </section>
+  );
+}
+
+/** Moving to a browser where speech works: the data goes along in a backup file. */
+function SwitchBrowserNote() {
+  return (
+    <p className="rounded-md border border-border bg-surface-2 px-3 py-2 text-xs text-muted">
+      Prefer another browser? In{" "}
+      <Link href="/settings#data" className="font-medium text-brand-ink hover:underline">
+        Settings → Your data
+      </Link>
+      , download a backup, then import it in the other browser. Everything comes along except API keys, which you enter again, and Whisper, which you
+      download again there if you want it.
+    </p>
   );
 }
 

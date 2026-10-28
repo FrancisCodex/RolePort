@@ -1,51 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { readSetting as read, useStoredSetting as useStored, writeSetting as write, type SpeechEngine } from "@/lib/speech/settings";
+import { transcribeWithWhisper, toWhisperAudio } from "@/lib/speech/whisper";
+import { downloadedModels, type WhisperModelId } from "@/lib/speech/whisper-models";
 
 /*
  * Voice for mock interviews, with nothing but the browser: the microphone (getUserMedia),
- * speech-to-text for answering out loud (Web Speech API) and text-to-speech for hearing the
- * questions. Nothing goes to RolePort; Chrome and Edge do send the audio to their makers to
- * transcribe it, which the page says before the microphone is first used.
+ * speech-to-text for answering out loud, and text-to-speech for hearing the questions. Speech-to-
+ * text is the browser's built-in recognition by default (Web Speech API: Chrome and Edge send the
+ * audio to their makers), or on-device Whisper if the user chose to download it (nothing leaves
+ * the device). Nothing ever goes to RolePort.
  *
  * The microphone is always opened with getUserMedia first: it makes the browser ask for
  * permission even where speech recognition alone wouldn't, it lets the user pick a device, and
  * it drives the level meter, so "the mic hears nothing" and "the browser can't transcribe" can be
  * told apart.
  */
-
-/* Settings remembered in this browser ---------------------------------------- */
-
-const listeners = new Set<() => void>();
-const notify = () => listeners.forEach((l) => l());
-const subscribe = (cb: () => void) => {
-  listeners.add(cb);
-  return () => listeners.delete(cb);
-};
-
-function read(key: string): string {
-  try {
-    return localStorage.getItem(key) ?? "";
-  } catch {
-    return "";
-  }
-}
-
-function write(key: string, value: string) {
-  try {
-    localStorage.setItem(key, value);
-  } catch {
-    // Storage blocked: the choice just won't be remembered.
-  }
-  notify();
-}
-
-/** A string setting kept in localStorage, shared by every component that reads it. */
-function useStored(key: string): [string, (value: string) => void] {
-  const value = useSyncExternalStore(subscribe, () => read(key), () => "");
-  const set = useCallback((next: string) => write(key, next), [key]);
-  return [value, set];
-}
 
 const READ_ALOUD_KEY = "roleport:interview-read-aloud";
 const MIC_KEY = "roleport:interview-mic";
@@ -189,20 +160,28 @@ const ERRORS: Record<string, string> = {
 /** Seconds of listening with sound but no words before the page says transcription seems stuck. */
 const STALL_SECONDS = 8;
 
+/** Options for dictation: which microphone, and which speech-to-text engine. */
+export type DictationOptions = { deviceId: string; engine: SpeechEngine; model: WhisperModelId };
+
 /**
- * Dictation into an answer box. Final phrases go to `onText`; `interim` is what's being heard
- * right now; `stream` is the open microphone (for a level meter). Chrome ends recognition after
- * a pause, so it restarts until `stop()`, unless it keeps ending at once, which means the
- * browser's service isn't working. `takeSeconds()` returns how long the microphone was on.
+ * Dictation into an answer box, with either engine:
+ * - browser: the built-in recognition. Final phrases go to `onText` as they're recognised and
+ *   `interim` is what's being heard. Chrome ends recognition after a pause, so it restarts until
+ *   stopped, unless it keeps ending at once, which means the browser's service isn't working.
+ * - whisper: records, then transcribes on this device when `stop()` is called; `stop()`
+ *   resolves with the text (and `transcribing` is true meanwhile).
+ * `stream` is the open microphone, for a level meter; `takeSeconds()` returns how long it was on.
  */
-export function useDictation(onText: (text: string) => void, deviceId: string) {
+export function useDictation(onText: (text: string) => void, { deviceId, engine, model }: DictationOptions) {
   const [listening, setListening] = useState(false);
   const [starting, setStarting] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
   const [interim, setInterim] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [stalled, setStalled] = useState(false);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const recognition = useRef<Recognition | null>(null);
+  const recorder = useRef<{ media: MediaRecorder; chunks: Blob[]; model: WhisperModelId } | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const wanted = useRef(false);
   const heard = useRef(false);
@@ -229,12 +208,15 @@ export function useDictation(onText: (text: string) => void, deviceId: string) {
     setStream(null);
   }, []);
 
+  /** Stop listening and close the microphone. A pending recording is thrown away. */
   const finish = useCallback(
     (message: string | null) => {
       wanted.current = false;
       clock();
       recognition.current?.abort();
       recognition.current = null;
+      if (recorder.current?.media.state === "recording") recorder.current.media.stop();
+      recorder.current = null;
       release();
       setListening(false);
       setStarting(false);
@@ -245,14 +227,48 @@ export function useDictation(onText: (text: string) => void, deviceId: string) {
     [release],
   );
 
-  const stop = useCallback(() => finish(null), [finish]);
+  /** Stop without transcribing what was recorded (skipping a question, opening settings). */
+  const cancel = useCallback(() => finish(null), [finish]);
+
+  /**
+   * Stop listening. With Whisper, transcribes the recording on this device and resolves with the
+   * text; with built-in recognition the words have already gone to `onText`, so it resolves "".
+   */
+  const stop = useCallback(async (): Promise<string> => {
+    const rec = recorder.current;
+    if (!rec || rec.media.state !== "recording") {
+      finish(null);
+      return "";
+    }
+    const done = new Promise<void>((resolve) => rec.media.addEventListener("stop", () => resolve(), { once: true }));
+    rec.media.stop();
+    await done;
+    recorder.current = null;
+    finish(null);
+    const recording = new Blob(rec.chunks, { type: rec.media.mimeType });
+    if (recording.size === 0) return "";
+    setTranscribing(true);
+    try {
+      return await transcribeWithWhisper(rec.model, await toWhisperAudio(recording));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Transcribing failed. Try again, or type your answer.");
+      return "";
+    } finally {
+      setTranscribing(false);
+    }
+  }, [finish]);
 
   const start = useCallback(async () => {
     const Ctor = recognitionCtor();
-    if (!Ctor) return setError(NO_SERVICE);
+    if (engine === "browser" && !Ctor) return setError(NO_SERVICE);
     setError(null);
     setStalled(false);
     setStarting(true);
+
+    if (engine === "whisper" && !(await downloadedModels()).includes(model)) {
+      setStarting(false);
+      return setError("The Whisper model isn't downloaded in this browser yet. Download it in Voice settings, or switch to built-in speech there.");
+    }
 
     // Open the microphone first: this is what makes the browser ask for permission.
     let mic: MediaStream;
@@ -265,7 +281,23 @@ export function useDictation(onText: (text: string) => void, deviceId: string) {
     streamRef.current = mic;
     setStream(mic);
 
-    const r = new Ctor();
+    if (engine === "whisper") {
+      if (typeof MediaRecorder === "undefined") return finish("This browser can't record audio. Switch to built-in speech, or type your answer.");
+      const media = new MediaRecorder(mic);
+      const chunks: Blob[] = [];
+      media.addEventListener("dataavailable", (e) => {
+        if (e.data.size) chunks.push(e.data);
+      });
+      recorder.current = { media, chunks, model };
+      media.start(1000);
+      wanted.current = true;
+      startedAt.current = Date.now();
+      setListening(true);
+      setStarting(false);
+      return;
+    }
+
+    const r = new Ctor!();
     r.lang = navigator.language || "en-US";
     r.continuous = true;
     r.interimResults = true;
@@ -320,7 +352,7 @@ export function useDictation(onText: (text: string) => void, deviceId: string) {
     stallTimer.current = setTimeout(() => {
       if (wanted.current && !heard.current) setStalled(true);
     }, STALL_SECONDS * 1000);
-  }, [deviceId, finish]);
+  }, [deviceId, engine, model, finish]);
 
   const takeSeconds = useCallback(() => {
     clock();
@@ -335,13 +367,14 @@ export function useDictation(onText: (text: string) => void, deviceId: string) {
     () => () => {
       wanted.current = false;
       recognition.current?.abort();
+      if (recorder.current?.media.state === "recording") recorder.current.media.stop();
       stopStream(streamRef.current);
       if (stallTimer.current) clearTimeout(stallTimer.current);
     },
     [],
   );
 
-  return { listening, starting, interim, error, stalled, stream, start, stop, takeSeconds };
+  return { engine, listening, starting, transcribing, interim, error, stalled, stream, start, stop, cancel, takeSeconds };
 }
 
 /* Text-to-speech ------------------------------------------------------------- */

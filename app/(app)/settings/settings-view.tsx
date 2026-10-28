@@ -1,4 +1,5 @@
 import { Database, Lock } from "lucide-react";
+import { SpeechSettings } from "@/components/speech/speech-settings";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AiSettingsForm, type AiSettingsView } from "./ai-settings-form";
 import { BackupControls } from "./backup-controls";
@@ -122,9 +123,25 @@ export function SettingsView({
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="speech">
+        <CardHeader>
+          <CardTitle>Speech-to-text</CardTitle>
+          <CardDescription>For answering mock interviews out loud. Pick the microphone and test it from Voice settings in any interview.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <SpeechSettings />
+        </CardContent>
+      </Card>
+
+      <Card id="data">
         <CardHeader>
           <CardTitle>Your data</CardTitle>
+          {aiInBrowser && (
+            <CardDescription>
+              Your data lives in this browser. To move to another browser or computer, download a backup here and import it there. API keys
+              aren&apos;t included, so enter them again; a downloaded Whisper model isn&apos;t either.
+            </CardDescription>
+          )}
         </CardHeader>
         <CardContent className="flex flex-col gap-3 text-[13px] text-muted">
           <p className="flex gap-2.5">
