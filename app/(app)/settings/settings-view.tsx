@@ -1,5 +1,5 @@
 import { Database, Lock } from "lucide-react";
-import { SpeechSettings } from "@/components/speech/speech-settings";
+import { VoicePanel } from "@/components/speech/voice-settings";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AiSettingsForm, type AiSettingsView } from "./ai-settings-form";
 import { BackupControls } from "./backup-controls";
@@ -125,11 +125,14 @@ export function SettingsView({
 
       <Card id="speech">
         <CardHeader>
-          <CardTitle>Speech-to-text</CardTitle>
-          <CardDescription>For answering mock interviews out loud. Pick the microphone and test it from Voice settings in any interview.</CardDescription>
+          <CardTitle>Voice</CardTitle>
+          <CardDescription>
+            For answering mock interviews out loud: your microphone, how speech becomes text (built-in or the optional Whisper download), and the
+            interviewer&apos;s voice. The same settings open from Voice settings in any interview.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <SpeechSettings />
+          <VoicePanel showBrowserNote={false} />
         </CardContent>
       </Card>
 

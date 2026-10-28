@@ -1,7 +1,7 @@
 "use client";
 
 import { CircleCheck, Cpu, Download, Globe, HardDrive, Loader2, Trash2, TriangleAlert } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/dialog";
@@ -20,6 +20,47 @@ import {
 } from "@/lib/speech/whisper-models";
 import { cn } from "@/lib/utils";
 
+/** Fired after a model is downloaded or removed, so every panel on the page shows the same list. */
+const WHISPER_CHANGED = "roleport:whisper-changed";
+const announce = () => window.dispatchEvent(new Event(WHISPER_CHANGED));
+
+/** The Whisper models in this browser and its free space, kept current across panels. */
+function useWhisperStorage(): { have: WhisperModelId[] | null; space: number | null } {
+  const [state, setState] = useState<{ have: WhisperModelId[] | null; space: number | null }>({ have: null, space: null });
+  useEffect(() => {
+    let live = true;
+    const load = () =>
+      void Promise.all([downloadedModels(), storageLeftMb()]).then(([have, space]) => {
+        if (live) setState({ have, space });
+      });
+    load();
+    window.addEventListener(WHISPER_CHANGED, load);
+    return () => {
+      live = false;
+      window.removeEventListener(WHISPER_CHANGED, load);
+    };
+  }, []);
+  return state;
+}
+
+/** "Remove Whisper X?" with what it frees, then the removal. Returns the remover and its dialog. */
+function useRemoveModel() {
+  const [confirm, confirmDialog] = useConfirm();
+  async function remove(id: WhisperModelId) {
+    const m = whisperModel(id);
+    const ok = await confirm({
+      title: `Remove Whisper ${m.label}?`,
+      body: `This deletes its ${modelMb(m)} MB of files from this browser. You can download it again any time; answers out loud will need a model or built-in speech until then.`,
+      confirmLabel: "Remove",
+      tone: "danger",
+    });
+    if (!ok) return;
+    await deleteModel(id);
+    announce();
+  }
+  return [remove, confirmDialog] as const;
+}
+
 /**
  * How answers spoken out loud become text: the browser's built-in speech (the default, nothing
  * to download) or Whisper on this device (an optional download). Every file a download fetches,
@@ -28,6 +69,7 @@ import { cn } from "@/lib/utils";
  */
 export function SpeechSettings({ intro = true }: { intro?: boolean }) {
   const [engine, setEngine] = useSpeechEngine();
+  const { have } = useWhisperStorage();
   return (
     <div className="flex flex-col gap-3">
       {intro && (
@@ -54,7 +96,11 @@ export function SpeechSettings({ intro = true }: { intro?: boolean }) {
           body="Works in every modern browser and in the desktop app. Your voice never leaves this computer. Needs a one-time download, and text appears when you stop rather than while you talk."
         />
       </div>
-      {engine === "whisper" && <WhisperManager onDownloaded={() => setEngine("whisper")} />}
+      {engine === "whisper" ? (
+        <WhisperManager onDownloaded={() => setEngine("whisper")} />
+      ) : (
+        have && have.length > 0 && <DownloadedModels have={have} />
+      )}
     </div>
   );
 }
@@ -92,62 +138,60 @@ function EngineChoice({
   );
 }
 
+/** Models still in this browser while built-in speech is selected: what they take up, and a way to remove them. */
+function DownloadedModels({ have }: { have: WhisperModelId[] }) {
+  const [remove, confirmDialog] = useRemoveModel();
+  return (
+    <div className="flex flex-col gap-2 rounded-lg border border-border bg-surface-2 p-3">
+      {confirmDialog}
+      <p className="text-xs text-muted">
+        Still on this device, but not in use while built-in speech is selected. Remove {have.length === 1 ? "it" : "them"} to free the space, or switch to
+        Whisper above to use {have.length === 1 ? "it" : "them"}.
+      </p>
+      <ul className="flex flex-col gap-1.5">
+        {have.map((id) => {
+          const m = whisperModel(id);
+          return (
+            <li key={id} className="flex items-center justify-between gap-3 rounded-md border border-border bg-surface px-2.5 py-2 text-[13px]">
+              <span className="flex items-center gap-1.5">
+                <HardDrive className="size-3.5 text-subtle" /> Whisper {m.label}
+                <span className="text-xs text-muted tabular-nums">about {modelMb(m)} MB</span>
+              </span>
+              <Button variant="ghost" size="sm" onClick={() => void remove(id)} className="hover:text-danger">
+                <Trash2 /> Remove
+              </Button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 type Progress = { loaded: number; total: number };
 
 /** Choose, download and remove Whisper models, with exactly what each download contains. */
 export function WhisperManager({ onDownloaded }: { onDownloaded?: () => void }) {
   const [model, setModel] = useWhisperModel();
-  const [have, setHave] = useState<WhisperModelId[] | null>(null);
-  const [space, setSpace] = useState<number | null>(null);
+  const { have, space } = useWhisperStorage();
   const [progress, setProgress] = useState<Progress | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [confirm, confirmDialog] = useConfirm();
+  const [remove, confirmDialog] = useRemoveModel();
   const chosen = whisperModel(model);
   const downloaded = have?.includes(chosen.id) ?? false;
-
-  const refresh = useCallback(async () => {
-    const [models, left] = await Promise.all([downloadedModels(), storageLeftMb()]);
-    setHave(models);
-    setSpace(left);
-  }, []);
-
-  useEffect(() => {
-    let live = true;
-    void Promise.all([downloadedModels(), storageLeftMb()]).then(([models, left]) => {
-      if (!live) return;
-      setHave(models);
-      setSpace(left);
-    });
-    return () => {
-      live = false;
-    };
-  }, []);
 
   async function download() {
     setError(null);
     setProgress({ loaded: 0, total: 0 });
     try {
       await downloadWhisper(chosen.id, setProgress);
-      await refresh();
+      announce();
       onDownloaded?.();
     } catch (e) {
       setError(e instanceof Error ? e.message : "The download failed. Try again.");
     } finally {
       setProgress(null);
     }
-  }
-
-  async function remove(id: WhisperModelId) {
-    const m = whisperModel(id);
-    const ok = await confirm({
-      title: `Remove Whisper ${m.label}?`,
-      body: `This deletes its ${modelMb(m)} MB of files from this browser. You can download it again any time; answers out loud will need a model or built-in speech until then.`,
-      confirmLabel: "Remove",
-      tone: "danger",
-    });
-    if (!ok) return;
-    await deleteModel(id);
-    await refresh();
   }
 
   const needMb = modelMb(chosen) + WHISPER_RUNTIME.mb;

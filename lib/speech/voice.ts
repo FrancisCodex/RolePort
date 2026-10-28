@@ -90,6 +90,8 @@ export function useMicLevel(stream: MediaStream | null): { level: number; peak: 
     const AudioCtx = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AudioCtx) return;
     const context = new AudioCtx();
+    // Browsers may start an audio context suspended until the page has been clicked; the meter needs it running.
+    void context.resume().catch(() => {});
     const analyser = context.createAnalyser();
     analyser.fftSize = 512;
     context.createMediaStreamSource(stream).connect(analyser);

@@ -21,8 +21,9 @@ import {
   useDictationSupported,
   useMicLevel,
   useMicSetting,
+  useReadAloudSetting,
   useVoiceSetting,
-} from "./voice";
+} from "@/lib/speech/voice";
 
 /**
  * Voice settings for mock interviews: pick the microphone and watch it pick up sound, check that
@@ -39,7 +40,30 @@ export function VoiceSettings({ open, onClose }: { open: boolean; onClose: () =>
 }
 
 function VoiceSettingsBody({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="flex flex-col gap-5 p-5">
+      <div>
+        <h2 id="voice-settings-title" className="text-[15px] font-semibold tracking-tight">
+          Voice settings
+        </h2>
+        <p className="mt-1 text-[13px] text-muted">Check your microphone and speech-to-text before you answer out loud. The same settings are in Settings.</p>
+      </div>
+      <VoicePanel autoOpenMic />
+      <div className="flex justify-end border-t border-border pt-4">
+        <Button onClick={onClose}>Done</Button>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Every voice setting, in one place: the microphone and its level, how speech becomes text (with
+ * a test), and the interviewer's voice. In an interview's dialog the microphone opens at once;
+ * on the Settings page it waits for "Check microphone", so visiting Settings never asks for it.
+ */
+export function VoicePanel({ autoOpenMic = false, showBrowserNote = true }: { autoOpenMic?: boolean; showBrowserNote?: boolean }) {
   const [mic, setMic] = useMicSetting();
+  const [checking, setChecking] = useState(autoOpenMic);
   const [mics, setMics] = useState<{ id: string; label: string }[]>([]);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [micError, setMicError] = useState<string | null>(null);
@@ -47,6 +71,7 @@ function VoiceSettingsBody({ onClose }: { onClose: () => void }) {
 
   // Open the chosen microphone for the meter (this is where the browser asks for permission).
   useEffect(() => {
+    if (!checking) return;
     let live = true;
     let opened: MediaStream | null = null;
     openMic(mic)
@@ -63,40 +88,56 @@ function VoiceSettingsBody({ onClose }: { onClose: () => void }) {
       stopStream(opened);
       setStream(null);
     };
-  }, [mic]);
+  }, [mic, checking]);
 
   return (
-    <div className="flex flex-col gap-5 p-5">
-      <div>
-        <h2 id="voice-settings-title" className="text-[15px] font-semibold tracking-tight">
-          Voice settings
-        </h2>
-        <p className="mt-1 text-[13px] text-muted">Check your microphone and speech-to-text before you answer out loud.</p>
-      </div>
-
+    <div className="flex flex-col gap-5">
       <section className="flex flex-col gap-2">
         <h3 className="text-xs font-medium tracking-wide text-subtle uppercase">1 · Microphone</h3>
-        {mics.length > 0 && (
-          <Select
-            aria-label="Microphone"
-            value={mic || ""}
-            onValueChange={setMic}
-            options={[{ value: "", label: "System default" }, ...mics.map((m) => ({ value: m.id, label: m.label }))]}
-          />
-        )}
-        {micError ? (
-          <p className="flex gap-1.5 rounded-md border border-danger/20 bg-danger-soft px-3 py-2 text-xs text-danger">
-            <CircleX className="mt-0.5 size-3.5 shrink-0" /> {micError}
-          </p>
+        {!checking ? (
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="secondary" size="sm" onClick={() => setChecking(true)}>
+              <Mic /> Check microphone
+            </Button>
+            <span className="text-xs text-muted">Your browser asks for permission the first time. The microphone turns off again when you stop.</span>
+          </div>
         ) : (
           <>
-            <div className="h-2 overflow-hidden rounded-full bg-surface-3" role="meter" aria-label="Microphone level" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(level * 100)}>
-              <div className={cn("h-full rounded-full transition-[width] duration-75", level > 0.08 ? "bg-success" : "bg-brand/50")} style={{ width: `${level * 100}%` }} />
-            </div>
-            <p className={cn("flex items-center gap-1.5 text-xs", peak > 0.08 ? "text-success" : "text-muted")}>
-              {peak > 0.08 ? <CircleCheck className="size-3.5" /> : <Mic className="size-3.5" />}
-              {!stream ? "Opening the microphone…" : peak > 0.08 ? "Your microphone is picking up sound." : "Say something: the bar should move. If it doesn't, pick another microphone."}
-            </p>
+            {mics.length > 0 && (
+              <Select
+                aria-label="Microphone"
+                value={mic || ""}
+                onValueChange={setMic}
+                options={[{ value: "", label: "System default" }, ...mics.map((m) => ({ value: m.id, label: m.label }))]}
+              />
+            )}
+            {micError ? (
+              <p className="flex gap-1.5 rounded-md border border-danger/20 bg-danger-soft px-3 py-2 text-xs text-danger">
+                <CircleX className="mt-0.5 size-3.5 shrink-0" /> {micError}
+              </p>
+            ) : (
+              <>
+                <div
+                  className="h-2 overflow-hidden rounded-full bg-surface-3"
+                  role="meter"
+                  aria-label="Microphone level"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(level * 100)}
+                >
+                  <div className={cn("h-full rounded-full transition-[width] duration-75", level > 0.08 ? "bg-success" : "bg-brand/50")} style={{ width: `${level * 100}%` }} />
+                </div>
+                <p className={cn("flex items-center gap-1.5 text-xs", peak > 0.08 ? "text-success" : "text-muted")}>
+                  {peak > 0.08 ? <CircleCheck className="size-3.5" /> : <Mic className="size-3.5" />}
+                  {!stream ? "Opening the microphone…" : peak > 0.08 ? "Your microphone is picking up sound." : "Say something: the bar should move. If it doesn't, pick another microphone."}
+                </p>
+              </>
+            )}
+            {!autoOpenMic && (
+              <Button variant="ghost" size="sm" className="w-fit" onClick={() => setChecking(false)}>
+                <MicOff /> Stop checking
+              </Button>
+            )}
           </>
         )}
       </section>
@@ -105,11 +146,7 @@ function VoiceSettingsBody({ onClose }: { onClose: () => void }) {
 
       <VoicePicker />
 
-      <SwitchBrowserNote />
-
-      <div className="flex justify-end border-t border-border pt-4">
-        <Button onClick={onClose}>Done</Button>
-      </div>
+      {showBrowserNote && <SwitchBrowserNote />}
     </div>
   );
 }
@@ -217,6 +254,7 @@ function SwitchBrowserNote() {
 /** The interviewer's voice for reading questions aloud, with a sample. */
 function VoicePicker() {
   const [voice, setVoice] = useVoiceSetting();
+  const [readAloud, setReadAloud] = useReadAloudSetting();
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
 
   // Chrome loads its voices after the page, and says so with voiceschanged.
@@ -232,7 +270,13 @@ function VoicePicker() {
   return (
     <section className="flex flex-col gap-2">
       <h3 className="text-xs font-medium tracking-wide text-subtle uppercase">3 · Interviewer voice</h3>
-      <p className="text-xs text-muted">Used when &ldquo;Read aloud&rdquo; is on. Voices come from your device, so nothing is sent anywhere.</p>
+      <label className="flex cursor-pointer items-start gap-2.5">
+        <input type="checkbox" checked={readAloud} onChange={(e) => setReadAloud(e.target.checked)} className="mt-0.5 size-4 accent-[var(--brand)]" />
+        <span className="flex flex-col gap-0.5">
+          <span className="text-[13px] font-medium">Read questions aloud</span>
+          <span className="text-xs text-muted">The interviewer speaks each question. Also switchable from the interview itself. Voices come from your device, so nothing is sent anywhere.</span>
+        </span>
+      </label>
       <div className="flex gap-2">
         <Select
           aria-label="Interviewer voice"

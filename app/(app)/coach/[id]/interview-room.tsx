@@ -16,8 +16,8 @@ import { cn } from "@/lib/utils";
 import { Briefing } from "./briefing";
 import { InterviewReport } from "./report";
 import { useSpeechEngine, useWhisperModel } from "@/lib/speech/settings";
-import { agreeToVoice, canSpeak, speak, useDictation, useDictationSupported, useMicLevel, useMicSetting, useReadAloudSetting, voiceAgreed } from "./voice";
-import { VoiceSettings } from "./voice-settings";
+import { agreeToVoice, canSpeak, speak, useDictation, useDictationSupported, useMicLevel, useMicSetting, useReadAloudSetting, voiceAgreed } from "@/lib/speech/voice";
+import { VoiceSettings } from "@/components/speech/voice-settings";
 
 type Busy = "answer" | "skip" | "end" | "grade" | "brief" | null;
 
