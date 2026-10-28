@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 
-/** A monochrome "H" tile: inverts with the theme, so it reads as ink on paper in both modes. */
+/** A monochrome "R" tile: inverts with the theme, so it reads as ink on paper in both modes. */
 export function LogoMark({ className }: { className?: string }) {
   return (
     <span
@@ -12,7 +12,7 @@ export function LogoMark({ className }: { className?: string }) {
       aria-hidden
     >
       <svg viewBox="0 0 24 24" className="size-[62%]" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M7 5v14M17 5v14M7 12h10" />
+        <path d="M7 19V5h5.5a4 4 0 0 1 0 8H7m5 0 5 6" />
       </svg>
     </span>
   );
@@ -22,7 +22,7 @@ export function Logo({ href = "/", className }: { href?: string; className?: str
   return (
     <Link href={href} className={cn("inline-flex items-center gap-2 text-[15px] font-semibold tracking-tight", className)}>
       <LogoMark />
-      HireMe
+      RolePort
     </Link>
   );
 }

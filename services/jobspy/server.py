@@ -1,7 +1,7 @@
 """
-A tiny HTTP wrapper around JobSpy (https://github.com/speedyapply/JobSpy, MIT) for HireMe.
+A tiny HTTP wrapper around JobSpy (https://github.com/speedyapply/JobSpy, MIT) for RolePort.
 
-HireMe calls it once per job board so each board reports its own result or error.
+RolePort calls it once per job board so each board reports its own result or error.
 Standard library only, apart from JobSpy itself. Meant for the user's own machine:
 don't expose it to the internet.
 
@@ -9,10 +9,10 @@ don't expose it to the internet.
     GET /search?site=linkedin&term=nurse&location=Manila, Philippines&country_indeed=philippines
                &hours_old=72&is_remote=false&results=20
 
-Self-hosted HireMe calls it from its server. HireMe Lite calls it from the browser, so the
+Self-hosted RolePort calls it from its server. RolePort Lite calls it from the browser, so the
 site's origin must be listed in JOBSPY_ALLOWED_ORIGINS (comma-separated, default none):
 
-    JOBSPY_ALLOWED_ORIGINS=https://hireme.example python server.py
+    JOBSPY_ALLOWED_ORIGINS=https://roleport.example python server.py
 """
 
 from __future__ import annotations
@@ -39,7 +39,7 @@ for _country in (Country.PHILIPPINES,):
 
 log = logging.getLogger("jobspy-service")
 
-# Web pages allowed to call the service from a browser (HireMe Lite). Empty: browsers can't.
+# Web pages allowed to call the service from a browser (RolePort Lite). Empty: browsers can't.
 ALLOWED_ORIGINS = {o.strip().rstrip("/") for o in os.environ.get("JOBSPY_ALLOWED_ORIGINS", "").split(",") if o.strip()}
 
 

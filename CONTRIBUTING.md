@@ -1,6 +1,6 @@
-# Contributing to HireMe
+# Contributing to RolePort
 
-Thanks for helping! HireMe is a free, self-hosted job search app. Users bring their own AI provider and API keys, and their data stays on their own machine.
+Thanks for helping! RolePort is a free, self-hosted job search app. Users bring their own AI provider and API keys, and their data stays on their own machine.
 
 ## Getting set up
 

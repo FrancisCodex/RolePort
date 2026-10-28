@@ -23,7 +23,7 @@ export function LetterDocument({ letter }: { letter: LetterContent }) {
   const s = pdfSafe;
   const contact = [letter.contact.email, letter.contact.phone, letter.contact.location].filter(Boolean);
   return (
-    <Document title={s(`${letter.name} - Cover letter`)} author={s(letter.name)} creator="HireMe" producer="HireMe">
+    <Document title={s(`${letter.name} - Cover letter`)} author={s(letter.name)} creator="RolePort" producer="RolePort">
       <Page size={letter.pageSize} style={styles.page}>
         <Text style={styles.name}>{s(letter.name)}</Text>
         {contact.length > 0 && <Text style={styles.contact}>{s(contact.join("  |  "))}</Text>}

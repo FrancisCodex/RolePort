@@ -137,7 +137,7 @@ export function AiSettingsForm({ initial, aiInBrowser = false }: { initial: AiSe
             <Input id="baseUrl" value={baseUrl} onChange={(e) => setBaseUrl(e.target.value)} placeholder="http://localhost:11434/v1" />
             {preset === "ollama" && !aiInBrowser && (
               <p className="text-xs text-subtle">
-                Running HireMe in Docker? Use http://host.docker.internal:11434/v1.
+                Running RolePort in Docker? Use http://host.docker.internal:11434/v1.
               </p>
             )}
           </div>

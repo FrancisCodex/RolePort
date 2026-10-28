@@ -28,7 +28,7 @@ const INTRO_QUERY = "developer";
 const ease = [0.2, 0, 0, 1] as const;
 
 /**
- * The hero's live product demo: a miniature HireMe with made-up jobs. Visitors can search,
+ * The hero's live product demo: a miniature RolePort with made-up jobs. Visitors can search,
  * filter by setup, open a job's fit breakdown and save it to the pipeline.
  */
 export function ProductDemo() {

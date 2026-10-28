@@ -26,13 +26,13 @@ import { GitHubMark, REPO_URL } from "./setup-guide";
 type Command = { id: string; group: string; label: string; icon: LucideIcon | typeof GitHubMark; hint?: string; run: (go: (href: string) => void) => void };
 
 const COMMANDS: Command[] = [
-  { id: "open", group: "Jump into HireMe", label: "Open HireMe", icon: ArrowRight, hint: "Dashboard", run: (go) => go("/home") },
-  { id: "search", group: "Jump into HireMe", label: "Search jobs", icon: Search, hint: "At home or abroad", run: (go) => go("/jobs") },
-  { id: "cv", group: "Jump into HireMe", label: "Import your CV", icon: FileUp, hint: "Profile", run: (go) => go("/profile") },
-  { id: "applied", group: "Jump into HireMe", label: "Prepare an application", icon: ClipboardCheck, hint: "CV and cover letter", run: (go) => go("/applied") },
-  { id: "pipeline", group: "Jump into HireMe", label: "Open your pipeline", icon: KanbanSquare, run: (go) => go("/pipeline") },
-  { id: "ai", group: "Jump into HireMe", label: "Set up your AI provider", icon: Sparkles, hint: "Settings", run: (go) => go("/settings") },
-  { id: "guide", group: "Jump into HireMe", label: "Run the setup guide", icon: Compass, run: (go) => go("/welcome") },
+  { id: "open", group: "Jump into RolePort", label: "Open RolePort", icon: ArrowRight, hint: "Dashboard", run: (go) => go("/home") },
+  { id: "search", group: "Jump into RolePort", label: "Search jobs", icon: Search, hint: "At home or abroad", run: (go) => go("/jobs") },
+  { id: "cv", group: "Jump into RolePort", label: "Import your CV", icon: FileUp, hint: "Profile", run: (go) => go("/profile") },
+  { id: "applied", group: "Jump into RolePort", label: "Prepare an application", icon: ClipboardCheck, hint: "CV and cover letter", run: (go) => go("/applied") },
+  { id: "pipeline", group: "Jump into RolePort", label: "Open your pipeline", icon: KanbanSquare, run: (go) => go("/pipeline") },
+  { id: "ai", group: "Jump into RolePort", label: "Set up your AI provider", icon: Sparkles, hint: "Settings", run: (go) => go("/settings") },
+  { id: "guide", group: "Jump into RolePort", label: "Run the setup guide", icon: Compass, run: (go) => go("/welcome") },
   { id: "how", group: "On this page", label: "How it works", icon: BookOpen, run: (go) => go("/#how") },
   { id: "features", group: "On this page", label: "Try the features", icon: Settings, run: (go) => go("/#features") },
   { id: "install", group: "On this page", label: "Install on your computer", icon: Download, run: (go) => go("/#get-started") },
@@ -51,7 +51,7 @@ function useModKey() {
 }
 
 /** Opens the command menu from anywhere on the page: dispatched by the hero's hint and the CTA. */
-export const OPEN_COMMAND_MENU = "hireme:open-command-menu";
+export const OPEN_COMMAND_MENU = "roleport:open-command-menu";
 
 /**
  * Raycast-style command menu for the landing page: ⌘K / Ctrl+K (or the nav button) opens it,

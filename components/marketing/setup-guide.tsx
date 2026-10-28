@@ -4,7 +4,7 @@ import { Check, Code, Container, Copy } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
-export const REPO_URL = "https://github.com/FrancisCodex/HireMe";
+export const REPO_URL = "https://github.com/FrancisCodex/RolePort";
 
 const options = [
   {
@@ -20,7 +20,7 @@ const options = [
         and Git
       </>
     ),
-    commands: ["git clone https://github.com/FrancisCodex/HireMe.git", "cd HireMe", "docker compose up -d --build"],
+    commands: ["git clone https://github.com/FrancisCodex/RolePort.git", "cd RolePort", "docker compose up -d --build"],
     note: "The first build takes a few minutes. JobSpy (LinkedIn, Indeed and more) is included.",
   },
   {
@@ -37,8 +37,8 @@ const options = [
       </>
     ),
     commands: [
-      "git clone https://github.com/FrancisCodex/HireMe.git",
-      "cd HireMe",
+      "git clone https://github.com/FrancisCodex/RolePort.git",
+      "cd RolePort",
       "npm install",
       "cp .env.example .env.local",
       "npm run dev",

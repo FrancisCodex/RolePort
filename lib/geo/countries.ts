@@ -1,5 +1,5 @@
 /**
- * Countries HireMe can search. `code` is ISO 3166-1 alpha-2. The per-source fields say how each
+ * Countries RolePort can search. `code` is ISO 3166-1 alpha-2. The per-source fields say how each
  * source names the country, or leave it out when the source doesn't cover it:
  * - `jobicy`: Jobicy's geo slug (remote jobs open to people living there).
  * - `jobspy`: JobSpy's country name for Indeed, plus the other boards that cover it.

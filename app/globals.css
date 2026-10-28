@@ -1,9 +1,9 @@
 @import "tailwindcss";
 
 /*
- * HireMe design tokens.
+ * RolePort design tokens.
  * A quiet, neutral workspace in the spirit of Linear, Notion and Raycast: hairline borders,
- * small radii, one green accent (HireMe's brand), Inter for UI text. Colors are defined once on
+ * small radii, one green accent (RolePort's brand), Inter for UI text. Colors are defined once on
  * :root and redefined for dark mode. Components use the Tailwind aliases from @theme
  * (bg-surface, text-muted, bg-brand, ...), never raw hex values.
  */

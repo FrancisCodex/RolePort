@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /*
- * A cover letter as HireMe keeps it: the sender's lines (from the profile), the recipient,
+ * A cover letter as RolePort keeps it: the sender's lines (from the profile), the recipient,
  * and the letter itself as plain paragraphs, so it can be pasted into an application form
  * or printed as a PDF.
  */

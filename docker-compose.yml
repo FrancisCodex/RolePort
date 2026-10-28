@@ -1,5 +1,5 @@
 services:
-  hireme:
+  roleport:
     build: .
     ports:
       - "3000:3000"
@@ -10,7 +10,7 @@ services:
       # ANTHROPIC_API_KEY: ""
       # RAPIDAPI_KEY: ""
     volumes:
-      - hireme-data:/app/.data
+      - roleport-data:/app/.data
     # Lets the app reach Ollama on your computer at http://host.docker.internal:11434/v1
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -26,4 +26,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  hireme-data:
+  roleport-data:

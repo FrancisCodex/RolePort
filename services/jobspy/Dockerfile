@@ -1,4 +1,4 @@
-# JobSpy sidecar for HireMe: an internal HTTP service, not exposed outside docker-compose.
+# JobSpy sidecar for RolePort: an internal HTTP service, not exposed outside docker-compose.
 FROM python:3.12-slim
 WORKDIR /app
 COPY requirements.txt ./

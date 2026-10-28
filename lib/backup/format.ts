@@ -5,12 +5,14 @@ import { migrations } from "@/lib/db/migrations.generated";
 import packageJson from "@/package.json";
 
 /*
- * A HireMe backup: one JSON file with a user's data, readable by either edition, so a lite
+ * A RolePort backup: one JSON file with a user's data, readable by either edition, so a lite
  * user can move to a self-hosted install and back. API keys are never included: the
  * server's are encrypted with its own secret and the browser's shouldn't sit in a file.
  */
 
-export const BACKUP_FORMAT = "hireme-backup";
+export const BACKUP_FORMAT = "roleport-backup";
+/** What backups were called before the app was renamed from HireMe; still accepted on import. */
+const LEGACY_BACKUP_FORMAT = "hireme-backup";
 export const BACKUP_VERSION = 1;
 /** The newest migration, so an older install can refuse a backup with tables it doesn't know. */
 export const SCHEMA_VERSION = migrations.at(-1)?.folderMillis ?? 0;
@@ -45,7 +47,7 @@ export const KEY_COLUMNS = ["aiApiKeyEnc", "rapidApiKeyEnc"] as const;
 
 const rows = z.array(z.record(z.string(), z.unknown()));
 const backupSchema = z.object({
-  format: z.literal(BACKUP_FORMAT),
+  format: z.enum([BACKUP_FORMAT, LEGACY_BACKUP_FORMAT]),
   version: z.literal(BACKUP_VERSION),
   appVersion: z.string(),
   schemaVersion: z.number(),
@@ -77,10 +79,10 @@ function revive(name: string, table: Table, input: Record<string, unknown>[]): R
 /** Parse and check a backup file's JSON. Throws an Error with a message for the user. */
 export function parseBackup(json: unknown): Backup {
   const parsed = backupSchema.safeParse(json);
-  if (!parsed.success) throw new Error("That file isn't a HireMe backup.");
+  if (!parsed.success) throw new Error("That file isn't a RolePort backup.");
   const backup = parsed.data;
   if (backup.schemaVersion > SCHEMA_VERSION) {
-    throw new Error("This backup was made by a newer version of HireMe. Update this install, then import it again.");
+    throw new Error("This backup was made by a newer version of RolePort. Update this install, then import it again.");
   }
   const tables = Object.fromEntries(
     (Object.keys(BACKUP_TABLES) as (keyof BackupTables)[]).map((k) => [k, revive(k, BACKUP_TABLES[k], backup.tables[k])]),
@@ -88,7 +90,7 @@ export function parseBackup(json: unknown): Backup {
   return { ...backup, format: BACKUP_FORMAT, version: BACKUP_VERSION, tables };
 }
 
-/** File name for a download, e.g. hireme-backup-2026-10-23.json. */
+/** File name for a download, e.g. roleport-backup-2026-10-23.json. */
 export function backupFileName(date = new Date()): string {
-  return `hireme-backup-${date.toISOString().slice(0, 10)}.json`;
+  return `roleport-backup-${date.toISOString().slice(0, 10)}.json`;
 }

@@ -54,7 +54,7 @@ export function CvDocument({ cv }: { cv: CvContent }) {
   const s = pdfSafe;
   const contact = [cv.contact.email, cv.contact.phone, cv.contact.location, ...cv.contact.links].filter(Boolean);
   return (
-    <Document title={s(`${cv.name} - CV`)} author={s(cv.name)} subject={s(cv.headline)} creator="HireMe" producer="HireMe">
+    <Document title={s(`${cv.name} - CV`)} author={s(cv.name)} subject={s(cv.headline)} creator="RolePort" producer="RolePort">
       <Page size={cv.pageSize} style={styles.page}>
         <Text style={styles.name}>{s(cv.name)}</Text>
         {cv.headline ? <Text style={styles.headline}>{s(cv.headline)}</Text> : null}

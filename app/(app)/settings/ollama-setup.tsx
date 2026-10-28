@@ -74,7 +74,7 @@ export function OllamaSetup({ model }: { model: string }) {
       <div>
         <p className="font-medium">Let this site use Ollama</p>
         <p className="mt-1 text-muted">
-          HireMe Lite runs in your browser and talks to Ollama on this computer directly. Nothing goes through HireMe&apos;s servers.
+          RolePort Lite runs in your browser and talks to Ollama on this computer directly. Nothing goes through RolePort&apos;s servers.
         </p>
       </div>
 

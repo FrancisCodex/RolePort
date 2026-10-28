@@ -18,7 +18,7 @@ async function notify(tables: Table[]): Promise<void> {
 
 function getChannel(): BroadcastChannel | null {
   if (channel === undefined) {
-    channel = typeof BroadcastChannel === "undefined" ? null : new BroadcastChannel("hireme:invalidate");
+    channel = typeof BroadcastChannel === "undefined" ? null : new BroadcastChannel("roleport:invalidate");
     channel?.addEventListener("message", (e: MessageEvent<Table[]>) => void notify(e.data));
   }
   return channel;

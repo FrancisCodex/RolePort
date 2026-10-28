@@ -22,7 +22,7 @@ function describe(s: ImportSummary): string {
   return parts.length ? `Imported ${parts.join(", ")}.` : "Everything in that backup is already here.";
 }
 
-/** Download a backup, or restore one. The same file works in HireMe Lite and a self-hosted install. */
+/** Download a backup, or restore one. The same file works in RolePort Lite and a self-hosted install. */
 export function BackupControls({ browserStorage = false }: { browserStorage?: boolean }) {
   const [message, setMessage] = useState<Message>(null);
   const [file, setFile] = useState<File | null>(null);
@@ -66,7 +66,7 @@ export function BackupControls({ browserStorage = false }: { browserStorage?: bo
     <div className="flex flex-col gap-3 border-t border-border pt-4">
       <div>
         <p className="font-medium text-fg">Backups</p>
-        <p>One file with your profile, CV text, pipeline and evaluations. It works in HireMe Lite and in a self-hosted install. API keys aren&apos;t included.</p>
+        <p>One file with your profile, CV text, pipeline and evaluations. It works in RolePort Lite and in a self-hosted install. API keys aren&apos;t included.</p>
       </div>
 
       {browserStorage && <BrowserStorage />}
@@ -169,7 +169,7 @@ function BrowserStorage() {
       {status.persisted ? (
         <p className="flex items-center gap-2">
           <ShieldCheck className="size-3.5 shrink-0 text-success" />
-          Protected: this browser won&apos;t clear HireMe&apos;s data to free up space.
+          Protected: this browser won&apos;t clear RolePort&apos;s data to free up space.
         </p>
       ) : (
         <div className="flex flex-wrap items-center gap-2">
@@ -182,7 +182,7 @@ function BrowserStorage() {
             Protect my data
           </Button>
           {status.persisted === false && (
-            <span className="text-xs text-subtle">Browsers decide this themselves. Installing HireMe as an app usually helps.</span>
+            <span className="text-xs text-subtle">Browsers decide this themselves. Installing RolePort as an app usually helps.</span>
           )}
         </div>
       )}

@@ -12,6 +12,6 @@ if (args[0] === "dev" || args[0] === "build") {
 const next = createRequire(import.meta.url).resolve("next/dist/bin/next");
 const child = spawn(process.execPath, [next, ...args], {
   stdio: "inherit",
-  env: { ...process.env, NEXT_PUBLIC_HIREME_MODE: "lite" },
+  env: { ...process.env, NEXT_PUBLIC_ROLEPORT_MODE: "lite" },
 });
 child.on("exit", (code, signal) => (signal ? process.kill(process.pid, signal) : process.exit(code ?? 0)));

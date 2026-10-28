@@ -3,12 +3,12 @@
  * and by pages that want to know whether it exists yet. No PGlite here: cheap to import.
  */
 
-export const DB_NAME = "hireme";
+export const DB_NAME = "roleport";
 /** OPFS marker the worker writes once a database is fully set up. */
-export const READY_MARKER = "hireme.ready";
+export const READY_MARKER = "roleport.ready";
 /** OPFS marker that makes the next first visit skip the starter database. */
-export const NO_SEED_MARKER = "hireme.noseed";
-/** How IndexedDB names PGlite's `idb://hireme` database. */
+export const NO_SEED_MARKER = "roleport.noseed";
+/** How IndexedDB names PGlite's `idb://roleport` database. */
 export const IDB_NAME = `/pglite/${DB_NAME}`;
 
 /**

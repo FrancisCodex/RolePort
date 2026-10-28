@@ -23,18 +23,18 @@ export default function PrivacyPage() {
       <p className="font-mono text-xs text-subtle">Privacy</p>
       <h1 className="mt-3 text-3xl font-semibold tracking-[-0.025em] text-balance sm:text-4xl">Your data stays with you</h1>
       <p className="mt-4 text-base text-muted text-pretty">
-        HireMe has no accounts, no analytics and no ads. This page says exactly what goes where. Last updated {UPDATED}.
+        RolePort has no accounts, no analytics and no ads. This page says exactly what goes where. Last updated {UPDATED}.
       </p>
 
-      <Section title={isLite ? "On this site (HireMe Lite)" : "In HireMe Lite"}>
+      <Section title={isLite ? "On this site (RolePort Lite)" : "In RolePort Lite"}>
         <p>
           <strong>Your data is stored in your browser, on your device.</strong> Your profile, CV text, saved jobs, pipeline,
-          evaluations, settings and API keys are kept in this browser&apos;s own storage. HireMe&apos;s server never receives them.
+          evaluations, settings and API keys are kept in this browser&apos;s own storage. RolePort&apos;s server never receives them.
           Clearing this site&apos;s data in your browser deletes them, so download a backup from Settings now and then.
         </p>
         <p>
-          <strong>Job searches go through HireMe&apos;s server.</strong> Most job sites don&apos;t accept requests from other websites, so
-          your search terms and filters (job title, country, location, work setup, date range) go to HireMe&apos;s server. It asks
+          <strong>Job searches go through RolePort&apos;s server.</strong> Most job sites don&apos;t accept requests from other websites, so
+          your search terms and filters (job title, country, location, work setup, date range) go to RolePort&apos;s server. It asks
           freehire, Jobicy and, if you added a key, JSearch, and sends the jobs back. It stores nothing. Your IP address is used, in
           memory only, to limit how many searches can be made per minute, and the hosting provider may keep its standard access
           logs.
@@ -46,7 +46,7 @@ export default function PrivacyPage() {
         <p>
           <strong>AI requests go straight from your browser to the provider you choose.</strong> When you import a CV or evaluate a
           job, your profile, CV text and the job description go to that provider with your own key, or to Ollama on your own
-          computer. HireMe&apos;s server is not involved. The provider&apos;s own privacy terms apply.
+          computer. RolePort&apos;s server is not involved. The provider&apos;s own privacy terms apply.
         </p>
         <p>
           <strong>JobSpy runs on your computer.</strong> If you connect it, your browser asks it for LinkedIn, Indeed and other
@@ -56,22 +56,22 @@ export default function PrivacyPage() {
 
       <Section title="In a self-hosted install">
         <p>
-          Everything is stored in a database on the computer or server you run HireMe on. Job searches and AI requests go from that
+          Everything is stored in a database on the computer or server you run RolePort on. Job searches and AI requests go from that
           server to the job sources and the AI provider you choose. API keys are encrypted before they&apos;re saved. Nothing is sent to
-          the HireMe project.
+          the RolePort project.
         </p>
       </Section>
 
       <Section title="Moving between them">
         <p>
-          A backup from <strong>Settings → Your data</strong> is one file you keep. It works in both HireMe Lite and a self-hosted
+          A backup from <strong>Settings → Your data</strong> is one file you keep. It works in both RolePort Lite and a self-hosted
           install, and never includes API keys.
         </p>
       </Section>
 
       <Section title="Questions">
         <p>
-          HireMe is open source, so you can check all of this in the code. Ask or report anything on{" "}
+          RolePort is open source, so you can check all of this in the code. Ask or report anything on{" "}
           <a href={`${REPO_URL}/issues`} className="font-medium text-brand-ink hover:underline">
             GitHub
           </a>
@@ -79,7 +79,7 @@ export default function PrivacyPage() {
         </p>
         <p>
           <Link href="/" className="font-medium text-brand-ink hover:underline">
-            Back to HireMe
+            Back to RolePort
           </Link>
         </p>
       </Section>

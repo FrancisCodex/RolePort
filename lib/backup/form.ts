@@ -13,17 +13,17 @@ export async function readBackupForm(formData: FormData, maxBytes: number): Prom
   try {
     json = JSON.parse(await file.text());
   } catch {
-    return { ok: false, error: "That file isn't a HireMe backup." };
+    return { ok: false, error: "That file isn't a RolePort backup." };
   }
   try {
     return { ok: true, data: { backup: parseBackup(json), mode } };
   } catch (error) {
-    return { ok: false, error: error instanceof Error ? error.message : "That file isn't a HireMe backup." };
+    return { ok: false, error: error instanceof Error ? error.message : "That file isn't a RolePort backup." };
   }
 }
 
 /** A failed restore, for the user. Nothing was changed: the import runs in one transaction. */
 export function importErrorMessage(error: unknown): string {
   console.error("[backup] import failed", error);
-  return "The backup couldn't be imported, so nothing was changed. Is it from a HireMe install?";
+  return "The backup couldn't be imported, so nothing was changed. Is it from a RolePort install?";
 }

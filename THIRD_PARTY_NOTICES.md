@@ -1,6 +1,6 @@
 # Third-party notices
 
-HireMe includes code and ideas adapted from, or depends on, the projects below.
+RolePort includes code and ideas adapted from, or depends on, the projects below.
 
 ## ai-job-search
 
