@@ -1,6 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
 import { clip, jobBlock } from "@/lib/ai/evaluate-job";
-import { decideTurn, gradeAnswer, planInterview, summarizeInterview } from "@/lib/ai/interview";
+import { coachAnswer, decideTurn, gradeAnswer, planInterview, prepareBriefing, summarizeInterview } from "@/lib/ai/interview";
 import { describeAiConfig, type AiConfig } from "@/lib/ai/settings";
 import { candidateBlock } from "@/lib/ai/tailor-cv";
 import { readCv } from "@/lib/cv/queries";
@@ -63,6 +63,8 @@ function toView(row: Row): InterviewView {
     plan: row.plan,
     turns: row.turns,
     report: row.report ?? emptyReport(row.plan.length),
+    briefing: row.briefing,
+    hasJob: row.context.job !== null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -82,7 +84,7 @@ async function mustRead(db: AnyDb, userId: string, id: string): Promise<Row> {
   return row;
 }
 
-async function save(db: AnyDb, row: Row, changes: Partial<Pick<Row, "turns" | "status" | "report">>): Promise<InterviewView> {
+async function save(db: AnyDb, row: Row, changes: Partial<Pick<Row, "turns" | "status" | "report" | "briefing">>): Promise<InterviewView> {
   const [updated] = await db.update(schema.interviewSession).set(changes).where(eq(schema.interviewSession.id, row.id)).returning();
   return toView(updated);
 }
@@ -212,6 +214,24 @@ export async function startInterview(db: AnyDb, user: User, setup: InterviewSetu
   return row.id;
 }
 
+/** Write (or rewrite) the pre-interview briefing from the current profile and the session's posting. */
+export async function prepareInterviewBriefing(db: AnyDb, user: User, id: string, config: AiConfig): Promise<InterviewView> {
+  const row = await mustRead(db, user.id, id);
+  const { profile } = await readProfile(db, user);
+  const briefing = await prepareBriefing(
+    {
+      candidate: candidateBlock(profile, null),
+      // The numbers candidateBlock gives each role, so a story always points at a real one.
+      roles: profile.experience.map((e) => `${e.role} at ${e.company}`),
+      job: row.context.job,
+      role: row.targetRole,
+      company: row.company,
+    },
+    config,
+  );
+  return save(db, row, { briefing: { ...briefing, model: describeAiConfig(config), at: now() } });
+}
+
 /* During the interview ------------------------------------------------------ */
 
 /** The interviewer's next turn after question `q` is done: the next question, the closing question, or the end. */
@@ -278,9 +298,10 @@ export async function endInterview(db: AnyDb, userId: string, id: string): Promi
 const wordCount = (text: string) => (text.trim().match(/\S+/g) ?? []).length;
 
 /**
- * One step of the report: grade the next ungraded question (one model call), or, once all are
- * graded, write the summary and mark the session done. The page calls this until it's done,
- * so a local model only ever has one request at a time and progress survives a reload.
+ * One step of the report, one model call each: grade the next ungraded question, then check
+ * each graded answer against the documents and write a stronger version, then write the
+ * summary and mark the session done. The page calls this until it's done, so a local model
+ * only ever has one request at a time and progress survives a reload.
  */
 export async function gradeInterviewStep(db: AnyDb, userId: string, id: string, config: AiConfig): Promise<InterviewView> {
   const row = await mustRead(db, userId, id);
@@ -298,7 +319,8 @@ export async function gradeInterviewStep(db: AnyDb, userId: string, id: string, 
       continue;
     }
     if (answers.length === 0) {
-      results[i] = { status: "skipped" };
+      // Asked but never answered because the interview ended there: not a skip.
+      results[i] = exchange.some((t) => t.kind === "skip") ? { status: "skipped" } : { status: "not_reached" };
       continue;
     }
     const grade = await gradeAnswer({ role: view.targetRole, company: view.company, question: view.plan[i], exchange }, config);
@@ -311,11 +333,20 @@ export async function gradeInterviewStep(db: AnyDb, userId: string, id: string, 
     return save(db, row, { report: { ...view.report, results, model: describeAiConfig(config), at: now() } });
   }
 
+  for (let i = 0; i < view.plan.length; i++) {
+    const r = results[i];
+    if (r?.status !== "graded" || r.coached) continue;
+    const coaching = await coachAnswer({ question: view.plan[i], exchange: view.turns.filter((t) => t.q === i), context: row.context }, config);
+    results[i] = { ...r, coached: true, ...coaching };
+    return save(db, row, { report: { ...view.report, results, at: now() } });
+  }
+
   const candidateQuestions = view.turns
     .filter((t) => t.q === view.plan.length && t.kind === "answer")
     .map((t) => t.text)
     .join("\n");
-  const summary = results.some((r) => r?.status === "graded")
+  const graded = results.some((r) => r?.status === "graded");
+  const summary = graded
     ? await summarizeInterview({ role: view.targetRole, plan: view.plan, results, candidateQuestions }, config)
     : {
         headline: "You ended the interview before answering a question, so there's nothing to grade yet.",
@@ -323,7 +354,7 @@ export async function gradeInterviewStep(db: AnyDb, userId: string, id: string, 
         focusAreas: ["Run the interview again and answer at least one question."],
         questionsFeedback: "",
       };
-  return save(db, row, { report: { results, summary, model: describeAiConfig(config), at: now() }, status: "done" });
+  return save(db, row, { report: { results, summary, model: graded ? describeAiConfig(config) : null, at: now() }, status: "done" });
 }
 
 export async function deleteInterview(db: AnyDb, userId: string, id: string): Promise<boolean> {

@@ -11,7 +11,7 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
-import type { InterviewContext, InterviewReport, InterviewTurn, PlannedQuestion } from "@/lib/interview/types";
+import type { InterviewBriefing, InterviewContext, InterviewReport, InterviewTurn, PlannedQuestion } from "@/lib/interview/types";
 
 const id = () =>
   text("id")
@@ -353,6 +353,8 @@ export const interviewSession = pgTable(
     plan: jsonb("plan").$type<PlannedQuestion[]>().notNull(),
     turns: jsonb("turns").$type<InterviewTurn[]>().default([]).notNull(),
     report: jsonb("report").$type<InterviewReport>(),
+    /** The pre-interview briefing, made on request before the first answer. */
+    briefing: jsonb("briefing").$type<InterviewBriefing>(),
     ...timestamps,
   },
   (t) => [index("interview_session_user_idx").on(t.userId, t.createdAt)],

@@ -4,15 +4,20 @@ import {
   FOCUS_INFO,
   RUBRIC,
   type AnswerGrade,
+  type ConsistencyFlag,
+  type InterviewBriefing,
   type InterviewContext,
   type InterviewFocus,
   type InterviewSummary,
   type InterviewTurn,
   type PlannedQuestion,
   type QuestionResult,
+  type RefinedAnswer,
 } from "@/lib/interview/types";
+import { quoteInPosting } from "./evaluate-job";
 import type { AiConfig } from "./settings";
 import { generateStructured } from "./structured";
+import { numbersIn } from "./tailor-cv";
 
 /*
  * The Interview Coach's model calls, each small enough for a local model: plan the questions
@@ -224,6 +229,166 @@ export async function gradeAnswer(input: Parameters<typeof buildGradePrompt>[0],
     summary: tidy(raw.summary).slice(0, 400),
     strengths: tidyList(raw.strengths, 3),
     improvements: tidyList(raw.improvements, 3),
+  };
+}
+
+/* After grading: check against what was sent, and write a stronger answer ----- */
+
+const MAX_DOC_CHARS = 6000;
+
+export const coachSchema = z.object({
+  claims: z.array(
+    z.object({
+      kind: z.enum(["contradiction", "inflation", "unbacked"]),
+      said: z.string(),
+      source: z.string(),
+      sourceQuote: z.string(),
+      note: z.string(),
+    }),
+  ),
+  refinedAnswer: z.string(),
+  notes: z.string(),
+});
+
+export const COACH_SYSTEM_PROMPT = `You are an interview coach. You have the candidate's answers to one interview question and the documents they sent the employer. Do two things.
+
+1. CHECK THEIR CLAIMS against the documents. List only real problems, at most 3:
+- contradiction: what they said conflicts with a document (a different title, employer, date, tool, team size or result).
+- inflation: they claimed more than a document shows (a bigger number, a more senior role, sole ownership of team work).
+- unbacked: a specific, checkable claim (a number, a result, a tool, a title) that no document or profile mentions. An interviewer may ask them to back it up.
+For each: said = the candidate's exact words (copy them); source = the document's label as given (or "Profile" for the candidate profile), or "" for unbacked; sourceQuote = the document's exact words it conflicts with (copy them), or "" for unbacked; note = one sentence on what to fix or be ready for.
+General statements, opinions and things that simply aren't in the documents but aren't specific claims are NOT problems. If nothing is wrong, return an empty list.
+
+2. WRITE A STRONGER ANSWER the candidate could give, in their voice, first person, spoken style, 120-220 words.
+- Use only facts from their answers, the profile and the documents. Never invent employers, titles, tools, numbers or results.
+- Lead with what they did themselves, then the result. Follow the situation, action, result shape for stories.
+- Where a number or detail would help but isn't known, write a placeholder in square brackets for them to fill in, like [how many users], never a made-up value.
+- Leave out anything flagged as a contradiction or inflation.
+notes = one or two sentences on what changed and why.
+
+${FIXED_RULES}`;
+
+export function buildCoachPrompt(input: {
+  question: PlannedQuestion;
+  exchange: InterviewTurn[];
+  context: InterviewContext;
+}): string {
+  const docs = input.context.documents.map((d) => [`<document label="${d.label}">`, fence(d.text).slice(0, MAX_DOC_CHARS), "</document>"].join("\n"));
+  return [
+    "<candidate_profile>",
+    fence(input.context.candidate),
+    "</candidate_profile>",
+    "",
+    ...(docs.length ? ["What the candidate sent:", ...docs] : ["(The candidate sent no documents: check claims against the profile only.)"]),
+    "",
+    `Main question: ${input.question.question}`,
+    `A strong answer includes: ${input.question.strongSignals.join("; ") || "a clear, specific answer"}`,
+    "",
+    "<transcript>",
+    exchangeText(input.exchange),
+    "</transcript>",
+    "",
+    "Check the claims and write the stronger answer. Reply with the JSON object only.",
+  ].join("\n");
+}
+
+const PLACEHOLDER = /\[[^\]]{1,60}\]/g;
+
+/**
+ * Keep only flags whose quotes are real: `said` must be in the candidate's answers and, for a
+ * contradiction or inflation, `sourceQuote` in the named document. A conflict whose source
+ * can't be found becomes "not in what you sent", which is still worth knowing.
+ */
+export function reviewCoaching(
+  raw: z.infer<typeof coachSchema>,
+  input: { exchange: InterviewTurn[]; context: InterviewContext },
+): { flags: ConsistencyFlag[]; refined: RefinedAnswer | null } {
+  const answers = input.exchange.filter((t) => t.kind === "answer").map((t) => t.text).join("\n");
+  const docs = new Map([["profile", input.context.candidate], ...input.context.documents.map((d) => [d.label.toLowerCase(), d.text] as const)]);
+  const everything = [input.context.candidate, ...input.context.documents.map((d) => d.text)].join("\n");
+
+  const flags: ConsistencyFlag[] = [];
+  for (const c of raw.claims) {
+    const said = tidy(c.said);
+    if (!quoteInPosting(said, answers)) continue;
+    const docText = docs.get(tidy(c.source).toLowerCase());
+    const sourceQuote = tidy(c.sourceQuote);
+    const verified = c.kind !== "unbacked" && docText != null && quoteInPosting(sourceQuote, docText);
+    if (c.kind !== "unbacked" && !verified) {
+      // The model saw a conflict it can't point to: keep it only as an unbacked claim.
+      flags.push({ kind: "unbacked", said, source: null, sourceQuote: null, note: "Your documents don't mention this, so be ready to back it up." });
+    } else {
+      flags.push({ kind: c.kind, said, source: verified ? tidy(c.source) : null, sourceQuote: verified ? sourceQuote : null, note: tidy(c.note).slice(0, 300) });
+    }
+  }
+
+  const answer = raw.refinedAnswer.replace(/\*\*|__|^#+\s/gm, "").replace(/[ \t]+/g, " ").trim();
+  if (!answer) return { flags: flags.slice(0, 3), refined: null };
+  const known = new Set(numbersIn(`${everything}\n${answers}`));
+  // Placeholders aren't claims; numbers inside them don't count.
+  const unknown = [...new Set(numbersIn(answer.replace(PLACEHOLDER, " ")).filter((n) => !known.has(n)))];
+  const placeholders = answer.match(PLACEHOLDER)?.length ?? 0;
+  const warnings = [
+    unknown.length ? `It states ${unknown.join(", ")}, which you didn't say and isn't in your documents. Check it or take it out.` : null,
+    placeholders ? `Fill in the ${placeholders === 1 ? "placeholder" : `${placeholders} placeholders`} in [brackets] with your real figures before you use it.` : null,
+  ].filter((w): w is string => w !== null);
+  return { flags: flags.slice(0, 3), refined: { answer, notes: tidy(raw.notes).slice(0, 400), warnings } };
+}
+
+export async function coachAnswer(
+  input: Parameters<typeof buildCoachPrompt>[0],
+  config: AiConfig,
+): Promise<{ flags: ConsistencyFlag[]; refined: RefinedAnswer | null }> {
+  const raw = await generateStructured({ system: COACH_SYSTEM_PROMPT, prompt: buildCoachPrompt(input), schema: coachSchema, effort: "medium", config });
+  return reviewCoaching(raw, input);
+}
+
+/* Before the interview: the briefing ----------------------------------------- */
+
+export const briefingSchema = z.object({
+  roleSummary: z.string(),
+  mustHaves: z.array(z.string()),
+  themes: z.array(z.object({ theme: z.string(), why: z.string(), quote: z.string() })),
+  stories: z.array(z.object({ competency: z.string(), roleNumber: z.number().int(), angle: z.string() })),
+  gaps: z.array(z.object({ gap: z.string(), howToAddress: z.string() })),
+  questionsToAsk: z.array(z.string()),
+});
+
+export const BRIEFING_SYSTEM_PROMPT = `You are an interview coach preparing a candidate for an upcoming interview. Write a short, practical briefing. Talk to the candidate as "you". No markdown.
+
+- roleSummary: two or three sentences on what this role really needs, in plain words.
+- mustHaves: the 3-5 requirements the interviewer will care about most.
+- themes: 3-5 topics they'll likely ask about. why = one sentence. quote = the exact words from the job posting that point to it (copy them), or "" if there's no posting.
+- stories: for 3-5 competencies the role needs, the experience from the candidate's profile that best proves it. roleNumber = the role's number in brackets in the profile, or -1 if they have no fitting experience yet. angle = one sentence on which part of that experience to tell and what to emphasise.
+- gaps: 1-3 places where the candidate is weaker than the role asks, and how to address each honestly (what to say, what related experience to point to). Never suggest exaggerating.
+- questionsToAsk: 3-5 specific, thoughtful questions the candidate could ask the interviewer about the role, team or work.
+
+Use only facts from the profile and the posting. Don't guess questions word for word; give themes.
+
+${FIXED_RULES}`;
+
+export function buildBriefingPrompt(input: { candidate: string; job: string | null; role: string; company: string | null }): string {
+  return [...contextBlocks({ candidateName: "", candidate: input.candidate, job: input.job, documents: [] }, input.role, input.company), "", "Write the briefing. Reply with the JSON object only."].join("\n");
+}
+
+export async function prepareBriefing(
+  input: Parameters<typeof buildBriefingPrompt>[0] & { roles: string[] },
+  config: AiConfig,
+): Promise<Omit<InterviewBriefing, "model" | "at">> {
+  const raw = await generateStructured({ system: BRIEFING_SYSTEM_PROMPT, prompt: buildBriefingPrompt(input), schema: briefingSchema, effort: "medium", config });
+  return {
+    roleSummary: tidy(raw.roleSummary).slice(0, 600),
+    mustHaves: tidyList(raw.mustHaves, 5),
+    // Posting quotes must really be in the posting.
+    themes: raw.themes.slice(0, 5).map((t) => ({
+      theme: tidy(t.theme),
+      why: tidy(t.why),
+      quote: input.job && quoteInPosting(t.quote, input.job) ? tidy(t.quote) : null,
+    })),
+    // Stories point at a profile role by number, so the experience named is always a real one.
+    stories: raw.stories.slice(0, 5).map((s) => ({ competency: tidy(s.competency), from: input.roles[s.roleNumber] ?? null, angle: tidy(s.angle) })),
+    gaps: raw.gaps.slice(0, 3).map((g) => ({ gap: tidy(g.gap), howToAddress: tidy(g.howToAddress) })),
+    questionsToAsk: tidyList(raw.questionsToAsk, 5),
   };
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, ChevronDown, CornerDownLeft, Loader2, SkipForward, Square } from "lucide-react";
+import { ArrowLeft, BookOpen, ChevronDown, CornerDownLeft, Loader2, Play, RotateCcw, SkipForward, Square } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useEffectEvent, useState, type MouseEvent } from "react";
@@ -9,13 +9,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/fields";
-import { answerInterviewQuestion, endInterview, gradeInterview, skipInterviewTurn } from "@/lib/client/mutations";
+import { answerInterviewQuestion, endInterview, gradeInterview, prepareBriefing, skipInterviewTurn } from "@/lib/client/mutations";
 import { FOCUS_INFO, INTERVIEW_LENGTHS, interviewState, MAX_INTERVIEW_ANSWER, type InterviewPageData, type InterviewTurn, type InterviewView } from "@/lib/interview/types";
 import { wordCount } from "@/lib/letter/types";
 import { cn } from "@/lib/utils";
+import { Briefing } from "./briefing";
 import { InterviewReport } from "./report";
 
-type Busy = "answer" | "skip" | "end" | "grade" | null;
+type Busy = "answer" | "skip" | "end" | "grade" | "brief" | null;
 
 /**
  * A mock interview: one question at a time, the current question's follow-ups in view and the
@@ -29,6 +30,8 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
   const [needsSetup, setNeedsSetup] = useState(false);
   const [confirm, confirmDialog] = useConfirm();
   const router = useRouter();
+  // Before the first answer the page offers a briefing; once anything is answered it goes straight to the interview.
+  const [started, setStarted] = useState(() => data.interview.turns.some((t) => t.from === "candidate"));
 
   const state = interviewState(view);
   const total = view.plan.length;
@@ -95,6 +98,11 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
     if (ok) router.push("/coach");
   }
 
+  async function brief() {
+    if (view.briefing && !(await confirm({ title: "Write the briefing again?", body: "The new one replaces this briefing.", confirmLabel: "Write again" }))) return;
+    await act("brief", () => prepareBriefing(view.id));
+  }
+
   /** Grade question by question until the report is done; each step is one model call. */
   async function grade() {
     setBusy("grade");
@@ -158,11 +166,63 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
         <InterviewReport
           view={view}
           grading={busy === "grade"}
+          briefing={busy === "brief"}
           aiEnabled={data.aiEnabled}
           error={error}
           needsSetup={needsSetup}
           onRetry={() => void grade()}
+          onBrief={() => void brief()}
         />
+      </div>
+    );
+  }
+
+  const errorNote = error && (
+    <p className="mt-3 rounded-md border border-danger/20 bg-danger-soft px-3 py-2 text-xs text-danger">
+      {error}{" "}
+      {needsSetup && (
+        <Link href="/settings" className="font-medium underline">
+          Open Settings
+        </Link>
+      )}
+    </p>
+  );
+
+  if (!started) {
+    return (
+      <div className="mx-auto max-w-3xl">
+        {header}
+        <section className="flex flex-col gap-5 rounded-xl border border-border bg-surface p-4 shadow-[var(--shadow-soft)] sm:p-6">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-[15px] font-semibold tracking-tight">{view.briefing ? "Your briefing" : "Before you start"}</h2>
+              <p className="mt-1 text-[13px] text-muted">
+                {view.briefing
+                  ? "Read it through, then start when you're ready. It stays in your report's cheat sheet."
+                  : `A short briefing on what this ${view.hasJob ? "posting" : "role"} needs, which of your stories proves what, where you might be pressed and what to ask them. It doesn't give away the questions.`}
+              </p>
+            </div>
+            {view.briefing && (
+              <Button variant="ghost" size="sm" onClick={() => void brief()} disabled={busy !== null}>
+                {busy === "brief" ? <Loader2 className="animate-spin" /> : <RotateCcw />} Write again
+              </Button>
+            )}
+          </div>
+          {view.briefing && <Briefing briefing={view.briefing} />}
+          {busy === "brief" && <p className="text-xs text-muted">Local models can take a minute or two. Keep this page open.</p>}
+          <div className="flex flex-wrap gap-2 border-t border-border pt-4">
+            {!view.briefing && data.aiEnabled && (
+              <Button onClick={() => void brief()} disabled={busy !== null}>
+                {busy === "brief" ? <Loader2 className="animate-spin" /> : <BookOpen />}
+                {busy === "brief" ? "Writing your briefing…" : "Brief me first"}
+              </Button>
+            )}
+            <Button variant={view.briefing ? "primary" : "secondary"} onClick={() => setStarted(true)} disabled={busy !== null}>
+              <Play /> {view.briefing ? "Start the interview" : "Skip, start the interview"}
+            </Button>
+          </div>
+        </section>
+        {errorNote}
       </div>
     );
   }
@@ -234,16 +294,7 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
       </div>
       <p className="mt-2 px-1 text-xs text-subtle">Ctrl+Enter sends. No scores until the end, as in a real interview.</p>
 
-      {error && (
-        <p className="mt-3 rounded-md border border-danger/20 bg-danger-soft px-3 py-2 text-xs text-danger">
-          {error}{" "}
-          {needsSetup && (
-            <Link href="/settings" className="font-medium underline">
-              Open Settings
-            </Link>
-          )}
-        </p>
-      )}
+      {errorNote}
     </div>
   );
 }

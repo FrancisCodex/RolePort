@@ -131,5 +131,13 @@ export const migrations: MigrationMeta[] = [
     "bps": true,
     "folderMillis": 1793173863928,
     "hash": "b8d4177516faa875e42963bf74b63c1b806a51049c9f98ce1eca75f214cc112f"
+  },
+  {
+    "sql": [
+      "ALTER TABLE \"interview_session\" ADD COLUMN \"briefing\" jsonb;"
+    ],
+    "bps": true,
+    "folderMillis": 1793179516797,
+    "hash": "042cb3f4c3616ce043420ef9edfd7382cfd0459d8fb5ac2a6c8ae06e6ce563b6"
   }
 ];

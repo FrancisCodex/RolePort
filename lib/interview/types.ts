@@ -122,10 +122,60 @@ export const answerGradeSchema = z.object({
 
 export type AnswerGrade = z.infer<typeof answerGradeSchema>;
 
+/**
+ * Something the candidate said that doesn't line up with what they sent. Both quotes are
+ * checked in code: `said` must be in their answers, `sourceQuote` in the named document.
+ */
+export type ConsistencyFlag = {
+  kind: "contradiction" | "inflation" | "unbacked";
+  said: string;
+  /** The document it conflicts with ("Tailored CV", "Cover letter"…), or null for a claim no document backs. */
+  source: string | null;
+  sourceQuote: string | null;
+  note: string;
+};
+
+export const FLAG_INFO: Record<ConsistencyFlag["kind"], { label: string; tone: "danger" | "warning" | "neutral" }> = {
+  contradiction: { label: "Contradicts what you sent", tone: "danger" },
+  inflation: { label: "Bigger than what you sent", tone: "warning" },
+  unbacked: { label: "Not in what you sent", tone: "neutral" },
+};
+
+/** A stronger version of the candidate's answer, built from what they said and their profile only. */
+export type RefinedAnswer = {
+  answer: string;
+  /** What changed and why, in a sentence or two. */
+  notes: string;
+  /** The app's checks: numbers no source states, and placeholders to fill in. */
+  warnings: string[];
+};
+
 export type QuestionResult =
-  | ({ status: "graded"; words: number; followUps: number } & AnswerGrade)
+  | ({
+      status: "graded";
+      words: number;
+      followUps: number;
+      /** Set once the answer has been checked against the documents and rewritten (a second step after grading). */
+      coached?: boolean;
+      flags?: ConsistencyFlag[];
+      refined?: RefinedAnswer | null;
+    } & AnswerGrade)
   | { status: "skipped" }
   | { status: "not_reached" };
+
+/** The pre-interview briefing: what to expect and what to bring, without giving away the questions. */
+export type InterviewBriefing = {
+  roleSummary: string;
+  mustHaves: string[];
+  /** Likely question themes; `quote` is posting text that points to it, checked in code. */
+  themes: { theme: string; why: string; quote: string | null }[];
+  /** A story from the candidate's own experience for each competency; `from` is null when they have none yet. */
+  stories: { competency: string; from: string | null; angle: string }[];
+  gaps: { gap: string; howToAddress: string }[];
+  questionsToAsk: string[];
+  model: string;
+  at: string;
+};
 
 export type InterviewSummary = {
   headline: string;
@@ -158,6 +208,9 @@ export type InterviewView = {
   plan: PlannedQuestion[];
   turns: InterviewTurn[];
   report: InterviewReport;
+  briefing: InterviewBriefing | null;
+  /** Whether there's a posting or job description to brief from (a role-only practice has neither). */
+  hasJob: boolean;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -206,6 +259,19 @@ export function verdictOf(score: number): { label: string; tone: "danger" | "war
   if (score < 2.75) return { label: "Borderline", tone: "warning" };
   if (score < 3.4) return { label: "Likely pass", tone: "success" };
   return { label: "Strong pass", tone: "brand" };
+}
+
+/** The report's model calls, done and in total: a grade and a coaching pass per answered question, then the summary. */
+export function reportProgress(view: Pick<InterviewView, "plan" | "turns" | "report">): { done: number; total: number } {
+  let done = view.report.summary ? 1 : 0;
+  let total = 1;
+  view.plan.forEach((_, i) => {
+    const r = view.report.results[i];
+    if (!view.turns.some((t) => t.q === i && t.kind === "answer")) return;
+    total += 2;
+    if (r?.status === "graded") done += r.coached ? 2 : 1;
+  });
+  return { done, total };
 }
 
 /** The average of every graded answer's rubric scores, or null if nothing was graded. */

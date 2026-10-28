@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronDown, Loader2, RotateCcw, Target, Trash2, TrendingUp } from "lucide-react";
+import { BookOpen, Check, ChevronDown, Copy, Eye, Loader2, Quote, RotateCcw, Target, Trash2, TrendingUp, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
@@ -9,14 +9,146 @@ import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ConfirmDialog } from "@/components/ui/dialog";
 import { deleteInterview } from "@/lib/client/mutations";
-import { averageScore, RUBRIC, verdictOf, type InterviewView, type QuestionResult, type RubricKey } from "@/lib/interview/types";
+import {
+  averageScore,
+  FLAG_INFO,
+  reportProgress,
+  RUBRIC,
+  verdictOf,
+  type ConsistencyFlag,
+  type InterviewView,
+  type QuestionResult,
+  type RefinedAnswer,
+  type RubricKey,
+} from "@/lib/interview/types";
 import { cn } from "@/lib/utils";
+import { Briefing } from "./briefing";
 import { Exchange } from "./interview-room";
 
 const RUBRIC_KEYS = Object.keys(RUBRIC) as RubricKey[];
 
-/** The post-round report: the verdict and summary, the rubric across answers, then each question in turn. */
+type Graded = Extract<QuestionResult, { status: "graded" }>;
+
+/**
+ * After the interview: the report (verdict, summary, rubric, each question with its flags and a
+ * stronger answer) and a cheat sheet to read before the real interview.
+ */
 export function InterviewReport({
+  view,
+  grading,
+  briefing,
+  aiEnabled,
+  error,
+  needsSetup,
+  onRetry,
+  onBrief,
+}: {
+  view: InterviewView;
+  grading: boolean;
+  briefing: boolean;
+  aiEnabled: boolean;
+  error: string | null;
+  needsSetup: boolean;
+  onRetry: () => void;
+  onBrief: () => void;
+}) {
+  const [tab, setTab] = useState<"report" | "cheat">("report");
+  const { results, summary } = view.report;
+  const score = averageScore(results);
+  const practiseAgain = view.applicationId ? `/coach/new?application=${view.applicationId}` : "/coach/new";
+
+  return (
+    <div className="flex flex-col gap-3">
+      {view.status === "ended" && (
+        <Progress view={view} grading={grading} aiEnabled={aiEnabled} error={error} needsSetup={needsSetup} onRetry={onRetry} />
+      )}
+
+      {view.status === "done" && (
+        <div role="tablist" className="flex gap-1 rounded-lg border border-border bg-surface p-1 shadow-[var(--shadow-soft)] sm:w-fit">
+          {(
+            [
+              ["report", "Report"],
+              ["cheat", "Cheat sheet"],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              type="button"
+              role="tab"
+              aria-selected={tab === key}
+              onClick={() => setTab(key)}
+              className={cn(
+                "flex-1 rounded-md px-3 py-1.5 text-[13px] font-medium transition-colors sm:flex-none",
+                tab === key ? "bg-surface-2 text-fg shadow-[inset_0_0_0_1px_var(--border)]" : "text-muted hover:text-fg",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {tab === "cheat" && view.status === "done" ? (
+        <CheatSheet view={view} briefing={briefing} aiEnabled={aiEnabled} onBrief={onBrief} error={error} />
+      ) : (
+        <>
+          {summary && (
+            <Card>
+              <CardContent className="flex flex-col gap-5">
+                <div className="flex flex-wrap items-start gap-4">
+                  {score != null && <ScoreDial score={score} />}
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[15px] leading-relaxed font-medium text-pretty">{summary.headline}</p>
+                    {score != null && (
+                      <p className="mt-1.5 text-xs text-subtle">
+                        A practice verdict{view.report.model ? ` from ${view.report.model}` : ""}, not a prediction. Real interviewers weigh things a transcript
+                        can&apos;t show.
+                      </p>
+                    )}
+                  </div>
+                </div>
+                {(summary.strengths.length > 0 || summary.focusAreas.length > 0) && (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <Points icon={TrendingUp} title="What worked" items={summary.strengths} tone="text-success" />
+                    <Points icon={Target} title="Practise next" items={summary.focusAreas} tone="text-brand-ink" />
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {score != null && <RubricOverview results={results} />}
+
+          {view.plan.map((_, i) => (
+            <QuestionCard key={i} index={i} view={view} result={results[i]} />
+          ))}
+
+          {summary?.questionsFeedback && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Your questions for them</CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3">
+                <Exchange turns={view.turns.filter((t) => t.q === view.plan.length && t.kind !== "wrap")} compact />
+                <p className="text-[13px] text-muted">{summary.questionsFeedback}</p>
+              </CardContent>
+            </Card>
+          )}
+        </>
+      )}
+
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
+        <Link href={practiseAgain} className={buttonVariants({ variant: "secondary" })}>
+          <RotateCcw /> Practise again
+        </Link>
+        <DeleteButton id={view.id} />
+      </div>
+    </div>
+  );
+}
+
+/** While the report is being written: which step it's on, and a way to retry if a step failed. */
+function Progress({
   view,
   grading,
   aiEnabled,
@@ -31,102 +163,212 @@ export function InterviewReport({
   needsSetup: boolean;
   onRetry: () => void;
 }) {
-  const { results, summary } = view.report;
-  const done = results.filter(Boolean).length;
-  const score = averageScore(results);
-  const practiseAgain = view.applicationId ? `/coach/new?application=${view.applicationId}` : "/coach/new";
+  const { done, total } = reportProgress(view);
+  const results = view.report.results;
+  const step = view.plan.some((_, i) => !results[i] && view.turns.some((t) => t.q === i && t.kind === "answer"))
+    ? "Grading your answers…"
+    : results.some((r) => r?.status === "graded" && !r.coached)
+      ? "Checking your answers against what you sent, and writing stronger versions…"
+      : "Writing your summary…";
+  return (
+    <Card>
+      <CardContent className="flex flex-col gap-3">
+        <p className="flex items-center gap-2 text-[13px] font-medium">
+          {grading && <Loader2 className="size-4 animate-spin text-muted" />}
+          {grading ? step : "Your report isn't finished yet."}
+          <span className="ml-auto text-xs font-normal text-subtle tabular-nums">
+            {done} of {total}
+          </span>
+        </p>
+        <div className="h-1 overflow-hidden rounded-full bg-surface-3" aria-hidden>
+          <div className="h-full rounded-full bg-brand transition-[width] duration-500" style={{ width: `${(done / total) * 100}%` }} />
+        </div>
+        {grading && <p className="text-xs text-muted">Each answer is reviewed on its own. Local models can take a minute per step; you can leave and come back.</p>}
+        {!aiEnabled && (
+          <p className="text-xs text-muted">
+            <Link href="/settings" className="font-medium text-brand-ink hover:underline">
+              Choose an AI provider
+            </Link>{" "}
+            to grade this interview.
+          </p>
+        )}
+        {error && (
+          <div className="flex flex-wrap items-center gap-2 rounded-md border border-danger/20 bg-danger-soft px-3 py-2 text-xs text-danger">
+            <span>{error}</span>
+            {needsSetup ? (
+              <Link href="/settings" className="font-medium underline">
+                Open Settings
+              </Link>
+            ) : (
+              <Button size="sm" variant="secondary" onClick={onRetry}>
+                <RotateCcw /> Try again
+              </Button>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/** What to read before the real interview: flags to resolve, the briefing, and stronger answers to rehearse. */
+function CheatSheet({
+  view,
+  briefing,
+  aiEnabled,
+  onBrief,
+  error,
+}: {
+  view: InterviewView;
+  briefing: boolean;
+  aiEnabled: boolean;
+  onBrief: () => void;
+  error: string | null;
+}) {
+  const graded = view.plan.flatMap((q, i) => {
+    const r = view.report.results[i];
+    return r?.status === "graded" ? [{ question: q, index: i, result: r }] : [];
+  });
+  const flags = graded.flatMap((g) => (g.result.flags ?? []).map((flag) => ({ flag, index: g.index })));
+  const refined = graded.filter((g) => g.result.refined);
 
   return (
-    <div className="flex flex-col gap-3">
-      {view.status === "ended" && (
-        <Card>
-          <CardContent className="flex flex-col gap-3">
-            <p className="flex items-center gap-2 text-[13px] font-medium">
-              {grading && <Loader2 className="size-4 animate-spin text-muted" />}
-              {grading
-                ? done < view.plan.length
-                  ? `Grading question ${done + 1} of ${view.plan.length}…`
-                  : "Writing your summary…"
-                : "Your report isn't finished yet."}
-            </p>
-            <div className="flex gap-1" aria-hidden>
-              {view.plan.map((_, i) => (
-                <span key={i} className={cn("h-1 flex-1 rounded-full", results[i] ? "bg-brand" : "bg-surface-3")} />
-              ))}
-            </div>
-            {grading && <p className="text-xs text-muted">Each answer is reviewed on its own. Local models can take a minute per question; you can leave and come back.</p>}
-            {!aiEnabled && (
-              <p className="text-xs text-muted">
-                <Link href="/settings" className="font-medium text-brand-ink hover:underline">
-                  Choose an AI provider
-                </Link>{" "}
-                to grade this interview.
-              </p>
-            )}
-            {error && (
-              <div className="flex flex-wrap items-center gap-2 rounded-md border border-danger/20 bg-danger-soft px-3 py-2 text-xs text-danger">
-                <span>{error}</span>
-                {needsSetup ? (
-                  <Link href="/settings" className="font-medium underline">
-                    Open Settings
-                  </Link>
-                ) : (
-                  <Button size="sm" variant="secondary" onClick={onRetry}>
-                    <RotateCcw /> Try again
-                  </Button>
-                )}
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {summary && (
-        <Card>
-          <CardContent className="flex flex-col gap-5">
-            <div className="flex flex-wrap items-start gap-4">
-              {score != null && <ScoreDial score={score} />}
-              <div className="min-w-0 flex-1">
-                <p className="text-[15px] leading-relaxed font-medium text-pretty">{summary.headline}</p>
-                <p className="mt-1.5 text-xs text-subtle">
-                  A practice verdict{view.report.model ? ` from ${view.report.model}` : ""}, not a prediction. Real interviewers weigh things a transcript can&apos;t show.
-                </p>
-              </div>
-            </div>
-            {(summary.strengths.length > 0 || summary.focusAreas.length > 0) && (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Points icon={TrendingUp} title="What worked" items={summary.strengths} tone="text-success" />
-                <Points icon={Target} title="Practise next" items={summary.focusAreas} tone="text-brand-ink" />
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {score != null && <RubricOverview results={results} />}
-
-      {view.plan.map((_, i) => (
-        <QuestionCard key={i} index={i} view={view} result={results[i]} />
-      ))}
-
-      {summary?.questionsFeedback && (
-        <Card>
+    <>
+      {flags.length > 0 && (
+        <Card className="border-warning/30">
           <CardHeader>
-            <CardTitle>Your questions for them</CardTitle>
+            <CardTitle className="flex items-center gap-1.5">
+              <TriangleAlert className="size-4 text-warning" /> Sort these out before the real interview
+            </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
-            <Exchange turns={view.turns.filter((t) => t.q === view.plan.length && t.kind !== "wrap")} compact />
-            <p className="text-[13px] text-muted">{summary.questionsFeedback}</p>
+            {flags.map(({ flag, index }, n) => (
+              <FlagItem key={n} flag={flag} label={`Q${index + 1}`} />
+            ))}
           </CardContent>
         </Card>
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
-        <Link href={practiseAgain} className={buttonVariants({ variant: "secondary" })}>
-          <RotateCcw /> Practise again
-        </Link>
-        <DeleteButton id={view.id} />
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-1.5">
+            <BookOpen className="size-4 text-muted" /> Briefing
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-3">
+          {view.briefing ? (
+            <Briefing briefing={view.briefing} />
+          ) : (
+            <>
+              <p className="text-[13px] text-muted">What the role needs, which of your stories proves what, where you might be pressed and what to ask them.</p>
+              {aiEnabled && (
+                <Button className="w-fit" onClick={onBrief} disabled={briefing}>
+                  {briefing ? <Loader2 className="animate-spin" /> : <BookOpen />} {briefing ? "Writing your briefing…" : "Write my briefing"}
+                </Button>
+              )}
+              {error && <p className="text-xs text-danger">{error}</p>}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {refined.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Answers to rehearse</CardTitle>
+            <p className="text-[13px] text-muted">Try each one out loud first, then reveal the stronger version and compare.</p>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-3">
+            {refined.map(({ question, index, result }) => (
+              <RehearseCard key={index} label={`Q${index + 1}`} question={question.question} refined={result.refined!} />
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {graded.length === 0 && <p className="px-1 text-[13px] text-muted">Answer some questions in an interview to get stronger answers to rehearse here.</p>}
+    </>
+  );
+}
+
+/** A question with its stronger answer hidden until asked for, so the user practises before reading. */
+function RehearseCard({ label, question, refined }: { label: string; question: string; refined: RefinedAnswer }) {
+  const [shown, setShown] = useState(false);
+  return (
+    <div className="flex flex-col gap-2.5 rounded-lg border border-border p-3">
+      <p className="text-[13px] font-medium text-pretty">
+        <span className="mr-1.5 text-xs text-subtle">{label}</span>
+        {question}
+      </p>
+      {shown ? (
+        <RefinedBlock refined={refined} />
+      ) : (
+        <Button variant="secondary" size="sm" className="w-fit" onClick={() => setShown(true)}>
+          <Eye /> Show the stronger answer
+        </Button>
+      )}
+    </div>
+  );
+}
+
+function RefinedBlock({ refined }: { refined: RefinedAnswer }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-[13px] leading-relaxed whitespace-pre-line">{highlightPlaceholders(refined.answer)}</p>
+      {refined.notes && <p className="text-xs text-muted">{refined.notes}</p>}
+      {refined.warnings.map((w) => (
+        <p key={w} className="flex gap-1.5 text-xs text-warning">
+          <TriangleAlert className="mt-0.5 size-3 shrink-0" /> {w}
+        </p>
+      ))}
+      <Button
+        variant="ghost"
+        size="sm"
+        className="w-fit"
+        onClick={() => {
+          void navigator.clipboard.writeText(refined.answer).then(() => setCopied(true), () => {});
+        }}
+      >
+        {copied ? <Check /> : <Copy />} {copied ? "Copied" : "Copy"}
+      </Button>
+    </div>
+  );
+}
+
+/** [placeholders] stand out so they're filled in before the answer is used. */
+function highlightPlaceholders(text: string): ReactNode[] {
+  return text.split(/(\[[^\]]{1,60}\])/g).map((part, i) =>
+    /^\[.*\]$/.test(part) ? (
+      <mark key={i} className="rounded bg-warning-soft px-0.5 text-warning">
+        {part}
+      </mark>
+    ) : (
+      part
+    ),
+  );
+}
+
+function FlagItem({ flag, label }: { flag: ConsistencyFlag; label?: string }) {
+  const info = FLAG_INFO[flag.kind];
+  return (
+    <div className="flex flex-col gap-1.5 text-[13px]">
+      <div className="flex flex-wrap items-center gap-1.5">
+        {label && <span className="text-xs text-subtle">{label}</span>}
+        <Badge tone={info.tone}>{info.label}</Badge>
       </div>
+      <p>
+        You said: <span className="italic">“{flag.said}”</span>
+      </p>
+      {flag.source && flag.sourceQuote && (
+        <p className="flex gap-1.5 text-muted">
+          <Quote className="mt-1 size-3 shrink-0" />
+          <span>
+            Your {flag.source.toLowerCase()} says: <span className="italic">“{flag.sourceQuote}”</span>
+          </span>
+        </p>
+      )}
+      <p className="text-xs text-muted">{flag.note}</p>
     </div>
   );
 }
@@ -164,7 +406,7 @@ function Points({ icon: Icon, title, items, tone }: { icon: typeof Check; title:
 
 /** Each rubric dimension averaged over the graded answers, weakest easy to spot. */
 function RubricOverview({ results }: { results: (QuestionResult | null)[] }) {
-  const graded = results.filter((r): r is Extract<QuestionResult, { status: "graded" }> => r?.status === "graded");
+  const graded = results.filter((r): r is Graded => r?.status === "graded");
   return (
     <Card>
       <CardHeader>
@@ -198,8 +440,13 @@ function QuestionCard({ index, view, result }: { index: number; view: InterviewV
           <span className="text-xs font-medium text-subtle">Q{index + 1}</span>
           <Badge>{question.competency}</Badge>
           {result?.status === "graded" && result.followUps > 0 && <Badge tone="warning">{result.followUps} follow-up{result.followUps > 1 ? "s" : ""}</Badge>}
+          {result?.status === "graded" && (result.flags?.length ?? 0) > 0 && (
+            <Badge tone="danger">
+              {result.flags!.length} flag{result.flags!.length > 1 ? "s" : ""}
+            </Badge>
+          )}
           {result?.status === "skipped" && <Badge>Skipped</Badge>}
-          {result?.status === "not_reached" && <Badge>Not reached</Badge>}
+          {result?.status === "not_reached" && <Badge>Not answered</Badge>}
         </div>
         <CardTitle className="mt-1 text-pretty">{question.question}</CardTitle>
       </CardHeader>
@@ -226,7 +473,22 @@ function QuestionCard({ index, view, result }: { index: number; view: InterviewV
               <Points icon={Check} title="Good" items={result.strengths} tone="text-success" />
               <Points icon={Target} title="Next time" items={result.improvements} tone="text-brand-ink" />
             </div>
+            {(result.flags?.length ?? 0) > 0 && (
+              <div className="flex flex-col gap-3 rounded-lg border border-danger/20 bg-danger-soft/40 p-3">
+                <p className="flex items-center gap-1.5 text-xs font-medium text-danger">
+                  <TriangleAlert className="size-3.5" /> Doesn&apos;t match what you sent
+                </p>
+                {result.flags!.map((flag, n) => (
+                  <FlagItem key={n} flag={flag} />
+                ))}
+              </div>
+            )}
           </>
+        )}
+        {result?.status === "graded" && result.refined && (
+          <Fold title="A stronger answer" open>
+            <RefinedBlock refined={result.refined} />
+          </Fold>
         )}
         {turns.length > 0 && (
           <Fold title="Your answers">
@@ -245,9 +507,9 @@ function QuestionCard({ index, view, result }: { index: number; view: InterviewV
   );
 }
 
-function Fold({ title, children }: { title: string; children: ReactNode }) {
+function Fold({ title, open, children }: { title: string; open?: boolean; children: ReactNode }) {
   return (
-    <details className="group rounded-lg border border-border">
+    <details className="group rounded-lg border border-border" open={open}>
       <summary className="flex cursor-pointer list-none items-center justify-between px-3 py-2 text-xs font-medium text-muted hover:text-fg">
         {title}
         <ChevronDown className="size-3.5 transition-transform group-open:rotate-180" />
@@ -286,7 +548,7 @@ function DeleteButton({ id }: { id: string }) {
         title="Delete this interview?"
         body={
           <>
-            The transcript and report are deleted for good.
+            The transcript, report and briefing are deleted for good.
             {error && <span className="mt-2 block text-danger">{error}</span>}
           </>
         }

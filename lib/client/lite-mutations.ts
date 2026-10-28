@@ -33,6 +33,7 @@ import {
   deleteInterview as removeInterview,
   endInterview as stopInterview,
   gradeInterviewStep,
+  prepareInterviewBriefing,
   skipInterviewQuestion,
   startInterview as beginInterview,
 } from "@/lib/interview/sessions";
@@ -326,6 +327,10 @@ export async function answerInterviewQuestion(id: string, answer: string): Promi
 
 export async function gradeInterview(id: string): Promise<InterviewResult> {
   return withAi((db, config) => gradeInterviewStep(db, LOCAL_USER.id, id, config), "Grading the interview failed. Please try again.");
+}
+
+export async function prepareBriefing(id: string): Promise<InterviewResult> {
+  return withAi(async (db, config) => prepareInterviewBriefing(db, await me(db), id, config), "Writing the briefing failed. Please try again.");
 }
 
 export async function skipInterviewTurn(id: string): Promise<InterviewResult> {

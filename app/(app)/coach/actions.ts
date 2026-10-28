@@ -9,6 +9,7 @@ import {
   deleteInterview as removeInterview,
   endInterview as stopInterview,
   gradeInterviewStep,
+  prepareInterviewBriefing,
   skipInterviewQuestion,
   startInterview as beginInterview,
 } from "@/lib/interview/sessions";
@@ -77,6 +78,19 @@ export async function gradeInterview(id: string): Promise<InterviewResult> {
   } catch (error) {
     console.error("[interview] grading failed", error);
     return { ok: false, error: aiErrorMessage(error, "Grading the interview failed. Please try again.") };
+  }
+}
+
+/** Write the pre-interview briefing for this session (or write it again). */
+export async function prepareBriefing(id: string): Promise<InterviewResult> {
+  const user = await getCurrentUser();
+  const config = await getAiConfig();
+  if (!config) return { ok: false, error: new AiUnavailableError().message, needsSetup: true };
+  try {
+    return { ok: true, data: await prepareInterviewBriefing(await getDb(), user, id, config) };
+  } catch (error) {
+    console.error("[interview] briefing failed", error);
+    return { ok: false, error: aiErrorMessage(error, "Writing the briefing failed. Please try again.") };
   }
 }
 
