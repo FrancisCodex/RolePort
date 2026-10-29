@@ -5,9 +5,25 @@ Goal: RolePort works for job seekers in any country. The Philippines stays the d
 Order: **1. More job sources → 2. Paste a job → 3. Email applications and follow-ups → 4. Desktop app (and the agent question)**.
 Each step ships on its own branch and works in self-hosted and Lite, unless it says otherwise.
 
+## Status
+
+| Phase | Status | Branch |
+| --- | --- | --- |
+| 0. Groundwork: tests, fetch helper, private-address guard | ✅ Built | `feat/more-job-sources` |
+| 1A. Company job-board feeds, Companies I follow, starter lists | ✅ Built (closed-job check moved to Phase 2) | `feat/more-job-sources` |
+| 1B. Official boards and remote feeds | ✅ Built: Remotive, Remote OK, Himalayas, Arbeitnow, Platsbanken. Others are waiting, see 1B | `feat/more-job-sources` |
+| 1C. Contributor kit | ✅ Built | `feat/more-job-sources` |
+| Extra: old and ghost postings hidden, past month by default | ✅ Built | `feat/more-job-sources` |
+| 2. Paste a job (and "still open" checks) | Next | — |
+| 3. Email applications and follow-ups | Not started | — |
+| MCP server | Not started | — |
+| 4. Desktop app: job scout, apply assistant | Not started | — |
+
 ---
 
 ## 0. Groundwork (small, do first)
+
+Built. `npm test` runs Vitest; `lib/jobs/sources/http.ts` and `lib/net/safe-url.ts` hold the helper and the guard.
 
 - **Tests for sources.** Add Vitest. Each source gets a test against a saved sample response in `lib/jobs/sources/__fixtures__/`, never a live site, so CI never depends on a job board being up.
 - **Shared fetch helper** (`lib/jobs/sources/http.ts`): timeout, retry with backoff, a host allowlist, a page cap and a polite delay between pages. Every new source uses it.
@@ -34,25 +50,39 @@ Later: Teamtailor, Personio, BambooHR, Workday (harder).
 
 - **Companies I follow** (new table `followed_companies`: name, hiring software, slug, country, added date). Add a company by pasting its careers page URL. RolePort detects which hiring software it uses from the URL, plus a JSON-LD/HTML fallback for branded careers domains.
 - **How search uses them:** a search also runs over the followed companies' feeds, filtered by the query, country and work setup in code. Feeds are cached for a few hours.
-- **Starter lists:** an optional seed list of well-known employers per country (`lib/jobs/seed-companies/{country}.json`). It's contributed per country, and users can import it in one click.
+- **Starter lists (built):** "Popular employers" in **Follow companies**: well-known employers with open jobs in each country, one JSON file per country in `lib/companies/starters/` (PH, SG, AU, US, GB, DE, SE and "hiring remotely"). Follow one or all in one click; the user's own countries come first. Contributed per country (docs/ADDING_A_JOB_SOURCE.md).
+- **Jobs at companies you follow (built):** on Jobs, "All their jobs" or one company's name shows every opening they have, with optional filters, newest first.
 - **Still open (moved to Phase 2):** a job from a feed is open while it's still in its company's feed. Saved and applied jobs show "Closed" when it disappears. Built together with Phase 2's "Check again", so both kinds of job share one check.
 - **Lite:** the search relay (`/api/lite/search`) fetches the feeds with the host allowlist above. Followed companies live in the browser's database like everything else.
 - **Porting:** career-ops (MIT) has working modules for these in `providers/*.mjs`. Port the logic to TypeScript and credit it in `THIRD_PARTY_NOTICES.md`.
 
 ### 1B. Country-wide official sources and remote feeds
 
-- **Government job boards with open data:** Germany (Arbeitsagentur), Sweden (Platsbanken), Canada (Job Bank), Singapore (MyCareersFuture), Belgium (VDAB), US (USAJOBS, free key). Each one says which country it covers.
-- **Philippines:** check PhilJobNet (DOLE) for an open feed. If there isn't one, there's no change: JSearch and JobSpy already cover the Philippines.
-- **Remote feeds (RSS/JSON):** We Work Remotely, Remotive, RemoteOK, Himalayas, Arbeitnow.
+**Built:**
 
-### 1C. Make it easy for contributors to add sources
+- **Platsbanken (Sweden):** Arbetsförmedlingen's board, through JobTech's open JobSearch API. No key; JobTech matches the words (Swedish or English) and dates.
+- **Arbeitnow (Germany):** a free job board API, newest postings.
+- **Remote feeds:** Remotive (whole feed read every six hours, as its terms ask), Remote OK (posting links are followed links, as its terms ask), Himalayas (search). Jobicy was already there.
+- Remote postings that name a region ("Europe", "LATAM", "APAC") now only show to people in that region.
 
-- Load sources by file name, so a new source is one file plus one fixture and no edit to `search.ts`.
-- Generate the supported-sources table in the README from each source's metadata (`id`, label, countries, kind).
-- Add an issue template "Propose a job source" (country, URL, how it's accessed, a link to its terms or robots.txt).
-- Write the source policy into `docs/ADDING_A_JOB_SOURCE.md`. **Core sources** use public APIs, official feeds or pages that `robots.txt` allows, with no anti-bot workarounds. A board's **internal website API** (like JobStreet's and Kalibrr's) goes behind the same opt-in, self-hosted-only setting as JobSpy, never into core.
+**Waiting, and why:**
 
-**Done when:** you can follow a company by pasting its careers URL, its jobs show up in search, closed jobs are marked, and there are fixture tests for every source.
+- **Germany (Arbeitsagentur):** its API refused plain requests from RolePort (403). Under the source policy, RolePort doesn't work around that. Revisit if it publishes an open client.
+- **Singapore (MyCareersFuture):** only an internal website API, which didn't answer. Not a core source under the policy.
+- **Canada (Job Bank):** publishes open data as downloads, not a search API. Could be imported on a schedule later.
+- **US (USAJOBS):** needs a free key and an email address in each request. Needs a Settings field like the RapidAPI key: next candidate.
+- **Belgium (VDAB):** needs registration for API access.
+- **Philippines (PhilJobNet):** no open feed found. JSearch, JobSpy and the starter company list cover the Philippines.
+- **We Work Remotely:** RSS only, and its terms don't clearly allow reuse. Left out for now.
+
+### 1C. Make it easy for contributors to add sources (built)
+
+- **One registry:** a new source is one file, one fixture test and one line in `lib/jobs/sources/registry.ts` (no edit to `search.ts`). A test fails if a source file isn't listed. Bundlers can't load files by name at runtime, so this is the closest safe version.
+- **README table from metadata:** each source declares `kind`, `coverage` and `needs`; `npm run docs:sources` writes the README's "Job sources" table, and a test fails when it's out of date.
+- **Issue template** "Propose a job source" (`.github/ISSUE_TEMPLATE/job-source.yml`).
+- **Source policy** in `docs/ADDING_A_JOB_SOURCE.md`: core sources use official APIs, open data or pages `robots.txt` allows, identify as RolePort, and never work around a refusal. A board's internal website API only goes behind the opt-in, self-hosted-only setting, like JobSpy.
+
+**Done when:** you can follow a company by pasting its careers URL, its jobs show up in search, closed jobs are marked, and there are fixture tests for every source. *(All done except closed jobs, which moved to Phase 2 so pasted jobs share the same check.)*
 
 ## 2. Paste a job
 
@@ -117,13 +147,13 @@ Desktop-only isn't required for any of this except the two features above. Keep 
 
 | Step | Size | Depends on |
 | --- | --- | --- |
-| 0. Tests, fetch helper, address guard | S | — |
-| 1A. Company feeds + Companies I follow | L | 0 |
+| 0. Tests, fetch helper, address guard ✅ | S | — |
+| 1A. Company feeds + Companies I follow ✅ | L | 0 |
 | 2. Paste a job | M | 0 (1A for supported links) |
 | 3A. Email application + contacts | M | — |
 | 3B. Follow-ups | M | 3A |
-| 1B. Government and remote feeds | M (per source: S) | 0 |
-| 1C. Contributor kit | S | 1A |
+| 1B. Government and remote feeds ✅ (more to come) | M (per source: S) | 0 |
+| 1C. Contributor kit ✅ | S | 1A |
 | MCP server | S–M | — |
 | 4. Desktop app: job scout, apply assistant | L | 1A, 2 |
 

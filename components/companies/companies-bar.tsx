@@ -23,7 +23,7 @@ const chip = (on: boolean) =>
  * their jobs, and opens the guided dialog to add or remove them. `active` marks the company
  * (or "all") whose jobs are showing.
  */
-export function CompaniesBar({ companies, active }: { companies: FollowedCompanyView[]; active?: string }) {
+export function CompaniesBar({ companies, countries, active }: { companies: FollowedCompanyView[]; countries: string[]; active?: string }) {
   const [open, setOpen] = useState(false);
   // The company being viewed stays visible even when it's past the first few.
   const current = companies.find((c) => c.id === active);
@@ -36,11 +36,11 @@ export function CompaniesBar({ companies, active }: { companies: FollowedCompany
         <div className="-mt-2 flex flex-col gap-2 rounded-lg border border-dashed border-border-strong px-3 py-2.5 sm:flex-row sm:items-center">
           <Building2 className="hidden size-4 shrink-0 text-brand-ink sm:block" />
           <p className="flex-1 text-[13px] text-muted">
-            <strong className="font-medium text-fg">Have a company in mind?</strong> Follow it, and its openings show up in your searches,
-            straight from its own careers page.
+            <strong className="font-medium text-fg">Have a company in mind?</strong> Follow it, or pick from popular employers in your
+            country, and their openings show up in your searches, straight from their own careers pages.
           </p>
           <Button variant="secondary" size="sm" onClick={() => setOpen(true)} className="self-start sm:self-auto">
-            Follow a company
+            Follow companies
           </Button>
         </div>
       ) : (
@@ -76,7 +76,7 @@ export function CompaniesBar({ companies, active }: { companies: FollowedCompany
               <X />
             </Button>
           </div>
-          <CompanyManager companies={companies} onNavigate={() => setOpen(false)} />
+          <CompanyManager companies={companies} countries={countries} onNavigate={() => setOpen(false)} />
         </div>
       </Dialog>
     </>

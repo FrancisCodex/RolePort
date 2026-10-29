@@ -2,23 +2,13 @@ import "server-only";
 import { mergeDuplicates } from "./dedupe";
 import { isFresh } from "./freshness";
 import { jobKey } from "./job-key";
-import { ATS_IDS, BOARDS, COMPANY_SOURCES, readCompanyJobs, type CompanyJobFilters, type CompanyRef } from "./sources/companies";
-import { freehireSource } from "./sources/freehire";
-import { jobicySource } from "./sources/jobicy";
-import { jobSpySources } from "./sources/jobspy";
-import { jsearchSource } from "./sources/jsearch";
+import { ATS_IDS, BOARDS, readCompanyJobs, type CompanyJobFilters, type CompanyRef } from "./sources/companies";
+import { JOB_SOURCES } from "./sources/registry";
 import type { KeyedJob } from "./queries";
 import type { JobSearchParams, JobSource, NormalizedJob, SourceContext, SourceStatus } from "./types";
 
-/** Order matters: when two sources carry the same posting, the earlier one is shown and links to the others. */
-// Company feeds come first: a posting straight from the employer beats a copy on a job board.
-export const JOB_SOURCES = [...COMPANY_SOURCES, jsearchSource, ...jobSpySources, freehireSource, jobicySource];
-
-/**
- * What the hosted lite edition searches from its server: never the JobSpy boards, whose
- * terms forbid automated access (lite users connect JobSpy on their own computer instead).
- */
-export const HOSTED_SOURCES = JOB_SOURCES.filter((s) => !jobSpySources.includes(s));
+// The sources and their order live in ./sources/registry.ts.
+export { HOSTED_SOURCES, JOB_SOURCES } from "./sources/registry";
 
 export { sourceCredit } from "./sources/credits";
 
@@ -62,6 +52,8 @@ export async function browseCompanyJobs(companies: CompanyRef[], filters: Compan
   const settled = await Promise.allSettled(boards.map((b) => readCompanyJobs(b.id, companies, filters)));
   const { jobs, statuses } = collect(boards, settled, filters.postedWithinDays);
   const newest = jobs.sort((a, b) => (b.postedAt ?? "").localeCompare(a.postedAt ?? "")).slice(0, MAX_COMPANY_JOBS);
+  // Counted again after the cap, so each chip matches the jobs shown.
+  for (const status of statuses) if (!status.failed) status.count = newest.filter((j) => j.source === status.id).length;
   return { jobs: newest, statuses };
 }
 

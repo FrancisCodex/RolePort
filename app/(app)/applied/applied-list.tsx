@@ -111,7 +111,7 @@ function AppliedRow({ item }: { item: AppliedItem }) {
         <a
           href={item.url}
           target="_blank"
-          rel="noopener noreferrer nofollow"
+          rel="noopener"
           aria-label={`Open the ${item.role} posting`}
           title="Open the job posting"
           className="relative z-10 hidden size-8 shrink-0 place-items-center rounded-md text-subtle transition-colors hover:bg-surface-3 hover:text-fg sm:grid"

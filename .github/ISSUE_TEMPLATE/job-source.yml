@@ -1,0 +1,53 @@
+name: Propose a job source
+description: A job board, government job site or feed that RolePort could search.
+title: "Job source: "
+labels: ["job source"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks! RolePort only adds sources that publish their jobs openly: an official API or feed, a government board's open data, or pages its terms and robots.txt allow to be read. See [which sources are allowed](https://github.com/FrancisCodex/RolePort/blob/main/docs/ADDING_A_JOB_SOURCE.md#which-sources-are-allowed).
+  - type: input
+    id: name
+    attributes:
+      label: Name and website
+      placeholder: "e.g. Job Bank, https://www.jobbank.gc.ca"
+    validations:
+      required: true
+  - type: input
+    id: countries
+    attributes:
+      label: Countries it covers
+      description: Or "remote, worldwide".
+      placeholder: "e.g. Canada"
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What kind of source is it?
+      options:
+        - Government or public employment service
+        - Job board
+        - Remote jobs feed
+        - Hiring software used by many companies' careers pages
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: access
+    attributes:
+      label: How can its jobs be read?
+      description: A link to its API docs, feed (RSS/JSON) or open data page, and whether it needs a key. "I don't know" is fine.
+    validations:
+      required: true
+  - type: input
+    id: terms
+    attributes:
+      label: Link to its terms of use or robots.txt
+      description: So we can check automated access is allowed.
+  - type: textarea
+    id: why
+    attributes:
+      label: Why it would help
+      description: Who uses it, roughly how many jobs it has, anything else.

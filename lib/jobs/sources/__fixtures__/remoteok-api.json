@@ -1,0 +1,5 @@
+[
+  { "last_updated": 1793224395, "legal": "Made-up sample in Remote OK's shape, for tests." },
+  { "slug": "remote-designer-example-1", "id": "1001", "epoch": 1792800000, "date": "2026-10-22T08:00:00+00:00", "company": "Example Labs", "company_logo": "", "position": "Senior Designer", "tags": ["design", "figma"], "description": "<p>Design things.</p>", "location": "", "salary_min": 90000, "salary_max": 120000, "url": "https://remoteOK.com/remote-jobs/remote-designer-example-1" },
+  { "slug": "remote-designer-us-2", "id": "1002", "epoch": 1792800000, "date": "2026-10-22T08:00:00+00:00", "company": "US Co", "position": "Designer", "tags": ["design"], "description": "<p>US only.</p>", "location": "United States", "salary_min": 0, "salary_max": 0, "url": "https://remoteOK.com/remote-jobs/remote-designer-us-2" }
+]

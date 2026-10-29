@@ -43,7 +43,8 @@ import { interviewSetupSchema, MAX_INTERVIEW_ANSWER, spokenTime, type InterviewS
 import { draftQuestionAnswer, saveQuestionList } from "@/lib/questions/questions";
 import { questionsSchema, type QuestionItem } from "@/lib/questions/types";
 import { letterContentSchema, type LetterContent } from "@/lib/letter/types";
-import { deleteFollowedCompany, insertFollowedCompany, TOO_MANY_COMPANIES } from "@/lib/companies/queries";
+import { deleteFollowedCompany, insertFollowedCompany, insertStarterCompanies, TOO_MANY_COMPANIES } from "@/lib/companies/queries";
+import { starterKeysSchema } from "@/lib/companies/starters";
 import { getBrowserDb, type BrowserDb } from "@/lib/db/browser";
 import { ATS_IDS, type AtsId } from "@/lib/jobs/sources/companies/types";
 import { LOCAL_USER } from "@/lib/db/local-user";
@@ -474,6 +475,15 @@ export async function unfollowCompany(raw: { id: string }): Promise<Result> {
   await deleteFollowedCompany(await getBrowserDb(), LOCAL_USER.id, input.data.id);
   await invalidate("followed_company");
   return { ok: true, data: undefined };
+}
+
+/** The starter lists are part of the app, so following from them needs no server. */
+export async function followStarterCompanies(raw: { keys: string[] }): Promise<Result<{ added: string[]; full: boolean }>> {
+  const input = starterKeysSchema.safeParse(raw);
+  if (!input.success) return { ok: false, error: "Invalid companies." };
+  const result = await insertStarterCompanies(await getBrowserDb(), LOCAL_USER.id, input.data.keys);
+  await invalidate("followed_company");
+  return { ok: true, data: result };
 }
 
 export async function saveRapidApiKey(raw: { apiKey: string | null; clear: boolean }): Promise<Result> {

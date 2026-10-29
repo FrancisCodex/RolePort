@@ -115,6 +115,9 @@ function normalize(job: JSearchJob, fallbackCurrency: string): NormalizedJob {
 export const jsearchSource: JobSource = {
   id: "jsearch",
   label: "JSearch",
+  kind: "board",
+  coverage: "Every country (Google for Jobs: JobStreet, Indeed, LinkedIn, Kalibrr and more)",
+  needs: "A free RapidAPI key",
   attribution: SOURCE_CREDITS.jsearch,
   enabled: (ctx) => Boolean(ctx.rapidApiKey),
   disabledNote: "Add a RapidAPI key in Settings to include JobStreet, Indeed, LinkedIn and Kalibrr listings",

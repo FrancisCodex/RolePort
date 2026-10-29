@@ -103,7 +103,7 @@ export function CompanyJobsView({
         </Form>
       )}
 
-      <CompaniesBar companies={companies} active={company?.id ?? "all"} />
+      <CompaniesBar companies={companies} countries={[profile.country, ...profile.targetCountries]} active={company?.id ?? "all"} />
 
       {companies.length > 0 ? (
         results

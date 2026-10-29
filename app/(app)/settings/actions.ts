@@ -9,8 +9,9 @@ import { aiInput, aiSettingsValues, checkBaseUrl, CONNECTION_TEST, resolveAiInpu
 import { exportBackup } from "@/lib/backup/export";
 import { importErrorMessage, readBackupForm } from "@/lib/backup/form";
 import { importBackup, type ImportSummary } from "@/lib/backup/import";
-import { deleteFollowedCompany, insertFollowedCompany, TOO_MANY_COMPANIES } from "@/lib/companies/queries";
+import { deleteFollowedCompany, insertFollowedCompany, insertStarterCompanies, TOO_MANY_COMPANIES } from "@/lib/companies/queries";
 import { resolveCompany } from "@/lib/companies/resolve";
+import { starterKeysSchema } from "@/lib/companies/starters";
 import { getDb } from "@/lib/db";
 import { jobSpyUrl } from "@/lib/env";
 import type { Result } from "@/lib/result";
@@ -112,6 +113,16 @@ export async function unfollowCompany(raw: { id: string }): Promise<Result> {
   await deleteFollowedCompany(await getDb(), user.id, input.data.id);
   refresh();
   return { ok: true, data: undefined };
+}
+
+/** Follows companies from the starter lists, by key; only listed companies are accepted. */
+export async function followStarterCompanies(raw: { keys: string[] }): Promise<Result<{ added: string[]; full: boolean }>> {
+  const user = await getCurrentUser();
+  const input = starterKeysSchema.safeParse(raw);
+  if (!input.success) return { ok: false, error: "Invalid companies." };
+  const result = await insertStarterCompanies(await getDb(), user.id, input.data.keys);
+  refresh();
+  return { ok: true, data: result };
 }
 
 export async function saveRapidApiKey(raw: { apiKey: string | null; clear: boolean }): Promise<Result> {

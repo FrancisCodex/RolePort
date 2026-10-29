@@ -6,6 +6,7 @@ import { getAiConfig, getMySettingsRow } from "@/lib/ai/config";
 import { getMyFollowedCompanies } from "@/lib/companies/data";
 import { jobSpyUrl } from "@/lib/env";
 import { isLite } from "@/lib/mode";
+import { getMyProfile } from "@/lib/profile/data";
 import { maskSecret } from "@/lib/secret-hint";
 import { decryptSecret } from "@/lib/secrets";
 import { LiteSettings } from "./lite-settings";
@@ -51,11 +52,12 @@ async function jobSpyReachable(): Promise<boolean> {
 
 async function SettingsContent() {
   const showJobSpy = Boolean(jobSpyUrl);
-  const [row, active, reachable, companies] = await Promise.all([
+  const [row, active, reachable, companies, { profile }] = await Promise.all([
     getMySettingsRow(),
     getAiConfig(),
     showJobSpy ? jobSpyReachable() : false,
     getMyFollowedCompanies(),
+    getMyProfile(),
   ]);
 
   return (
@@ -63,6 +65,7 @@ async function SettingsContent() {
       ai={aiSettingsView(row, decryptSecret, active)}
       rapidApiKeyHint={maskSecret(decryptSecret(row?.rapidApiKeyEnc))}
       companies={companies}
+      countries={[profile.country, ...profile.targetCountries]}
       jobSpy={showJobSpy ? { enabled: Boolean(row?.jobspyEnabled), reachable } : null}
       cvPrompt={row?.cvPrompt ?? null}
       coverLetterPrompt={row?.coverLetterPrompt ?? null}

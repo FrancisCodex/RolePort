@@ -1,6 +1,7 @@
 import { cacheLife } from "next/cache";
 import type { JobSearchParams, JobSource, NormalizedJob } from "../../types";
 import { SOURCE_CREDITS } from "../credits";
+import { toNormalized } from "../feed";
 import { ashby } from "./ashby";
 import { greenhouse } from "./greenhouse";
 import { lever } from "./lever";
@@ -47,14 +48,6 @@ async function mapLimited<T, R>(items: T[], limit: number, fn: (item: T) => Prom
   return results;
 }
 
-/** Drops the filter-only fields, so they aren't stored with the job. */
-function toNormalized(job: CompanyJob, company: string): NormalizedJob {
-  const normalized: NormalizedJob & Partial<Pick<CompanyJob, "countries" | "team">> = { ...job, company };
-  delete normalized.countries;
-  delete normalized.team;
-  return normalized;
-}
-
 /**
  * The open jobs at these companies (all on `board`) that pass `filters`. A search passes its
  * params as `hint` too, so hiring software that filters on its side gets the words and country.
@@ -79,6 +72,9 @@ function companySource(board: CompanyBoard): JobSource {
   return {
     id: board.id,
     label: board.label,
+    kind: "company",
+    coverage: "Companies you follow, in any country",
+    needs: "Follow a company on the Jobs page",
     attribution: SOURCE_CREDITS[board.id],
     enabled: (ctx) => ctx.companies.some((c) => c.ats === board.id),
     listWhenOff: false,

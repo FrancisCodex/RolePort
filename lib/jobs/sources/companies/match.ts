@@ -26,14 +26,37 @@ function countryTerms(code: string): string[] {
   return [...new Set([...(name ? [name] : []), ...(ALIASES[code] ?? [])])];
 }
 
-/** The posting's location names this country, or (for remote jobs) names no other country. */
+const EUROPE = "AT BE BG HR CY CZ DK EE FI FR DE GR HU IS IE IT LV LT LU MT NL NO PL PT RO SK SI ES SE CH GB UA RS".split(" ");
+const LATAM = "AR BO BR CL CO CR DO EC GT HN MX NI PA PE PY SV UY VE".split(" ");
+const ASIA = "PH SG MY TH VN ID JP KR CN HK TW IN PK BD LK KH".split(" ");
+const MIDDLE_EAST = "AE SA QA KW BH OM IL JO LB EG TR".split(" ");
+const AFRICA = "EG MA NG KE ZA GH TZ UG ET RW TN".split(" ");
+
+/** Regions remote postings name instead of countries, and the countries in each. */
+const REGIONS: [string[], string[]][] = [
+  [["europe", "eu", "european union"], EUROPE],
+  [["emea"], [...EUROPE, ...MIDDLE_EAST, ...AFRICA]],
+  [["latam", "latin america", "south america"], LATAM],
+  [["north america"], ["US", "CA", "MX"]],
+  [["americas"], ["US", "CA", ...LATAM]],
+  [["apac", "asia pacific", "asia-pacific", "asia"], [...ASIA, "AU", "NZ"]],
+  [["southeast asia", "sea"], ["PH", "SG", "MY", "TH", "VN", "ID", "KH"]],
+  [["middle east", "mena"], [...MIDDLE_EAST, "MA", "TN"]],
+  [["africa"], AFRICA],
+  [["oceania", "anz"], ["AU", "NZ"]],
+];
+
+/** The posting's location names this country, or (for remote jobs) names no other country or region without it. */
 function inCountry(job: CompanyJob, code: string): boolean {
   if (job.countries.includes(code)) return true;
   const text = job.location ?? "";
   if (countryTerms(code).some((t) => mentions(text, t))) return true;
   if (job.countries.length > 0) return false;
   if (job.workSetup !== "remote") return false;
-  // "Remote" with no country, or a region like "APAC" / "Worldwide": open to applicants here.
+  // A region ("Remote · Europe", "APAC"): open to applicants here only if it includes this country.
+  const regions = REGIONS.filter(([names]) => names.some((n) => mentions(text, n)));
+  if (regions.length > 0) return regions.some(([, members]) => members.includes(code));
+  // "Remote" with no country, or "Worldwide": open to applicants here.
   return !COUNTRIES.some((c) => c.code !== code && countryTerms(c.code).some((t) => mentions(text, t)));
 }
 

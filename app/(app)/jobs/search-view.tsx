@@ -127,7 +127,7 @@ export function JobSearchView({
         </div>
       )}
 
-      <CompaniesBar companies={companies} />
+      <CompaniesBar companies={companies} countries={[profile.country, ...profile.targetCountries]} />
 
       {query ? (
         results

@@ -1,0 +1,10 @@
+{
+  "0-legal-notice": "Made-up sample in Remotive's shape, for tests.",
+  "job-count": 4,
+  "jobs": [
+    { "id": 501, "url": "https://remotive.com/remote-jobs/design/product-designer-501", "title": "Product Designer", "company_name": "Example Labs", "company_logo": "https://remotive.com/job/501/logo", "category": "Design", "tags": ["figma", "ux"], "job_type": "full_time", "publication_date": "2026-10-20T08:00:00", "candidate_required_location": "Worldwide", "description": "<p>Design our <strong>app</strong>.</p><script>alert(1)</script>" },
+    { "id": 502, "url": "https://remotive.com/remote-jobs/design/ui-designer-502", "title": "UI Designer", "company_name": "Euro Co", "category": "Design", "tags": [], "job_type": "contract", "publication_date": "2026-10-21T08:00:00", "candidate_required_location": "Europe", "description": "<p>EU only.</p>" },
+    { "id": 503, "url": "https://remotive.com/remote-jobs/design/designer-503", "title": "Brand Designer", "company_name": "Asia Co", "job_type": "part_time", "publication_date": "2026-10-22T08:00:00", "candidate_required_location": "Philippines, Singapore", "description": "<p>APAC team.</p>" },
+    { "id": 504, "url": "https://remotive.com/remote-jobs/dev/backend-504", "title": "Backend Engineer", "company_name": "Example Labs", "job_type": "full_time", "publication_date": "2026-10-23T08:00:00", "candidate_required_location": "USA", "description": "<p>Go and Postgres.</p>" }
+  ]
+}

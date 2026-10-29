@@ -66,9 +66,21 @@ export type SourceContext = {
   companies: CompanyRef[];
 };
 
+/**
+ * What kind of source it is, for the README's table and the source policy (docs/ADDING_A_JOB_SOURCE.md):
+ * a job board or aggregator, a government's official job board, a remote-jobs feed, a company's own
+ * hiring software, or a scraper the user switches on for a self-hosted install.
+ */
+export type SourceKind = "board" | "official" | "remote" | "company" | "opt-in";
+
 export interface JobSource {
   id: string;
   label: string;
+  kind: SourceKind;
+  /** Where its jobs are, in a few words for the README: "Sweden", "Remote jobs open worldwide". */
+  coverage: string;
+  /** What the user has to set up first, if anything: "A free RapidAPI key". */
+  needs?: string;
   /** Credit line and link required by the source's terms. */
   attribution: { name: string; url: string };
   enabled(ctx: SourceContext): boolean;

@@ -6,6 +6,11 @@ export const SOURCE_CREDITS: Record<string, { name: string; url: string }> = {
   jsearch: { name: "Google for Jobs via JSearch", url: "https://rapidapi.com/letscrunch/api/jsearch" },
   freehire: { name: "freehire.me", url: "https://freehire.me" },
   jobicy: { name: "Jobicy", url: "https://jobicy.com" },
+  remotive: { name: "Remotive", url: "https://remotive.com" },
+  remoteok: { name: "Remote OK", url: "https://remoteok.com" },
+  himalayas: { name: "Himalayas", url: "https://himalayas.app" },
+  arbeitnow: { name: "Arbeitnow", url: "https://www.arbeitnow.com" },
+  platsbanken: { name: "Platsbanken (Arbetsförmedlingen), via JobTech", url: "https://arbetsformedlingen.se/platsbanken" },
   // Company job-board feeds (lib/jobs/sources/companies): postings straight from the employer.
   greenhouse: { name: "Greenhouse (the company's careers page)", url: "https://www.greenhouse.com" },
   lever: { name: "Lever (the company's careers page)", url: "https://www.lever.co" },

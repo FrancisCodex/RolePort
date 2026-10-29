@@ -21,7 +21,8 @@
     "db:studio": "drizzle-kit studio",
     "jobspy": "docker compose up -d --build jobspy",
     "jobspy:stop": "docker compose stop jobspy",
-    "jobspy:logs": "docker compose logs -f jobspy"
+    "jobspy:logs": "docker compose logs -f jobspy",
+    "docs:sources": "node scripts/sources-table.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.135.0",

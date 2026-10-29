@@ -8,6 +8,7 @@ import { Input, Label } from "@/components/ui/input";
 import { followCompany, unfollowCompany } from "@/lib/client/mutations";
 import type { FollowedCompanyView } from "@/lib/companies/queries";
 import { companyJobsHref } from "@/lib/companies/links";
+import { StarterCompanies } from "./starter-companies";
 
 // Real companies on different hiring services, so a first-timer can see it work in one click.
 const EXAMPLES = [
@@ -26,7 +27,16 @@ const STEPS = [
  * Following companies, explained for someone doing it the first time: what it does, how to find
  * the right link, the form, and the companies already followed. Used on Jobs (in a dialog) and in Settings.
  */
-export function CompanyManager({ companies, onNavigate }: { companies: FollowedCompanyView[]; onNavigate?: () => void }) {
+export function CompanyManager({
+  companies,
+  countries,
+  onNavigate,
+}: {
+  companies: FollowedCompanyView[];
+  /** The user's countries (home first), for the starter lists. */
+  countries: string[];
+  onNavigate?: () => void;
+}) {
   const [url, setUrl] = useState("");
   const [name, setName] = useState("");
   const [message, setMessage] = useState<{ ok: boolean; text: string; companyId?: string } | null>(null);
@@ -65,6 +75,14 @@ export function CompanyManager({ companies, onNavigate }: { companies: FollowedC
 
   return (
     <div className="flex flex-col gap-5">
+      <StarterCompanies companies={companies} countries={countries} onNavigate={onNavigate} />
+
+      <div className="flex items-center gap-3 text-xs font-medium text-subtle">
+        <span className="h-px flex-1 bg-border" />
+        Or follow any company with its careers page link
+        <span className="h-px flex-1 bg-border" />
+      </div>
+
       <ol className="flex flex-col gap-2.5">
         {STEPS.map((step, i) => (
           <li key={i} className="flex gap-3 text-[13px] leading-relaxed text-muted">

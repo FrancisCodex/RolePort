@@ -78,6 +78,8 @@ function normalize(job: JobicyJob): NormalizedJob {
 export const jobicySource: JobSource = {
   id: "jobicy",
   label: "Jobicy",
+  kind: "remote",
+  coverage: "Remote jobs open to people in the countries it lists",
   attribution: SOURCE_CREDITS.jobicy,
   enabled: () => true,
   // Jobicy only lists remote roles, filtered by where the applicant lives.

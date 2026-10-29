@@ -35,7 +35,8 @@ export default function PrivacyPage() {
         <p>
           <strong>Job searches go through RolePort&apos;s server.</strong> Most job sites don&apos;t accept requests from other websites, so
           your search terms and filters (job title, country, location, work setup, date range) go to RolePort&apos;s server. It asks
-          freehire, Jobicy and, if you added a key, JSearch, and sends the jobs back. It stores nothing. Your IP address is used, in
+          the job sources that cover your search (freehire, the remote-job feeds Jobicy, Remotive, Himalayas and Remote OK, Arbeitnow
+          for Germany, Platsbanken for Sweden and, if you added a key, JSearch), and sends the jobs back. It stores nothing. Your IP address is used, in
           memory only, to limit how many searches can be made per minute, and the hosting provider may keep its standard access
           logs.
         </p>

@@ -107,6 +107,7 @@ export async function loadSettings(): Promise<{
   ai: AiSettingsView;
   rapidApiKeyHint: string | null;
   companies: FollowedCompanyView[];
+  countries: string[];
   jobspyEnabled: boolean;
   cvPrompt: string | null;
   coverLetterPrompt: string | null;
@@ -114,11 +115,16 @@ export async function loadSettings(): Promise<{
   interviewPrompt: string | null;
 }> {
   const db = await getBrowserDb();
-  const [row, companies] = await Promise.all([readSettings(db, LOCAL_USER.id), readFollowedCompanies(db, LOCAL_USER.id)]);
+  const [row, companies, { profile }] = await Promise.all([
+    readSettings(db, LOCAL_USER.id),
+    readFollowedCompanies(db, LOCAL_USER.id),
+    readProfile(db, await me(db)),
+  ]);
   return {
     ai: aiSettingsView(row, readKey, aiConfigFromRow(row, readKey)),
     rapidApiKeyHint: maskSecret(readKey(row?.rapidApiKeyEnc)),
     companies: companies.map(followedCompanyView),
+    countries: [profile.country, ...profile.targetCountries],
     jobspyEnabled: Boolean(row?.jobspyEnabled),
     cvPrompt: row?.cvPrompt ?? null,
     coverLetterPrompt: row?.coverLetterPrompt ?? null,

@@ -1,0 +1,37 @@
+[
+  {
+    "name": "HelloFresh",
+    "ats": "greenhouse",
+    "slug": "hellofresh"
+  },
+  {
+    "name": "Ninja Van",
+    "ats": "lever",
+    "slug": "ninjavan"
+  },
+  {
+    "name": "Okta",
+    "ats": "greenhouse",
+    "slug": "okta"
+  },
+  {
+    "name": "Coinbase",
+    "ats": "greenhouse",
+    "slug": "coinbase"
+  },
+  {
+    "name": "Airbnb",
+    "ats": "greenhouse",
+    "slug": "airbnb"
+  },
+  {
+    "name": "Delivery Hero",
+    "ats": "smartrecruiters",
+    "slug": "DeliveryHero"
+  },
+  {
+    "name": "Wise",
+    "ats": "greenhouse",
+    "slug": "wise"
+  }
+]

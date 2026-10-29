@@ -105,6 +105,8 @@ function normalize(job: FreehireJob, fallbackCurrency: string): NormalizedJob {
 export const freehireSource: JobSource = {
   id: "freehire",
   label: "freehire",
+  kind: "board",
+  coverage: "Every country",
   attribution: SOURCE_CREDITS.freehire,
   enabled: () => true,
   covers: () => true,

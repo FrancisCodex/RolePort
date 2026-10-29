@@ -36,7 +36,7 @@ const moreFeatures = [
   {
     icon: Globe,
     title: "Search anywhere, once",
-    body: "Jobs from freehire, Jobicy, JSearch and JobSpy (LinkedIn, Indeed, Glassdoor and more), with the same opening shown once even when it's on several boards.",
+    body: "Job boards, government job boards, remote-job feeds and the careers pages of companies you follow, with the same opening shown once even when it's on several boards.",
   },
   { icon: Bot, title: "Bring your own AI", body: "Claude, OpenAI, OpenRouter, Groq, or a free local model through Ollama." },
   {

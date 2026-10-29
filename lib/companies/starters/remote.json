@@ -1,0 +1,52 @@
+[
+  {
+    "name": "GitLab",
+    "ats": "greenhouse",
+    "slug": "gitlab"
+  },
+  {
+    "name": "Supabase",
+    "ats": "ashby",
+    "slug": "supabase"
+  },
+  {
+    "name": "PostHog",
+    "ats": "ashby",
+    "slug": "posthog"
+  },
+  {
+    "name": "Twilio",
+    "ats": "greenhouse",
+    "slug": "twilio"
+  },
+  {
+    "name": "Canonical",
+    "ats": "greenhouse",
+    "slug": "canonical"
+  },
+  {
+    "name": "Hostaway",
+    "ats": "recruitee",
+    "slug": "hostaway"
+  },
+  {
+    "name": "Hugging Face",
+    "ats": "workable",
+    "slug": "huggingface"
+  },
+  {
+    "name": "Coinbase",
+    "ats": "greenhouse",
+    "slug": "coinbase"
+  },
+  {
+    "name": "Reddit",
+    "ats": "greenhouse",
+    "slug": "reddit"
+  },
+  {
+    "name": "Zapier",
+    "ats": "ashby",
+    "slug": "zapier"
+  }
+]

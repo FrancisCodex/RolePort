@@ -15,6 +15,8 @@ export type SettingsData = {
   aiInBrowser?: boolean;
   rapidApiKeyHint: string | null;
   companies: FollowedCompanyView[];
+  /** The user's countries (home first), for the starter company lists. */
+  countries: string[];
   /** The JobSpy switch, when this install can use it. */
   jobSpy: { enabled: boolean; reachable: boolean } | null;
   /** Lite: JobSpy on the user's computer, called from the browser. */
@@ -37,6 +39,7 @@ export function SettingsView({
   aiInBrowser,
   rapidApiKeyHint,
   companies,
+  countries,
   jobSpy,
   localJobSpy,
   cvPrompt,
@@ -116,8 +119,9 @@ export function SettingsView({
         <CardHeader>
           <CardTitle>Job sources</CardTitle>
           <CardDescription>
-            freehire and Jobicy work without a key, in every country. Add JSearch to include Google for Jobs listings from JobStreet,
-            Indeed, LinkedIn and Kalibrr.
+            freehire, the remote-job feeds (Jobicy, Remotive, Himalayas, Remote OK) and official boards like Platsbanken (Sweden) work
+            without a key and are searched whenever they cover your search. Add JSearch to include Google for Jobs listings from
+            JobStreet, Indeed, LinkedIn and Kalibrr.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
@@ -136,7 +140,7 @@ export function SettingsView({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <CompanyManager companies={companies} />
+          <CompanyManager companies={companies} countries={countries} />
         </CardContent>
       </Card>
 

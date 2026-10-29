@@ -47,6 +47,9 @@ export const followCompany: typeof settings.followCompany = isLite ? async (...a
 export const unfollowCompany: typeof settings.unfollowCompany = isLite
   ? async (...a) => (await lite()).unfollowCompany(...a)
   : settings.unfollowCompany;
+export const followStarterCompanies: typeof settings.followStarterCompanies = isLite
+  ? async (...a) => (await lite()).followStarterCompanies(...a)
+  : settings.followStarterCompanies;
 export const saveRapidApiKey: typeof settings.saveRapidApiKey = isLite ? async (...a) => (await lite()).saveRapidApiKey(...a) : settings.saveRapidApiKey;
 export const saveJobSpyEnabled: typeof settings.saveJobSpyEnabled = isLite
   ? async (...a) => (await lite()).saveJobSpyEnabled(...a)
