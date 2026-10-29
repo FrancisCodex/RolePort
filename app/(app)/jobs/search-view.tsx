@@ -128,9 +128,11 @@ export function JobSearchView({
         </div>
       )}
 
-      <CompaniesBar companies={companies} countries={[profile.country, ...profile.targetCountries]} />
-
-      <PasteJob className="-mt-2" />
+      {/* Two shortcuts that each open a dialog: follow companies, and add a job found elsewhere. */}
+      <div className="-mt-2 grid gap-2 lg:grid-cols-2">
+        <CompaniesBar companies={companies} countries={[profile.country, ...profile.targetCountries]} />
+        <PasteJob />
+      </div>
 
       {query ? (
         results

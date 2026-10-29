@@ -23,7 +23,17 @@ const chip = (on: boolean) =>
  * their jobs, and opens the guided dialog to add or remove them. `active` marks the company
  * (or "all") whose jobs are showing.
  */
-export function CompaniesBar({ companies, countries, active }: { companies: FollowedCompanyView[]; countries: string[]; active?: string }) {
+export function CompaniesBar({
+  companies,
+  countries,
+  active,
+  className,
+}: {
+  companies: FollowedCompanyView[];
+  countries: string[];
+  active?: string;
+  className?: string;
+}) {
   const [open, setOpen] = useState(false);
   // The company being viewed stays visible even when it's past the first few.
   const current = companies.find((c) => c.id === active);
@@ -33,18 +43,18 @@ export function CompaniesBar({ companies, countries, active }: { companies: Foll
   return (
     <>
       {companies.length === 0 ? (
-        <div className="-mt-2 flex flex-col gap-2 rounded-lg border border-dashed border-border-strong px-3 py-2.5 sm:flex-row sm:items-center">
+        <div className={cn("flex flex-col gap-2 rounded-lg border border-dashed border-border-strong px-3 py-2.5 sm:flex-row sm:items-center", className)}>
           <Building2 className="hidden size-4 shrink-0 text-brand-ink sm:block" />
           <p className="flex-1 text-[13px] text-muted">
-            <strong className="font-medium text-fg">Have a company in mind?</strong> Follow it, or pick from popular employers in your
-            country, and their openings show up in your searches, straight from their own careers pages.
+            <strong className="font-medium text-fg">Have a company in mind?</strong> Follow it, or pick popular employers in your country.
+            Their openings show up in your searches.
           </p>
           <Button variant="secondary" size="sm" onClick={() => setOpen(true)} className="self-start sm:self-auto">
             Follow companies
           </Button>
         </div>
       ) : (
-        <div className="-mt-2 flex flex-wrap items-center gap-1.5 text-xs">
+        <div className={cn("flex flex-wrap items-center gap-1.5 rounded-lg border border-dashed border-border-strong px-3 py-2.5 text-xs", className)}>
           <span className="text-subtle">Following:</span>
           <Link href={companyJobsHref()} className={chip(active === "all")}>
             <Building2 className="size-3" /> All their jobs

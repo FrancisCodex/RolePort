@@ -85,9 +85,9 @@ Later: Teamtailor, Personio, BambooHR, Workday (harder).
 
 **Done when:** you can follow a company by pasting its careers URL, its jobs show up in search, closed jobs are marked, and there are fixture tests for every source. *(All done except closed jobs, which moved to Phase 2 so pasted jobs share the same check.)*
 
-## 2. Paste a job
+## 2. Paste a job (built)
 
-One input on **Jobs** (and on the home page): "Paste a job link or the job description".
+An **Add a job** card on **Jobs** (beside **Follow companies**) and on the home page opens a dialog: "Paste a job link or the job description".
 
 1. **A link from a supported hiring system** (Greenhouse, Lever and the others): fetch the posting through that source. You get structured data and the "still open" check, and RolePort offers "Follow this company".
 2. **Any other link:** fetch that one page (it passes the private-address guard, follows at most 3 redirects, is capped at 2 MB, and isn't fetched again within 1 hour). Read the `schema.org/JobPosting` JSON-LD most careers pages include. If it isn't there, extract the page text.
@@ -99,7 +99,16 @@ One input on **Jobs** (and on the home page): "Paste a job link or the job descr
 
 **Done when:** a Greenhouse link, a company page with JSON-LD and a pasted LinkedIn description each end up as a saved, evaluated job.
 
-**How it was built:** the box sits on Jobs and Home (`components/jobs/paste-job.tsx`). Greenhouse, Lever and SmartRecruiters postings are read through their single-posting APIs; Ashby, Workable and Recruitee postings are looked up in the company's feed. Other pages go through `lib/jobs/paste/link.ts`: the address guard, 3 redirects, 2 MB, and one fetch per link per hour. LinkedIn, Facebook, Indeed, Glassdoor and OnlineJobs.ph pages aren't fetched; RolePort asks for the text instead. The AI reads text with `lib/ai/extract-job.ts`, and `lib/jobs/paste/verify.ts` empties every field the text doesn't back up. Saving always puts the job on the user's list, so it can't get lost. "Check again" covers company-feed jobs and pasted links, and a saved job is checked once a day when its page opens; the answer is kept on the job. Lite uses `/api/lite/job-link` and `/api/lite/job-check`.
+### How it was built
+
+- **The dialog** (`components/jobs/paste-job.tsx`): three short steps on how it works, the box for a link or text, and a "Good to know" list of what isn't read (LinkedIn, Facebook, Indeed, Glassdoor, OnlineJobs.ph, private or local addresses, pages that only show the job in a browser). The review screen opens in the same dialog, with **Back** to change what was pasted.
+- **Hiring systems:** Greenhouse, Lever and SmartRecruiters postings are read through their single-posting APIs; Ashby, Workable and Recruitee postings are looked up in the company's feed (`postingId()` and `fetchPosting()` on each board). The review offers to follow the company.
+- **Other pages** (`lib/jobs/paste/link.ts`, `page.ts`): the address guard, 3 redirects, 2 MB, one fetch per link per hour, then the page's `JobPosting` JSON-LD, else its readable text. Sites whose terms don't allow reading are never fetched; RolePort asks for the text instead.
+- **AI is optional.** Hiring-system links and pages with JSON-LD fill in without it. Only plain text (pasted, or from a page without JSON-LD) needs the AI (`lib/ai/extract-job.ts`), and `lib/jobs/paste/verify.ts` empties every field the text doesn't back up word for word. Without AI the user fills those fields in. Tested on gemma4 12B.
+- **Saving** (`lib/jobs/paste/store.ts`) always puts the job on the user's list, so it can't get lost. Pasting the same link or text again updates the same job.
+- **Still open:** "Check again" on the job page covers company-feed jobs and pasted links, and a saved job is checked once a day when its page opens. The answer is kept on the job; closed jobs are marked on the job page, job cards and the Applied list ("Posting closed").
+- **Lite:** `/api/lite/job-link` reads links and `/api/lite/job-check` checks them; pasted text is read by the user's AI in the browser.
+- **Tests:** `lib/jobs/paste/*.test.ts` (JSON-LD, page text, closed wording, the extraction checks, link reading and checks with saved responses).
 
 ## 3. Email applications and follow-ups (reaching people directly)
 
