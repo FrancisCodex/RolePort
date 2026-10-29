@@ -46,7 +46,7 @@ export function buildLetterPrompt({ profile, cvText, job }: LetterInput): string
 
 const tidy = (s: string) => s.replace(/[ \t]+/g, " ").trim();
 
-const CLICHES = [
+export const CLICHES = [
   "i am writing to express my interest",
   "i am writing to apply",
   "i believe i would be a great fit",
@@ -60,7 +60,7 @@ const CLICHES = [
   "hit the ground running",
 ];
 
-const PLACEHOLDER = /\[[^\]]{1,40}\]|\{[^}]{1,40}\}|<[^>]{1,40}>|\bXX+\b/;
+export const PLACEHOLDER = /\[[^\]]{1,40}\]|\{[^}]{1,40}\}|<[^>]{1,40}>|\bXX+\b/;
 
 /**
  * Turn the model's draft into the letter body and review it against the profile and CV:

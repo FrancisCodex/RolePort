@@ -159,15 +159,17 @@ export function HomeView({ firstName, stats, setup }: HomeData) {
                 {stats.followUps.map((f) => (
                   <li key={f.id}>
                     <Link
-                      href={f.jobId ? `/jobs/${f.jobId}` : "/pipeline"}
+                      href={`/applied/${f.id}/emails?draft=${f.kind}`}
                       className="flex items-center justify-between gap-3 rounded-md px-2 py-1.5 transition-colors hover:bg-surface-2"
                     >
                       <span className="min-w-0">
-                        <span className="block truncate text-[13px] font-medium">{f.role}</span>
-                        <span className="block truncate text-xs text-muted">{f.company}</span>
+                        <span className="block truncate text-[13px] font-medium">{f.label}</span>
+                        <span className="block truncate text-xs text-muted">
+                          {f.role} · {f.company}
+                        </span>
                       </span>
-                      <Badge tone="warning" className="shrink-0 whitespace-nowrap">
-                        {f.days} days
+                      <Badge tone={f.due ? "warning" : "neutral"} className="shrink-0 whitespace-nowrap">
+                        {f.when}
                       </Badge>
                     </Link>
                   </li>
@@ -175,7 +177,11 @@ export function HomeView({ firstName, stats, setup }: HomeData) {
               </ul>
             ) : (
               <p className="text-[13px] text-muted">
-                Nothing waiting. Applications with no reply for a week show up here, so you know when to check in.
+                Nothing waiting. Follow-ups show up here when they&apos;re due: a week after you apply, after an interview, before an offer&apos;s
+                deadline.{" "}
+                <Link href="/settings#follow-ups" className="font-medium text-brand-ink hover:underline">
+                  Change when
+                </Link>
               </p>
             )}
           </Panel>
@@ -308,7 +314,7 @@ function SetupChecklist({ setup }: { setup: HomeData["setup"] }) {
   );
 }
 
-function ActivityRow({ company, role, status, ago, jobId }: HomeData["stats"]["recent"][number]) {
+function ActivityRow({ company, role, status, note, ago, jobId }: HomeData["stats"]["recent"][number]) {
   const body = (
     <>
       <Badge tone={STATUS_TONE[status]} className="w-20 shrink-0 justify-center">
@@ -316,7 +322,7 @@ function ActivityRow({ company, role, status, ago, jobId }: HomeData["stats"]["r
       </Badge>
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[13px] font-medium">{role}</span>
-        <span className="block truncate text-xs text-muted">{company}</span>
+        <span className="block truncate text-xs text-muted">{note ? `${note} · ${company}` : company}</span>
       </span>
       <span className="shrink-0 text-xs text-subtle tabular-nums">{ago}</span>
     </>

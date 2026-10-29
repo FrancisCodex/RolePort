@@ -15,12 +15,12 @@ Each step ships on its own branch and works in self-hosted and Lite, unless it s
 | 1C. Contributor kit | ✅ Done | `feat/more-job-sources` |
 | Extra: old and ghost postings hidden, past month by default | ✅ Done | `feat/more-job-sources` |
 | 2. Paste a job (and "still open" checks) | ✅ Done | `feat/paste-a-job` |
-| 3. Email applications and follow-ups | ⏭️ Next | — |
+| 3. Email applications and follow-ups | ✅ Done (pasting an employer's reply is still for later, see 3B) | `feat/email-and-follow-ups` |
 | MCP server | Not started | — |
-| 4. Documentation page (`/docs`) with search | Not started | — |
+| 4. Documentation page (`/docs`) with search | ⏭️ Next | — |
 | 5. Desktop app: job scout, apply assistant | Not started | — |
 
-**Next up: Phase 3, email applications and follow-ups.** Everything marked ✅ Done is finished.
+**Next up: Phase 4, the documentation page.** Everything marked ✅ Done is finished.
 
 ---
 
@@ -112,7 +112,7 @@ An **Add a job** card on **Jobs** (beside **Follow companies**) and on the home 
 - **Lite:** `/api/lite/job-link` reads links and `/api/lite/job-check` checks them; pasted text is read by the user's AI in the browser.
 - **Tests:** `lib/jobs/paste/*.test.ts` (JSON-LD, page text, closed wording, the extraction checks, link reading and checks with saved responses).
 
-## 3. Email applications and follow-ups (reaching people directly) ⏭️ Next
+## 3. Email applications and follow-ups (reaching people directly) ✅ Done
 
 All of this lives on the application page (`/applied/[id]`) and reuses the cover-letter pipeline (`lib/letter`): profile facts in code, the prompt editable in Settings, checks for unsupported numbers, placeholders and clichés. **RolePort never sends anything**: copy, download, or open in the user's mail app (`mailto:` with subject and body).
 
@@ -135,7 +135,19 @@ All of this lives on the application page (`/applied/[id]`) and reuses the cover
 - **Log it:** "Mark as sent" adds an entry to the status history and schedules the next follow-up. "Got a reply" pauses them all.
 - **Later:** paste an employer's reply and RolePort suggests a status change (interview invite, rejection, offer).
 
-**Done when:** from an applied job you can produce an application email and a follow-up after 7 days, mark both as sent, and see the next one on the dashboard.
+**Done when:** from an applied job you can produce an application email and a follow-up after 7 days, mark both as sent, and see the next one on the dashboard. *(All done. Pasting an employer's reply to suggest a status is still for later.)*
+
+### How it was built
+
+- **The page** (`/applied/[id]/emails`, opened from an **Emails and follow-ups** row in the application kit and from Home): pick a kind (Application, Referral, Hiring manager, LinkedIn; Follow-up 1 and 2, Thank you, Check-in, Offer reply), fill in who it's for, edit the subject and message, then **Copy message**, **Open in my mail app** (`mailto:` with the subject and body) or, for LinkedIn, open the contact's profile. **Mark as sent** (with **Not sent** to undo) logs it. Edits save as you type.
+- **Storage:** one `follow_up` document per application (`lib/outreach/types.ts`) holds the contacts, a draft per kind, the sent log, "Got a reply", the reply-by and offer-deadline dates, what came up in the interview and the attachments checklist. Backups carry it with the other documents. Marking sent adds a note to the status history ("Sent: First follow-up"), updates `last_contact_at`, `follow_up_count` and `next_follow_up_at`, and sending the application email moves a saved job to Applied.
+- **Contacts:** added by hand per application (name, role, email, LinkedIn, notes); email addresses written in the posting are offered with one click. Nothing is looked up.
+- **AI drafts** (`lib/ai/write-email.ts`, prompt in `lib/ai/email-prompt.ts`, editable in Settings → Email prompt): the model writes the greeting and message from the profile, the posting and the application's history (`lib/outreach/view.ts` builds the prompt, shown word for word on the page). The subject and sign-off come from code. Checks flag numbers not in the profile, CV or application, placeholders, clichés, length (LinkedIn's 300 characters) and a missing employer name. Without AI, everything works except the draft button.
+- **What came up:** thank-you and check-in drafts only use what the user writes there. Points from the Interview Coach for the application can be added with one click, labelled as practice, not the real interview.
+- **Attachments checklist:** the tailored CV and cover letter (with their status and links), plus what the posting asks for (portfolio, references, transcript, samples, certificates, NBI clearance).
+- **Follow-up rules** (`lib/outreach/rules.ts`, Settings → Follow-up reminders, each one can be changed or switched off): first nudge 7 days after applying (or after the application email was sent), second at 14; thank-you within 24 hours of the interview; check-in 5 working days after the date they gave (or the interview); offer reply 2 days before the deadline. **Got a reply** pauses them until the application moves to another status. Home's **Follow up** panel lists what's due and what's coming in the next two weeks, each opening its draft.
+- **Lite:** the same code runs on the browser database; drafts go from the browser to the user's AI.
+- **Tests:** `lib/outreach/rules.test.ts` (the rules, labels, mailto links) and `lib/ai/write-email.test.ts` (composing, checks, the prompt).
 
 ## 4. Documentation page (`/docs`)
 
@@ -189,8 +201,8 @@ Desktop-only isn't required for any of this except the two features above. Keep 
 | 0. Tests, fetch helper, address guard ✅ | S | — |
 | 1A. Company feeds + Companies I follow ✅ | L | 0 |
 | 2. Paste a job ✅ | M | 0 (1A for supported links) |
-| 3A. Email application + contacts | M | — |
-| 3B. Follow-ups | M | 3A |
+| 3A. Email application + contacts ✅ | M | — |
+| 3B. Follow-ups ✅ | M | 3A |
 | 1B. Government and remote feeds ✅ (more to come) | M (per source: S) | 0 |
 | 1C. Contributor kit ✅ | S | 1A |
 | MCP server | S–M | — |

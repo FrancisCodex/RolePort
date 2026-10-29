@@ -1,6 +1,7 @@
 import * as applied from "@/app/(app)/applied/actions";
 import * as coach from "@/app/(app)/coach/actions";
 import * as letter from "@/app/(app)/applied/[id]/cover-letter/actions";
+import * as emails from "@/app/(app)/applied/[id]/emails/actions";
 import * as questions from "@/app/(app)/applied/[id]/questions/actions";
 import * as cv from "@/app/(app)/applied/[id]/cv/actions";
 import * as jobs from "@/app/(app)/jobs/actions";
@@ -73,6 +74,17 @@ export const discardLetter: typeof letter.discardLetter = isLite ? async (...a) 
 export const saveLetterPrompt: typeof letter.saveLetterPrompt = isLite
   ? async (...a) => (await lite()).saveLetterPrompt(...a)
   : letter.saveLetterPrompt;
+
+export const saveOutreach: typeof emails.saveOutreach = isLite ? async (...a) => (await lite()).saveOutreach(...a) : emails.saveOutreach;
+export const draftEmail: typeof emails.draftEmail = isLite ? async (...a) => (await lite()).draftEmail(...a) : emails.draftEmail;
+export const markEmailSent: typeof emails.markEmailSent = isLite ? async (...a) => (await lite()).markEmailSent(...a) : emails.markEmailSent;
+export const setFollowUpsPaused: typeof emails.setFollowUpsPaused = isLite
+  ? async (...a) => (await lite()).setFollowUpsPaused(...a)
+  : emails.setFollowUpsPaused;
+export const saveEmailPrompt: typeof emails.saveEmailPrompt = isLite ? async (...a) => (await lite()).saveEmailPrompt(...a) : emails.saveEmailPrompt;
+export const saveFollowUpRules: typeof emails.saveFollowUpRules = isLite
+  ? async (...a) => (await lite()).saveFollowUpRules(...a)
+  : emails.saveFollowUpRules;
 
 export const saveQuestions: typeof questions.saveQuestions = isLite ? async (...a) => (await lite()).saveQuestions(...a) : questions.saveQuestions;
 export const saveAnswerPrompt: typeof questions.saveAnswerPrompt = isLite

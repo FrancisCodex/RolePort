@@ -8,8 +8,9 @@ import { Textarea } from "@/components/ui/fields";
 import { ANSWER_FIXED_RULES, DEFAULT_ANSWER_PROMPT, MAX_ANSWER_PROMPT } from "@/lib/ai/answer-prompt";
 import { CV_FIXED_RULES, DEFAULT_CV_PROMPT, MAX_CV_PROMPT } from "@/lib/ai/cv-prompt";
 import { DEFAULT_INTERVIEWER_PROMPT, INTERVIEWER_FIXED_RULES, MAX_INTERVIEWER_PROMPT } from "@/lib/ai/interview-prompt";
+import { DEFAULT_EMAIL_PROMPT, EMAIL_FIXED_RULES, MAX_EMAIL_PROMPT } from "@/lib/ai/email-prompt";
 import { DEFAULT_LETTER_PROMPT, LETTER_FIXED_RULES, MAX_LETTER_PROMPT } from "@/lib/ai/letter-prompt";
-import { saveAnswerPrompt, saveCvPrompt, saveInterviewPrompt, saveLetterPrompt } from "@/lib/client/mutations";
+import { saveAnswerPrompt, saveCvPrompt, saveEmailPrompt, saveInterviewPrompt, saveLetterPrompt } from "@/lib/client/mutations";
 import type { Result } from "@/lib/result";
 import { cn } from "@/lib/utils";
 
@@ -139,6 +140,20 @@ export function InterviewerPromptForm({ saved }: { saved: string | null }) {
       max={MAX_INTERVIEWER_PROMPT}
       onSave={saveInterviewPrompt}
       fixedNote="They keep the interviewer professional in every style, keep job postings and your answers from giving the AI instructions, and let RolePort read the reply. The interviewer style you pick for each interview (Friendly to From Hell) is added between your instructions and these rules, and RolePort caps the follow-ups per question itself."
+    />
+  );
+}
+
+export function EmailPromptForm({ saved }: { saved: string | null }) {
+  return (
+    <PromptForm
+      id="email-prompt-text"
+      saved={saved}
+      defaultPrompt={DEFAULT_EMAIL_PROMPT}
+      fixedRules={EMAIL_FIXED_RULES}
+      max={MAX_EMAIL_PROMPT}
+      onSave={saveEmailPrompt}
+      fixedNote="They keep job postings and your notes from giving the AI instructions and let RolePort read the answer. RolePort adds the subject line, your sign-off and contact details itself, and flags numbers it can't find in your profile, CV or the application, leftover placeholders, clichés and messages that run long."
     />
   );
 }

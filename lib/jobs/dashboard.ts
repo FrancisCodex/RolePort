@@ -1,6 +1,9 @@
 import { desc, eq, inArray } from "drizzle-orm";
 import * as schema from "@/lib/db/schema";
 import type { AnyDb } from "@/lib/db/types";
+import { readEmailPrompt, readOutreachDocs } from "@/lib/outreach/outreach";
+import { followUpLabel, nextFollowUp } from "@/lib/outreach/rules";
+import { EMAIL_INFO, EMPTY_OUTREACH, type FollowUpKind } from "@/lib/outreach/types";
 import type { ApplicationStatus } from "./applications";
 import { timeAgo } from "./format";
 
@@ -15,7 +18,8 @@ export type Stage = (typeof STAGES)[number];
 const CLOSED: ApplicationStatus[] = ["rejected", "withdrawn", "offer_declined", "ghosted"];
 
 const WEEKS = 8;
-const FOLLOW_UP_AFTER_DAYS = 7;
+/** How far ahead "Follow up" lists what's coming. */
+const FOLLOW_UP_AHEAD_DAYS = 14;
 const DAY = 86_400_000;
 
 export type DashboardStats = {
@@ -32,9 +36,9 @@ export type DashboardStats = {
   sentThisWeek: number;
   evaluations: { count: number; average: number | null; strong: number };
   /** Latest pipeline changes; `ago` is formatted where the data is loaded so server and browser agree. */
-  recent: { id: string; company: string; role: string; status: ApplicationStatus; at: string; ago: string; jobId: string | null }[];
-  /** Applied or screening with no change for a while: worth a follow-up. */
-  followUps: { id: string; company: string; role: string; days: number; jobId: string | null }[];
+  recent: { id: string; company: string; role: string; status: ApplicationStatus; note: string | null; at: string; ago: string; jobId: string | null }[];
+  /** Follow-ups due now (oldest first), then the ones coming up in the next two weeks, from the rules in Settings. */
+  followUps: { id: string; company: string; role: string; kind: FollowUpKind; label: string; when: string; due: boolean; dueAt: string }[];
 };
 
 /** Monday 00:00 (local time) of the week containing `date`. */
@@ -48,9 +52,11 @@ function weekStart(date: Date): Date {
 const isoDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 
 export async function readDashboard(db: AnyDb, userId: string, now = new Date()): Promise<DashboardStats> {
-  const [apps, matches] = await Promise.all([
+  const [apps, matches, outreach, { rules }] = await Promise.all([
     db.select().from(schema.application).where(eq(schema.application.userId, userId)),
     db.select({ score: schema.jobMatch.overallScore }).from(schema.jobMatch).where(eq(schema.jobMatch.userId, userId)),
+    readOutreachDocs(db, userId),
+    readEmailPrompt(db, userId),
   ]);
   const events = apps.length
     ? await db
@@ -116,13 +122,34 @@ export async function readDashboard(db: AnyDb, userId: string, now = new Date())
     recent: events.slice(0, 6).flatMap((e) => {
       const app = appById.get(e.applicationId);
       return app
-        ? [{ id: e.id, company: app.company, role: app.role, status: e.status, at: e.occurredAt.toISOString(), ago: timeAgo(e.occurredAt, now.getTime()) ?? "", jobId: app.jobId }]
+        ? [
+            {
+              id: e.id,
+              company: app.company,
+              role: app.role,
+              status: e.status,
+              note: e.note,
+              at: e.occurredAt.toISOString(),
+              ago: timeAgo(e.occurredAt, now.getTime()) ?? "",
+              jobId: app.jobId,
+            },
+          ]
         : [];
     }),
     followUps: apps
-      .filter((a) => (a.status === "applied" || a.status === "screening") && now.getTime() - a.updatedAt.getTime() > FOLLOW_UP_AFTER_DAYS * DAY)
-      .map((a) => ({ id: a.id, company: a.company, role: a.role, days: Math.floor((now.getTime() - a.updatedAt.getTime()) / DAY), jobId: a.jobId }))
-      .sort((a, b) => b.days - a.days)
-      .slice(0, 4),
+      .flatMap((a) => {
+        const offerAt = events.find((e) => e.applicationId === a.id && e.status === "offer")?.occurredAt ?? null;
+        const next = nextFollowUp(
+          { status: a.status, appliedAt: a.appliedAt, interviewAt: a.interviewAt, offerAt, doc: outreach.get(a.id) ?? EMPTY_OUTREACH },
+          rules,
+          now,
+        );
+        if (!next || next.dueAt.getTime() > now.getTime() + FOLLOW_UP_AHEAD_DAYS * DAY) return [];
+        const { text, due } = followUpLabel(next, now);
+        return [{ id: a.id, company: a.company, role: a.role, kind: next.kind, label: EMAIL_INFO[next.kind].label, when: text, due, dueAt: next.dueAt.toISOString() }];
+      })
+      // ISO strings sort by time.
+      .sort((a, b) => a.dueAt.localeCompare(b.dueAt))
+      .slice(0, 5),
   };
 }

@@ -126,7 +126,7 @@ function ProgressCard({ data, status }: { data: ApplicationData; status: Status 
                   {i < data.events.length - 1 && <span aria-hidden className="absolute top-3 bottom-0 left-[3px] w-px bg-border" />}
                   <span aria-hidden className={cn("mt-1.5 size-[7px] shrink-0 rounded-full", i === 0 ? "bg-brand" : "bg-border-strong")} />
                   <span className="flex flex-1 items-baseline justify-between gap-2 text-[13px]">
-                    {STATUS_LABEL[e.status]}
+                    {e.note ?? STATUS_LABEL[e.status]}
                     <span className="text-xs text-subtle tabular-nums">{e.on}</span>
                   </span>
                 </li>
