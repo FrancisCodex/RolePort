@@ -1,5 +1,6 @@
 import "server-only";
 import { mergeDuplicates } from "./dedupe";
+import { isFresh } from "./freshness";
 import { jobKey } from "./job-key";
 import { ATS_IDS, BOARDS, COMPANY_SOURCES, readCompanyJobs, type CompanyJobFilters, type CompanyRef } from "./sources/companies";
 import { freehireSource } from "./sources/freehire";
@@ -23,10 +24,11 @@ export { sourceCredit } from "./sources/credits";
 
 export type { KeyedJob } from "./queries";
 
-/** Keys each source's jobs, merges duplicates and counts what each source shows. */
+/** Keys each source's recent jobs (old and ghost postings left out), merges duplicates and counts what each source shows. */
 function collect(
   sources: Pick<JobSource, "id" | "label">[],
   settled: PromiseSettledResult<NormalizedJob[]>[],
+  postedWithinDays: number | undefined,
 ): { jobs: KeyedJob[]; statuses: SourceStatus[] } {
   const found: KeyedJob[] = [];
   const statuses: SourceStatus[] = [];
@@ -38,7 +40,7 @@ function collect(
       statuses.push({ id: source.id, label: source.label, count: 0, failed: true, note: "Couldn't reach this source" });
       return;
     }
-    for (const job of result.value) found.push({ ...job, jobKey: jobKey(job.company, job.title, `${job.source}-${job.sourceId}`) });
+    for (const job of result.value.filter((j) => isFresh(j, postedWithinDays))) found.push({ ...job, jobKey: jobKey(job.company, job.title, `${job.source}-${job.sourceId}`) });
     statuses.push({ id: source.id, label: source.label, count: 0 });
   });
 
@@ -58,7 +60,7 @@ export const MAX_COMPANY_JOBS = 500;
 export async function browseCompanyJobs(companies: CompanyRef[], filters: CompanyJobFilters): Promise<{ jobs: KeyedJob[]; statuses: SourceStatus[] }> {
   const boards = ATS_IDS.filter((id) => companies.some((c) => c.ats === id)).map((id) => BOARDS[id]);
   const settled = await Promise.allSettled(boards.map((b) => readCompanyJobs(b.id, companies, filters)));
-  const { jobs, statuses } = collect(boards, settled);
+  const { jobs, statuses } = collect(boards, settled, filters.postedWithinDays);
   const newest = jobs.sort((a, b) => (b.postedAt ?? "").localeCompare(a.postedAt ?? "")).slice(0, MAX_COMPANY_JOBS);
   return { jobs: newest, statuses };
 }
@@ -70,7 +72,7 @@ export async function searchAllSources(
   sources: JobSource[] = JOB_SOURCES,
 ): Promise<{ jobs: KeyedJob[]; statuses: SourceStatus[] }> {
   const active = sources.filter((s) => s.enabled(ctx) && s.covers(params));
-  const { jobs, statuses } = collect(active, await Promise.allSettled(active.map((s) => s.search(params, ctx))));
+  const { jobs, statuses } = collect(active, await Promise.allSettled(active.map((s) => s.search(params, ctx))), params.postedWithinDays);
 
   for (const source of sources) {
     // Boards that don't cover this search's country stay out of the list, even when switched off.

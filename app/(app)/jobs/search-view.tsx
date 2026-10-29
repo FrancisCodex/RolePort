@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { findCountry, orderedCountries } from "@/lib/geo/countries";
 import type { FollowedCompanyView } from "@/lib/companies/queries";
-import type { ParsedJobSearch } from "@/lib/jobs/search-params";
+import { DEFAULT_POSTED_DAYS, POSTED_OPTIONS, type ParsedJobSearch } from "@/lib/jobs/search-params";
 import { PH_LOCATIONS } from "@/lib/ph-locations";
 import type { ProfileInput } from "@/lib/profile/schema";
 import { cn } from "@/lib/utils";
@@ -19,13 +19,6 @@ const SETUP_OPTIONS = [
   { value: "onsite", label: "Onsite" },
   { value: "hybrid", label: "Hybrid" },
   { value: "remote", label: "Remote" },
-];
-const POSTED_OPTIONS = [
-  { value: "", label: "Any time" },
-  { value: "1", label: "Past 24 hours" },
-  { value: "3", label: "Past 3 days" },
-  { value: "7", label: "Past week" },
-  { value: "30", label: "Past month" },
 ];
 const SORT_OPTIONS = [
   { value: "match", label: "Best match" },
@@ -79,7 +72,7 @@ export function JobSearchView({
           <Select name="setup" defaultValue={params.workSetup ?? ""} aria-label="Work setup" options={SETUP_OPTIONS} />
           <Select
             name="days"
-            defaultValue={params.postedWithinDays ? String(params.postedWithinDays) : ""}
+            defaultValue={String(params.postedWithinDays ?? DEFAULT_POSTED_DAYS)}
             aria-label="Date posted"
             options={POSTED_OPTIONS}
           />

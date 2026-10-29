@@ -4,6 +4,7 @@ import type { CompanyJobFilters } from "@/lib/jobs/sources/companies/match";
 import { ATS_IDS, type CompanyRef } from "@/lib/jobs/sources/companies/types";
 import { LOCAL_USER } from "@/lib/db/local-user";
 import { mergeDuplicates } from "@/lib/jobs/dedupe";
+import { isFresh } from "@/lib/jobs/freshness";
 import { storeJobs, type KeyedJob } from "@/lib/jobs/queries";
 import type { JobSearchParams, SourceStatus } from "@/lib/jobs/types";
 import { readSettings } from "@/lib/settings/queries";
@@ -72,7 +73,9 @@ async function run(
     const id = s.source ?? s.id ?? "";
     return id === "jsearch" || (ATS_IDS as readonly string[]).includes(id);
   };
-  const ordered = [...hosted.jobs.filter(first), ...local.jobs, ...hosted.jobs.filter((j) => !first(j))];
+  // The hosted results are already freshness-checked on the server; the local boards are checked here.
+  const fresh = local.jobs.filter((j) => isFresh(j, params.postedWithinDays));
+  const ordered = [...hosted.jobs.filter(first), ...fresh, ...hosted.jobs.filter((j) => !first(j))];
   const jobs = mergeDuplicates(ordered);
 
   // Counts after merging, so a posting found twice is counted once, where it's shown.

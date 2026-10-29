@@ -37,7 +37,8 @@ const TYPES: Record<string, EmploymentType> = {
 const PERIODS: Record<string, SalaryPeriod> = { HOUR: "hour", DAY: "day", MONTH: "month", YEAR: "year" };
 
 function datePosted(days?: number) {
-  if (!days) return "all";
+  // Past a month JSearch has no setting; ask for everything and let lib/jobs/freshness.ts trim it.
+  if (!days || days > 30) return "all";
   if (days <= 1) return "today";
   if (days <= 3) return "3days";
   if (days <= 7) return "week";

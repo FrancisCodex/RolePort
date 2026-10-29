@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import type { FollowedCompanyView } from "@/lib/companies/queries";
 import { orderedCountries } from "@/lib/geo/countries";
-import type { ParsedCompanyBrowse } from "@/lib/jobs/search-params";
+import { POSTED_OPTIONS, type ParsedCompanyBrowse } from "@/lib/jobs/search-params";
 import type { ProfileInput } from "@/lib/profile/schema";
 
 const SETUP_OPTIONS = [
@@ -16,13 +16,6 @@ const SETUP_OPTIONS = [
   { value: "onsite", label: "Onsite" },
   { value: "hybrid", label: "Hybrid" },
   { value: "remote", label: "Remote" },
-];
-const POSTED_OPTIONS = [
-  { value: "", label: "Any time" },
-  { value: "1", label: "Past 24 hours" },
-  { value: "3", label: "Past 3 days" },
-  { value: "7", label: "Past week" },
-  { value: "30", label: "Past month" },
 ];
 const SORT_OPTIONS = [
   { value: "date", label: "Newest" },
@@ -101,7 +94,7 @@ export function CompanyJobsView({
             <Select name="setup" defaultValue={browse.workSetup ?? ""} aria-label="Work setup" options={SETUP_OPTIONS} />
             <Select
               name="days"
-              defaultValue={browse.postedWithinDays ? String(browse.postedWithinDays) : ""}
+              defaultValue={String(browse.postedWithinDays)}
               aria-label="Date posted"
               options={POSTED_OPTIONS}
             />

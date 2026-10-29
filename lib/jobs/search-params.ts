@@ -11,7 +11,23 @@ import type { JobSearchParams, WorkSetup } from "./types";
  */
 
 export const WORK_SETUPS: WorkSetup[] = ["onsite", "hybrid", "remote"];
-export const POSTED_WITHIN_DAYS = [1, 3, 7, 14, 30];
+/** How recent a posting must be, in days. Older postings are never shown: they are rarely still open. */
+export const POSTED_WITHIN_DAYS = [1, 3, 7, 30, 90];
+/** A month unless the user picks otherwise. */
+export const DEFAULT_POSTED_DAYS = 30;
+
+export const POSTED_OPTIONS = [
+  { value: "1", label: "Past 24 hours" },
+  { value: "3", label: "Past 3 days" },
+  { value: "7", label: "Past week" },
+  { value: "30", label: "Past month" },
+  { value: "90", label: "Past 3 months" },
+];
+
+function postedDays(value: string | undefined): number {
+  const days = Number(value);
+  return POSTED_WITHIN_DAYS.includes(days) ? days : DEFAULT_POSTED_DAYS;
+}
 
 export type JobSort = "match" | "date";
 
@@ -36,7 +52,7 @@ export function parseJobSearch(sp: UrlParams, profile: { desiredRoles: string[];
   const locationId = one(sp.loc);
   const city = locationId === "remote" || country === "PH" ? undefined : one(sp.city)?.slice(0, 80);
   const setup = one(sp.setup) as WorkSetup | undefined;
-  const days = Number(one(sp.days)) || undefined;
+  const days = postedDays(one(sp.days));
   const sort = one(sp.sort) === "date" ? "date" : "match";
 
   return {
@@ -50,7 +66,7 @@ export function parseJobSearch(sp: UrlParams, profile: { desiredRoles: string[];
         locationId === "remote" || (country === "PH" && PH_LOCATIONS.some((l) => l.id === locationId)) ? locationId : undefined,
       city,
       workSetup: setup && WORK_SETUPS.includes(setup) ? setup : undefined,
-      postedWithinDays: days && POSTED_WITHIN_DAYS.includes(days) ? days : undefined,
+      postedWithinDays: days,
     },
   };
 }
@@ -80,7 +96,7 @@ export type ParsedCompanyBrowse = {
   /** Undefined for any country. */
   country: string | undefined;
   workSetup: WorkSetup | undefined;
-  postedWithinDays: number | undefined;
+  postedWithinDays: number;
   sort: JobSort;
 };
 
@@ -90,13 +106,13 @@ export function isCompanyBrowse(sp: UrlParams): boolean {
 
 export function parseCompanyBrowse(sp: UrlParams): ParsedCompanyBrowse {
   const setup = one(sp.setup) as WorkSetup | undefined;
-  const days = Number(one(sp.days)) || undefined;
+  const days = postedDays(one(sp.days));
   return {
     company: one(sp.company)?.slice(0, 100),
     query: one(sp.q)?.slice(0, 120) ?? "",
     country: findCountry(one(sp.country))?.code,
     workSetup: setup && WORK_SETUPS.includes(setup) ? setup : undefined,
-    postedWithinDays: days && POSTED_WITHIN_DAYS.includes(days) ? days : undefined,
+    postedWithinDays: days,
     // Newest first by default: this view is for seeing what a company has open.
     sort: one(sp.sort) === "match" ? "match" : "date",
   };

@@ -175,7 +175,7 @@ describe("parseCompanyBrowse", () => {
       query: "",
       country: undefined,
       workSetup: undefined,
-      postedWithinDays: undefined,
+      postedWithinDays: 30,
       sort: "date",
     });
     expect(parseCompanyBrowse({ country: "sg", setup: "remote", days: "7", sort: "match", q: "design" })).toMatchObject({
@@ -185,7 +185,7 @@ describe("parseCompanyBrowse", () => {
       sort: "match",
       query: "design",
     });
-    expect(parseCompanyBrowse({ country: "nowhere", setup: "beach", days: "5" })).toMatchObject({ country: undefined, workSetup: undefined, postedWithinDays: undefined });
+    expect(parseCompanyBrowse({ country: "nowhere", setup: "beach", days: "5" })).toMatchObject({ country: undefined, workSetup: undefined, postedWithinDays: 30 });
   });
 });
 
