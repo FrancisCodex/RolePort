@@ -9,20 +9,22 @@ Each step ships on its own branch and works in self-hosted and Lite, unless it s
 
 | Phase | Status | Branch |
 | --- | --- | --- |
-| 0. Groundwork: tests, fetch helper, private-address guard | ✅ Built | `feat/more-job-sources` |
-| 1A. Company job-board feeds, Companies I follow, starter lists | ✅ Built (closed-job check moved to Phase 2) | `feat/more-job-sources` |
-| 1B. Official boards and remote feeds | ✅ Built: Remotive, Remote OK, Himalayas, Arbeitnow, Platsbanken. Others are waiting, see 1B | `feat/more-job-sources` |
-| 1C. Contributor kit | ✅ Built | `feat/more-job-sources` |
-| Extra: old and ghost postings hidden, past month by default | ✅ Built | `feat/more-job-sources` |
-| 2. Paste a job (and "still open" checks) | ✅ Built | `feat/paste-a-job` |
-| 3. Email applications and follow-ups | Next | — |
+| 0. Groundwork: tests, fetch helper, private-address guard | ✅ Done | `feat/more-job-sources` |
+| 1A. Company job-board feeds, Companies I follow, starter lists | ✅ Done (its closed-job check was finished in Phase 2) | `feat/more-job-sources` |
+| 1B. Official boards and remote feeds | ✅ Done: Remotive, Remote OK, Himalayas, Arbeitnow, Platsbanken. More can be added later, see 1B | `feat/more-job-sources` |
+| 1C. Contributor kit | ✅ Done | `feat/more-job-sources` |
+| Extra: old and ghost postings hidden, past month by default | ✅ Done | `feat/more-job-sources` |
+| 2. Paste a job (and "still open" checks) | ✅ Done | `feat/paste-a-job` |
+| 3. Email applications and follow-ups | ⏭️ Next | — |
 | MCP server | Not started | — |
 | 4. Documentation page (`/docs`) with search | Not started | — |
 | 5. Desktop app: job scout, apply assistant | Not started | — |
 
+**Next up: Phase 3, email applications and follow-ups.** Everything marked ✅ Done is finished.
+
 ---
 
-## 0. Groundwork (small, do first)
+## 0. Groundwork ✅ Done
 
 Built. `npm test` runs Vitest; `lib/jobs/sources/http.ts` and `lib/net/safe-url.ts` hold the helper and the guard.
 
@@ -30,11 +32,11 @@ Built. `npm test` runs Vitest; `lib/jobs/sources/http.ts` and `lib/net/safe-url.
 - **Shared fetch helper** (`lib/jobs/sources/http.ts`): timeout, retry with backoff, a host allowlist, a page cap and a polite delay between pages. Every new source uses it.
 - **Block private addresses.** Any URL that comes from a user (careers pages, pasted jobs) goes through a guard that refuses `localhost`, private IPs and cloud metadata addresses, both before and after DNS lookup. Phases 1 and 2 need this, especially on the hosted Lite relay.
 
-## 1. More job sources
+## 1. More job sources ✅ Done
 
 Three kinds of source, in this order. Each one is one file in `lib/jobs/sources/` implementing `JobSource`, with `covers(country)`.
 
-### 1A. Company job-board feeds + "Companies I follow" (built)
+### 1A. Company job-board feeds + "Companies I follow" ✅ Done
 
 Most employers post through hiring software that publishes a public, key-less JSON feed for each company's careers page.
 
@@ -57,7 +59,7 @@ Later: Teamtailor, Personio, BambooHR, Workday (harder).
 - **Lite:** the search relay (`/api/lite/search`) fetches the feeds with the host allowlist above. Followed companies live in the browser's database like everything else.
 - **Porting:** career-ops (MIT) has working modules for these in `providers/*.mjs`. Port the logic to TypeScript and credit it in `THIRD_PARTY_NOTICES.md`.
 
-### 1B. Country-wide official sources and remote feeds
+### 1B. Country-wide official sources and remote feeds ✅ Done (more sources can be added any time)
 
 **Built:**
 
@@ -76,7 +78,7 @@ Later: Teamtailor, Personio, BambooHR, Workday (harder).
 - **Philippines (PhilJobNet):** no open feed found. JSearch, JobSpy and the starter company list cover the Philippines.
 - **We Work Remotely:** RSS only, and its terms don't clearly allow reuse. Left out for now.
 
-### 1C. Make it easy for contributors to add sources (built)
+### 1C. Make it easy for contributors to add sources ✅ Done
 
 - **One registry:** a new source is one file, one fixture test and one line in `lib/jobs/sources/registry.ts` (no edit to `search.ts`). A test fails if a source file isn't listed. Bundlers can't load files by name at runtime, so this is the closest safe version.
 - **README table from metadata:** each source declares `kind`, `coverage` and `needs`; `npm run docs:sources` writes the README's "Job sources" table, and a test fails when it's out of date.
@@ -85,7 +87,7 @@ Later: Teamtailor, Personio, BambooHR, Workday (harder).
 
 **Done when:** you can follow a company by pasting its careers URL, its jobs show up in search, closed jobs are marked, and there are fixture tests for every source. *(All done except closed jobs, which moved to Phase 2 so pasted jobs share the same check.)*
 
-## 2. Paste a job (built)
+## 2. Paste a job ✅ Done
 
 An **Add a job** card on **Jobs** (beside **Follow companies**) and on the home page opens a dialog: "Paste a job link or the job description".
 
@@ -110,7 +112,7 @@ An **Add a job** card on **Jobs** (beside **Follow companies**) and on the home 
 - **Lite:** `/api/lite/job-link` reads links and `/api/lite/job-check` checks them; pasted text is read by the user's AI in the browser.
 - **Tests:** `lib/jobs/paste/*.test.ts` (JSON-LD, page text, closed wording, the extraction checks, link reading and checks with saved responses).
 
-## 3. Email applications and follow-ups (reaching people directly)
+## 3. Email applications and follow-ups (reaching people directly) ⏭️ Next
 
 All of this lives on the application page (`/applied/[id]`) and reuses the cover-letter pipeline (`lib/letter`): profile facts in code, the prompt editable in Settings, checks for unsupported numbers, placeholders and clichés. **RolePort never sends anything**: copy, download, or open in the user's mail app (`mailto:` with subject and body).
 
@@ -186,7 +188,7 @@ Desktop-only isn't required for any of this except the two features above. Keep 
 | --- | --- | --- |
 | 0. Tests, fetch helper, address guard ✅ | S | — |
 | 1A. Company feeds + Companies I follow ✅ | L | 0 |
-| 2. Paste a job | M | 0 (1A for supported links) |
+| 2. Paste a job ✅ | M | 0 (1A for supported links) |
 | 3A. Email application + contacts | M | — |
 | 3B. Follow-ups | M | 3A |
 | 1B. Government and remote feeds ✅ (more to come) | M (per source: S) | 0 |
