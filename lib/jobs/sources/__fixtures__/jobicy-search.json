@@ -1,0 +1,31 @@
+{
+  "apiVersion": "2",
+  "jobCount": 2,
+  "jobs": [
+    {
+      "id": 101,
+      "url": "https://jobicy.com/jobs/101-senior-frontend-engineer",
+      "jobTitle": "Senior Frontend Engineer",
+      "companyName": "Example Labs",
+      "companyLogo": "https://jobicy.com/data/logos/example-labs.png",
+      "jobType": ["Full-Time"],
+      "jobGeo": "Philippines, APAC",
+      "jobExcerpt": "Build the web app our customers use every day.",
+      "jobDescription": "<p>Build the web app.</p><script>alert(1)</script>",
+      "pubDate": "2026-10-20 08:00:00",
+      "salaryMin": 3000,
+      "salaryMax": 4500,
+      "salaryCurrency": "USD",
+      "salaryPeriod": "monthly"
+    },
+    {
+      "id": 102,
+      "url": "https://jobicy.com/jobs/102-support-specialist",
+      "jobTitle": "Customer Support Specialist",
+      "companyName": "Sample Co",
+      "jobType": ["Part-Time"],
+      "jobExcerpt": "Help customers by chat and email.",
+      "pubDate": "2025-01-01 08:00:00"
+    }
+  ]
+}

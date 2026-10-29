@@ -4,6 +4,7 @@ import { findLocation } from "@/lib/ph-locations";
 import { cleanDescription } from "../html";
 import type { EmploymentType, JobSearchParams, JobSource, NormalizedJob, SalaryPeriod, WorkSetup } from "../types";
 import { SOURCE_CREDITS } from "./credits";
+import { fetchJson } from "./http";
 
 const BASE_URL = process.env.FREEHIRE_API_URL ?? "https://freehire.me";
 const PAGE_SIZE = 30;
@@ -64,12 +65,9 @@ async function fetchFreehire(query: string): Promise<FreehireJob[]> {
   "use cache";
   cacheLife("hours");
 
-  const res = await fetch(`${BASE_URL}/api/v1/agent/jobs/search?${query}`, {
-    headers: { Accept: "application/json", "User-Agent": "RolePort/0.1 (job search)" },
-    signal: AbortSignal.timeout(15_000),
+  const body = await fetchJson<{ data?: FreehireJob[] }>(`${BASE_URL}/api/v1/agent/jobs/search?${query}`, {
+    allowedHosts: [new URL(BASE_URL).hostname],
   });
-  if (!res.ok) throw new Error(`freehire responded ${res.status}`);
-  const body = (await res.json()) as { data?: FreehireJob[] };
   return body.data ?? [];
 }
 
