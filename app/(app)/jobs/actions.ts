@@ -2,9 +2,16 @@
 
 import { refresh } from "next/cache";
 import { AiUnavailableError } from "@/lib/ai/client";
+import { getAiConfig } from "@/lib/ai/config";
 import { aiErrorMessage } from "@/lib/ai/errors";
 import { getDb } from "@/lib/db";
 import { setStatus, toggleSaved, type ApplicationStatus } from "@/lib/jobs/applications";
+import { checkPosting, readJobLink } from "@/lib/jobs/paste/link";
+import { readPaste } from "@/lib/jobs/paste/review";
+import { jobCheckSchema, storePastedJob, writeJobCheck } from "@/lib/jobs/paste/store";
+import { canCheckJob, pastedJobSchema, type JobCheck, type PasteReview, type PastedJob } from "@/lib/jobs/paste/types";
+import { readJobRow } from "@/lib/jobs/queries";
+import type { Result } from "@/lib/result";
 import { runFitEvaluation } from "@/lib/jobs/evaluation";
 import { vetoReason } from "@/lib/jobs/fit";
 import { getCurrentUser } from "@/lib/session";
@@ -39,4 +46,34 @@ export async function evaluateJob(jobId: string, refreshPage = true): Promise<Ev
     console.error("[evaluate] failed", error);
     return { ok: false, error: aiErrorMessage(error, "The evaluation failed. Please try again.") };
   }
+}
+
+/** "Paste a job": reads a pasted link or posting text into fields for the user to review. Nothing is stored yet. */
+export async function readPastedJob(input: string): Promise<Result<PasteReview>> {
+  await getCurrentUser();
+  return readPaste(input, { readLink: readJobLink, config: await getAiConfig() });
+}
+
+/** Stores a reviewed pasted job and puts it on the user's list as saved. */
+export async function savePastedJob(job: PastedJob, check: JobCheck | null): Promise<Result<{ jobId: string }>> {
+  const user = await getCurrentUser();
+  const parsed = pastedJobSchema.safeParse(job);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Some fields are invalid." };
+  const lastCheck = check === null ? null : jobCheckSchema.safeParse(check).data ?? null;
+  const jobId = await storePastedJob(await getDb(), user.id, parsed.data, lastCheck);
+  refresh();
+  return { ok: true, data: { jobId } };
+}
+
+/** "Check again": whether a company-feed job or a pasted link is still open. Saves the answer on the job. */
+export async function checkJobStillOpen(jobId: string): Promise<Result<JobCheck>> {
+  await getCurrentUser();
+  const db = await getDb();
+  const job = typeof jobId === "string" ? await readJobRow(db, jobId) : null;
+  if (!job) return { ok: false, error: "This job is no longer stored." };
+  if (!canCheckJob(job)) return { ok: false, error: "RolePort can't check jobs from this source." };
+  const check = await checkPosting(job);
+  await writeJobCheck(db, job.id, check);
+  refresh();
+  return { ok: true, data: check };
 }

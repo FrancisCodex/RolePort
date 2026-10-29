@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
+import { PasteJob } from "@/components/jobs/paste-job";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -81,6 +82,8 @@ export function HomeView({ firstName, stats, setup }: HomeData) {
       </header>
 
       <SetupChecklist setup={setup} />
+
+      <PasteJob />
 
       <section
         aria-label="Key numbers"

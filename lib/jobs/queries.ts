@@ -6,6 +6,7 @@ import type { ProfileInput } from "@/lib/profile/schema";
 import { overallFitScore, vetoReason } from "./fit";
 import { toPlainText } from "./html";
 import { quickMatch, type QuickMatch } from "./quick-match";
+import type { JobCheck } from "./paste/types";
 import type { JobLink, NormalizedJob } from "./types";
 
 /*
@@ -19,6 +20,8 @@ export type JobExtras = {
   possiblyStale: boolean;
   /** The same opening on other boards. */
   alsoOn: JobLink[];
+  /** The last "still open" check (Check again on the job page), if any. */
+  check: JobCheck | null;
 };
 
 export type JobRow = typeof schema.job.$inferSelect;
@@ -64,7 +67,8 @@ const toInsert = (j: KeyedJob) => ({
   description: j.description,
   skills: j.skills,
   postedAt: j.postedAt ? new Date(j.postedAt) : null,
-  raw: { summary: j.summary, requirements: j.requirements, possiblyStale: j.possiblyStale, alsoOn: j.alsoOn ?? [] } satisfies JobExtras,
+  // Found again by a search, so it's open: a re-store clears an old "closed" check.
+  raw: { summary: j.summary, requirements: j.requirements, possiblyStale: j.possiblyStale, alsoOn: j.alsoOn ?? [], check: null } satisfies JobExtras,
   fetchedAt: new Date(),
 });
 
@@ -161,6 +165,7 @@ export function extrasOf(row: JobRow): JobExtras {
     requirements: raw.requirements ?? [],
     possiblyStale: Boolean(raw.possiblyStale),
     alsoOn: raw.alsoOn ?? [],
+    check: raw.check ?? null,
   };
 }
 

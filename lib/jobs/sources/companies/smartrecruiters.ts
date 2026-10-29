@@ -1,5 +1,6 @@
-import { fetchJson, fetchPages } from "../http";
-import { blankJob, firstSegment, isoDate, type CompanyBoard } from "./types";
+import { cleanDescription } from "../../html";
+import { fetchJson, fetchPages, SourceHttpError } from "../http";
+import { blankJob, firstSegment, isoDate, secondSegment, type CompanyBoard, type CompanyJob } from "./types";
 import { leverEmployment } from "./lever";
 
 type SmartRecruitersJob = {
@@ -13,10 +14,35 @@ type SmartRecruitersJob = {
   function?: { label?: string };
 };
 type Page = { totalFound?: number; offset?: number; content?: SmartRecruitersJob[] };
+/** One posting by id adds the ad's text, which the list leaves out. */
+type SmartRecruitersPosting = SmartRecruitersJob & {
+  active?: boolean;
+  postingUrl?: string;
+  jobAd?: { sections?: Record<string, { title?: string; text?: string } | undefined> };
+};
 
 const PAGE_SIZE = 100;
 // Large employers list thousands of jobs, so the board filters by query and country itself.
 const MAX_PAGES = 3;
+const SECTIONS = ["companyDescription", "jobDescription", "qualifications", "additionalInformation"];
+
+function toJob(slug: string, j: SmartRecruitersJob): CompanyJob {
+  const loc = j.location ?? {};
+  return {
+    ...blankJob("smartrecruiters"),
+    sourceId: `${slug}:${j.id}`,
+    url: `https://jobs.smartrecruiters.com/${encodeURIComponent(j.company?.identifier ?? slug)}/${encodeURIComponent(j.id)}`,
+    title: j.name,
+    company: j.company?.name ?? slug,
+    location: loc.fullLocation ?? null,
+    city: loc.city ?? null,
+    workSetup: loc.remote ? "remote" : loc.hybrid ? "hybrid" : null,
+    employmentType: leverEmployment(j.typeOfEmployment?.label),
+    postedAt: isoDate(j.releasedDate),
+    countries: loc.country ? [loc.country.toUpperCase()] : [],
+    team: j.department?.label ?? j.function?.label ?? null,
+  };
+}
 
 export const smartRecruiters: CompanyBoard = {
   id: "smartrecruiters",
@@ -28,6 +54,11 @@ export const smartRecruiters: CompanyBoard = {
     if (host === "jobs.smartrecruiters.com" || host === "careers.smartrecruiters.com") return firstSegment(url);
     if (host === "api.smartrecruiters.com") return firstSegment(new URL(url.pathname.replace(/^\/v1\/companies/, ""), url));
     return null;
+  },
+  postingId(url) {
+    // jobs.smartrecruiters.com/Acme/744000012345678-backend-engineer
+    if (url.hostname.toLowerCase() !== "jobs.smartrecruiters.com") return null;
+    return secondSegment(url)?.match(/^\d+/)?.[0] ?? null;
   },
   async fetchJobs(slug, hint) {
     let name: string | null = null;
@@ -43,23 +74,22 @@ export const smartRecruiters: CompanyBoard = {
       },
       { maxPages: MAX_PAGES },
     );
-    const jobs = raw.map((j) => {
-      const loc = j.location ?? {};
-      return {
-        ...blankJob("smartrecruiters"),
-        sourceId: `${slug}:${j.id}`,
-        url: `https://jobs.smartrecruiters.com/${encodeURIComponent(j.company?.identifier ?? slug)}/${encodeURIComponent(j.id)}`,
-        title: j.name,
-        company: j.company?.name ?? slug,
-        location: loc.fullLocation ?? null,
-        city: loc.city ?? null,
-        workSetup: loc.remote ? ("remote" as const) : loc.hybrid ? ("hybrid" as const) : null,
-        employmentType: leverEmployment(j.typeOfEmployment?.label),
-        postedAt: isoDate(j.releasedDate),
-        countries: loc.country ? [loc.country.toUpperCase()] : [],
-        team: j.department?.label ?? j.function?.label ?? null,
-      };
-    });
-    return { name, jobs };
+    return { name, jobs: raw.map((j) => toJob(slug, j)) };
+  },
+  async fetchPosting(slug, id) {
+    let posting: SmartRecruitersPosting;
+    try {
+      posting = await fetchJson<SmartRecruitersPosting>(`https://api.smartrecruiters.com/v1/companies/${slug}/postings/${id}`, { allowedHosts: this.hosts });
+    } catch (error) {
+      if (error instanceof SourceHttpError && (error.status === 404 || error.status === 410)) return null;
+      throw error;
+    }
+    if (posting.active === false) return null;
+    const sections = posting.jobAd?.sections ?? {};
+    const html = SECTIONS.map((key) => sections[key])
+      .filter((s) => s?.text)
+      .map((s) => `${s!.title ? `<h3>${s!.title}</h3>` : ""}${s!.text}`)
+      .join("");
+    return { ...toJob(slug, posting), description: cleanDescription(html) };
   },
 };

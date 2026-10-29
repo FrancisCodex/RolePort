@@ -28,6 +28,11 @@ export const setApplicationStatus: typeof jobs.setApplicationStatus = isLite
   ? async (...a) => (await lite()).setApplicationStatus(...a)
   : jobs.setApplicationStatus;
 export const evaluateJob: typeof jobs.evaluateJob = isLite ? async (jobId) => (await lite()).evaluateJob(jobId) : jobs.evaluateJob;
+export const readPastedJob: typeof jobs.readPastedJob = isLite ? async (...a) => (await lite()).readPastedJob(...a) : jobs.readPastedJob;
+export const savePastedJob: typeof jobs.savePastedJob = isLite ? async (...a) => (await lite()).savePastedJob(...a) : jobs.savePastedJob;
+export const checkJobStillOpen: typeof jobs.checkJobStillOpen = isLite
+  ? async (...a) => (await lite()).checkJobStillOpen(...a)
+  : jobs.checkJobStillOpen;
 
 export const applyToJob: typeof applied.applyToJob = isLite ? async (...a) => (await lite()).applyToJob(...a) : applied.applyToJob;
 export const saveApplicationNotes: typeof applied.saveApplicationNotes = isLite

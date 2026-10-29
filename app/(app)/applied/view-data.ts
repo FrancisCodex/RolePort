@@ -3,7 +3,7 @@ import type { CvPageData } from "@/lib/cv/tailor";
 import type { ApplicationDetail, ApplicationStatus, PipelineItem } from "@/lib/jobs/applications";
 import type { LetterPageData } from "@/lib/letter/letter";
 import type { QuestionsData } from "@/lib/questions/types";
-import type { JobListItem } from "@/lib/jobs/queries";
+import { extrasOf, type JobListItem } from "@/lib/jobs/queries";
 import { timeAgo } from "@/lib/jobs/format";
 
 /*
@@ -24,6 +24,8 @@ export type AppliedItem = {
   /** The posting on the employer's site or job board. */
   url: string | null;
   status: ApplicationStatus;
+  /** The last check found the posting closed. */
+  closed: boolean;
   appliedOn: string | null;
   updated: string | null;
 };
@@ -63,6 +65,7 @@ export function toAppliedItems(items: PipelineItem[]): AppliedItem[] {
     location: i.job?.location ?? null,
     url: i.job?.url ?? null,
     status: i.status,
+    closed: i.job ? extrasOf(i.job).check?.status === "closed" : false,
     appliedOn: i.appliedAt ? formatDay(i.appliedAt) : null,
     updated: timeAgo(i.updatedAt),
   }));

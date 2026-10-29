@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { ApplyButton } from "@/components/jobs/apply-button";
 import { ExpandableDescription } from "@/components/jobs/expandable-description";
 import { FitEvaluation } from "@/components/jobs/fit-evaluation";
+import { PostingStatus } from "@/components/jobs/posting-status";
 import { CompanyLogo } from "@/components/jobs/job-card";
 import { SaveButton } from "@/components/jobs/save-button";
 import { Badge } from "@/components/ui/badge";
@@ -90,15 +91,18 @@ export function JobDetailView({
                 This posting may be old or reposted. Check that it&apos;s still open before applying.
               </p>
             )}
+            <PostingStatus job={job} />
             <div className="flex flex-wrap gap-1.5">
               {actions ?? (
                 <>
                   <ApplyButton job={job} />
                   {(!job.application || job.application.status === "saved") && <SaveButton jobId={job.id} saved={job.saved} withLabel />}
                   {/* A plain link, followed and with the referrer: some sources' terms (Remote OK) ask for traffic back. */}
-                  <a href={job.url} target="_blank" rel="noopener" className={buttonVariants({ variant: "ghost" })}>
-                    View posting <ExternalLink />
-                  </a>
+                  {job.url && (
+                    <a href={job.url} target="_blank" rel="noopener" className={buttonVariants({ variant: "ghost" })}>
+                      View posting <ExternalLink />
+                    </a>
+                  )}
                 </>
               )}
             </div>

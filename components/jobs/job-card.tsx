@@ -54,6 +54,11 @@ export function JobCard({ job }: { job: JobListItem }) {
                 <Building2 /> From the company
               </Badge>
             )}
+            {job.extras.check?.status === "closed" && (
+              <Badge tone="danger" title={job.extras.check.reason ?? undefined}>
+                Closed
+              </Badge>
+            )}
             {job.extras.possiblyStale && <Badge tone="warning">May be old</Badge>}
             {job.extras.alsoOn.length > 0 && (
               <Badge title={`Also on ${job.extras.alsoOn.length} other board${job.extras.alsoOn.length === 1 ? "" : "s"}`}>

@@ -1,6 +1,6 @@
 import { cleanDescription } from "../../html";
 import { fetchJson } from "../http";
-import { blankJob, firstSegment, isoDate, setupFromText, type CompanyBoard } from "./types";
+import { blankJob, firstSegment, isoDate, segmentAfter, setupFromText, type CompanyBoard } from "./types";
 import { leverEmployment } from "./lever";
 
 type WorkableJob = {
@@ -32,6 +32,7 @@ export const workable: CompanyBoard = {
     if (segments[0] === "api") return segments[4] && /^[A-Za-z0-9._-]+$/.test(segments[4]) ? segments[4] : null;
     return segments[0] === "j" ? null : firstSegment(url);
   },
+  postingId: (url) => (url.hostname.toLowerCase() === "apply.workable.com" ? segmentAfter(url, "j") : null),
   async fetchJobs(slug) {
     const body = await fetchJson<{ name?: string; jobs?: WorkableJob[] }>(`https://apply.workable.com/api/v1/widget/accounts/${slug}?details=true`, {
       allowedHosts: this.hosts,
