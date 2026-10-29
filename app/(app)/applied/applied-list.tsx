@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { EmptyState } from "@/components/app/empty-state";
 import { CompanyLogo } from "@/components/jobs/job-card";
+import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import type { ApplicationStatus } from "@/lib/jobs/applications";
 import { cn } from "@/lib/utils";
@@ -102,6 +103,11 @@ function AppliedRow({ item }: { item: AppliedItem }) {
         </p>
       </div>
       <div className="flex shrink-0 flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-3">
+        {item.closed && (
+          <Badge tone="danger" title="The employer's job posting is closed">
+            Posting closed
+          </Badge>
+        )}
         <StatusBadge status={item.status} />
         <span className="text-[11px] text-subtle tabular-nums sm:w-24 sm:text-right sm:text-xs">
           {item.appliedOn ? item.appliedOn : item.updated && `Saved ${item.updated.toLowerCase()}`}

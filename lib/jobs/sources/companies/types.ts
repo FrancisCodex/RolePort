@@ -43,7 +43,26 @@ export type CompanyBoard = {
   slugFromUrl(url: URL): string | null;
   /** All the company's open jobs, and its name when the feed gives one. */
   fetchJobs(slug: string, hint: FeedHint): Promise<{ name: string | null; jobs: CompanyJob[] }>;
+  /** The posting's id on this software when `url` links to one posting (a pasted job), else null. */
+  postingId(url: URL): string | null;
+  /**
+   * One posting by id, or null when it's gone. Boards without a single-posting endpoint leave
+   * this out, and RolePort looks the posting up in the whole feed instead.
+   */
+  fetchPosting?(slug: string, id: string): Promise<CompanyJob | null>;
 };
+
+/** The path segment after `marker` (e.g. "jobs" in /acme/jobs/123), when it's a valid id. */
+export function segmentAfter(url: URL, marker: string): string | null {
+  const segments = url.pathname.split("/").filter(Boolean);
+  const i = segments.indexOf(marker);
+  return i >= 0 ? validSlug(decodeURIComponent(segments[i + 1] ?? "")) : null;
+}
+
+/** The second path segment, e.g. jobs.lever.co/acme/<id>. */
+export function secondSegment(url: URL): string | null {
+  return validSlug(decodeURIComponent(url.pathname.split("/").filter(Boolean)[1] ?? ""));
+}
 
 /** Slugs are path segments or subdomains; anything else never reaches a URL. */
 export const SLUG_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/;

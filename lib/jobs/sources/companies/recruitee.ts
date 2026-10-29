@@ -1,7 +1,7 @@
 import type { SalaryPeriod } from "../../types";
 import { cleanDescription } from "../../html";
 import { fetchJson } from "../http";
-import { blankJob, isoDate, validSlug, type CompanyBoard } from "./types";
+import { blankJob, isoDate, segmentAfter, validSlug, type CompanyBoard } from "./types";
 import { leverEmployment } from "./lever";
 
 type RecruiteeOffer = {
@@ -37,6 +37,8 @@ export const recruitee: CompanyBoard = {
     const match = url.hostname.toLowerCase().match(/^([a-z0-9-]+)\.recruitee\.com$/);
     return match && match[1] !== "www" && match[1] !== "api" ? validSlug(match[1]) : null;
   },
+  // acme.recruitee.com/o/<offer-slug>: matched against each offer's link in the feed.
+  postingId: (url) => segmentAfter(url, "o"),
   async fetchJobs(slug) {
     const body = await fetchJson<{ offers?: RecruiteeOffer[] }>(`https://${slug.toLowerCase()}.recruitee.com/api/offers/`, {
       allowedHosts: this.hosts,

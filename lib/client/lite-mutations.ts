@@ -59,6 +59,10 @@ import {
 } from "@/lib/jobs/applications";
 import { vetoReason } from "@/lib/jobs/fit";
 import { evaluateStoredJob } from "@/lib/jobs/fit-evaluation";
+import { readPaste } from "@/lib/jobs/paste/review";
+import { jobCheckSchema, storePastedJob, writeJobCheck } from "@/lib/jobs/paste/store";
+import { canCheckJob, pastedJobSchema, type JobCheck, type LinkRead, type PasteReview, type PastedJob } from "@/lib/jobs/paste/types";
+import { readJobRow } from "@/lib/jobs/queries";
 import { readCvFile, type CvImport } from "@/lib/profile/cv-file";
 import { draftFromCv } from "@/lib/profile/cv-import";
 import { ONBOARDING_DONE, writeCv, writeOnboardingStep, writeProfile } from "@/lib/profile/queries";
@@ -180,6 +184,54 @@ export async function evaluateJob(jobId: string): Promise<EvaluateResult> {
     if (isUnreachable(error) && baseUrl && isLocalUrl(baseUrl)) return { ok: false, error: await explainLocalFailure(baseUrl) };
     return { ok: false, error: aiErrorMessage(error, "The evaluation failed. Please try again.") };
   }
+}
+
+/* Paste a job --------------------------------------------------------------- */
+
+/** POSTs to a lite relay route that answers with a Result. */
+async function relay<T>(path: string, body: unknown, failed: string): Promise<Result<T>> {
+  try {
+    const res = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    return (await res.json()) as Result<T>;
+  } catch {
+    return { ok: false, error: failed };
+  }
+}
+
+/** Lite: links are read by the server relay (/api/lite/job-link); text is read by the user's AI, from this browser. */
+export async function readPastedJob(input: string): Promise<Result<PasteReview>> {
+  const config = await savedAiConfig(await getBrowserDb());
+  const readLink = (url: string) => relay<LinkRead>("/api/lite/job-link", { url }, "Couldn't reach RolePort to read that link. Try again.");
+  return readPaste(input, { readLink, config });
+}
+
+export async function savePastedJob(job: PastedJob, check: JobCheck | null): Promise<Result<{ jobId: string }>> {
+  const parsed = pastedJobSchema.safeParse(job);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Some fields are invalid." };
+  const lastCheck = check === null ? null : (jobCheckSchema.safeParse(check).data ?? null);
+  const jobId = await storePastedJob(await getBrowserDb(), LOCAL_USER.id, parsed.data, lastCheck);
+  await invalidate("job", "application");
+  void requestPersistence();
+  return { ok: true, data: { jobId } };
+}
+
+/** Lite: the relay (/api/lite/job-check) looks the posting up; the answer is kept in this browser. */
+export async function checkJobStillOpen(jobId: string): Promise<Result<JobCheck>> {
+  const db = await getBrowserDb();
+  const job = typeof jobId === "string" ? await readJobRow(db, jobId) : null;
+  if (!job) return { ok: false, error: "This job is no longer stored." };
+  if (!canCheckJob(job)) return { ok: false, error: "RolePort can't check jobs from this source." };
+  const result = await relay<JobCheck>(
+    "/api/lite/job-check",
+    { source: job.source, sourceId: job.sourceId, url: job.url },
+    "Couldn't reach RolePort to check this job. Try again.",
+  );
+  if (!result.ok) return result;
+  const check = jobCheckSchema.safeParse(result.data);
+  if (!check.success) return { ok: false, error: "Unexpected answer from the server." };
+  await writeJobCheck(db, job.id, check.data);
+  await invalidate("job");
+  return { ok: true, data: check.data };
 }
 
 /* CV tailoring -------------------------------------------------------------- */

@@ -2,7 +2,7 @@ import { COUNTRIES } from "@/lib/geo/countries";
 import type { EmploymentType, SalaryPeriod } from "../../types";
 import { cleanDescription } from "../../html";
 import { fetchJson } from "../http";
-import { blankJob, firstSegment, isoDate, setupFromText, type CompanyBoard } from "./types";
+import { blankJob, firstSegment, isoDate, secondSegment, setupFromText, type CompanyBoard } from "./types";
 
 type Address = { postalAddress?: { addressCountry?: string; addressLocality?: string } };
 type AshbyJob = {
@@ -54,6 +54,7 @@ export const ashby: CompanyBoard = {
     if (host === "api.ashbyhq.com") return firstSegment(new URL(url.pathname.replace(/^\/posting-api\/job-board/, ""), url));
     return null;
   },
+  postingId: (url) => (url.hostname.toLowerCase() === "jobs.ashbyhq.com" ? secondSegment(url) : null),
   async fetchJobs(slug) {
     const body = await fetchJson<{ jobs?: AshbyJob[] }>(`https://api.ashbyhq.com/posting-api/job-board/${slug}?includeCompensation=true`, {
       allowedHosts: this.hosts,
