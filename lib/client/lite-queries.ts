@@ -51,6 +51,13 @@ export async function loadProfile(): Promise<ProfileView & { aiEnabled: boolean 
   return { ...view, aiEnabled: ai };
 }
 
+/** Jobs: the profile (for the search defaults) and the companies the user follows. */
+export async function loadJobSearch(): Promise<ProfileView & { companies: FollowedCompanyView[] }> {
+  const db = await getBrowserDb();
+  const [view, companies] = await Promise.all([readProfile(db, await me(db)), readFollowedCompanies(db, LOCAL_USER.id)]);
+  return { ...view, companies: companies.map(followedCompanyView) };
+}
+
 export async function loadHome(): Promise<HomeData> {
   const db = await getBrowserDb();
   const [view, stats, ai, onboarding] = await Promise.all([

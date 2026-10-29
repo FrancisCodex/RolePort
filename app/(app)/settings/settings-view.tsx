@@ -1,10 +1,10 @@
 import { Database, Lock } from "lucide-react";
 import { VoicePanel } from "@/components/speech/voice-settings";
+import { CompanyManager } from "@/components/companies/company-manager";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AiSettingsForm, type AiSettingsView } from "./ai-settings-form";
 import type { FollowedCompanyView } from "@/lib/companies/queries";
 import { BackupControls } from "./backup-controls";
-import { FollowedCompanies } from "./followed-companies";
 import { JobSourceForm, JobSpyToggle } from "./job-source-form";
 import { LocalJobSpy } from "./local-jobspy";
 import { AnswerPromptForm, CvPromptForm, InterviewerPromptForm, LetterPromptForm } from "./prompt-form";
@@ -131,12 +131,12 @@ export function SettingsView({
         <CardHeader>
           <CardTitle>Companies you follow</CardTitle>
           <CardDescription>
-            Paste a company&apos;s careers page and its open jobs join your searches, straight from the employer. Works with companies that
-            hire through Greenhouse, Lever, Ashby, SmartRecruiters, Workable or Recruitee, in any country.
+            Know a company you&apos;d love to work for? Follow it, and every job search also checks that company&apos;s own list of openings,
+            in any country. You can also do this from the Jobs page.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <FollowedCompanies companies={companies} />
+          <CompanyManager companies={companies} />
         </CardContent>
       </Card>
 

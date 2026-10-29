@@ -8,7 +8,21 @@ import { MAX_PER_RUN } from "@/lib/jobs/fit";
 import type { JobListItem } from "@/lib/jobs/queries";
 import { sourceCredit } from "@/lib/jobs/sources/credits";
 import type { SourceStatus } from "@/lib/jobs/types";
+import { isCompanySource } from "@/lib/jobs/sources/companies/types";
 import { cn } from "@/lib/utils";
+
+/** The company feeds show as one "Companies you follow" chip, not one per hiring service. */
+function groupCompanySources(statuses: SourceStatus[]): SourceStatus[] {
+  const companies = statuses.filter((s) => isCompanySource(s.id));
+  if (companies.length === 0) return statuses;
+  const merged: SourceStatus = {
+    id: "companies",
+    label: "Companies you follow",
+    count: companies.reduce((n, s) => n + s.count, 0),
+    ...(companies.every((s) => s.failed) ? { failed: true, note: "Couldn't reach their job pages" } : {}),
+  };
+  return [merged, ...statuses.filter((s) => !isCompanySource(s.id))];
+}
 
 export type ResultsData = { jobs: JobListItem[]; statuses: SourceStatus[]; hasSkills: boolean; aiEnabled: boolean };
 
@@ -34,7 +48,7 @@ export function ResultsView({ jobs, statuses, hasSkills, aiEnabled }: ResultsDat
             {jobs.length} job{jobs.length === 1 ? "" : "s"}
           </span>
           <span className="text-subtle">from</span>
-          {statuses.map((s) => (
+          {groupCompanySources(statuses).map((s) => (
             <span
               key={s.id}
               title={s.note}

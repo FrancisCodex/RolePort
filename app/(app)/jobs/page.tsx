@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/app/page-header";
 import { isAiConfigured } from "@/lib/ai/config";
+import { getMyFollowedCompanies } from "@/lib/companies/data";
 import { searchJobs } from "@/lib/jobs/data";
 import { parseJobSearch, type JobSort } from "@/lib/jobs/search-params";
 import type { JobSearchParams } from "@/lib/jobs/types";
@@ -26,15 +27,17 @@ export default function JobsPage(props: PageProps<"/jobs">) {
 }
 
 async function JobSearch({ searchParams }: { searchParams: PageProps<"/jobs">["searchParams"] }) {
-  const { profile } = await getMyProfile();
+  const [{ profile }, companies] = await Promise.all([getMyProfile(), getMyFollowedCompanies()]);
   const search = parseJobSearch(await searchParams, profile);
 
   return (
     <JobSearchView
       profile={profile}
       search={search}
+      companies={companies}
       results={
-        <Suspense key={JSON.stringify({ params: search.params, sort: search.sort })} fallback={<ResultsSkeleton />}>
+        // Following or unfollowing a company changes the results, so it's part of the key.
+        <Suspense key={JSON.stringify({ params: search.params, sort: search.sort, companies: companies.map((c) => c.id) })} fallback={<ResultsSkeleton />}>
           <Results params={search.params} sort={search.sort} />
         </Suspense>
       }

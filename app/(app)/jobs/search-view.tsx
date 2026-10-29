@@ -3,10 +3,12 @@ import Form from "next/form";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { EmptyState } from "@/components/app/empty-state";
+import { CompaniesBar } from "@/components/companies/companies-bar";
 import { LocationFields } from "@/components/jobs/location-fields";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { findCountry, orderedCountries } from "@/lib/geo/countries";
+import type { FollowedCompanyView } from "@/lib/companies/queries";
 import type { ParsedJobSearch } from "@/lib/jobs/search-params";
 import { PH_LOCATIONS } from "@/lib/ph-locations";
 import type { ProfileInput } from "@/lib/profile/schema";
@@ -37,10 +39,12 @@ const SORT_OPTIONS = [
 export function JobSearchView({
   profile,
   search: { params, sort, query, city },
+  companies,
   results,
 }: {
   profile: Pick<ProfileInput, "country" | "targetCountries" | "desiredRoles">;
   search: ParsedJobSearch;
+  companies: FollowedCompanyView[];
   results: ReactNode;
 }) {
   const country = params.country;
@@ -129,6 +133,8 @@ export function JobSearchView({
           ))}
         </div>
       )}
+
+      <CompaniesBar companies={companies} />
 
       {query ? (
         results

@@ -68,7 +68,7 @@ export async function resolveCompany(raw: unknown): Promise<Result<ResolvedCompa
   if (!board) {
     return {
       ok: false,
-      error: `RolePort can follow companies that post jobs with ${ATS_IDS.map((id) => BOARDS[id].label).join(", ")}. This page doesn't seem to use any of them. Try the link to the company's list of open jobs.`,
+      error: `RolePort couldn't find a list of jobs it can read on that page. Try opening one of the company's job postings and pasting that link instead. (RolePort can follow companies that hire through ${ATS_IDS.map((id) => BOARDS[id].label).join(", ")}; some companies use other services it can't read yet.)`,
     };
   }
 

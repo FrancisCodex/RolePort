@@ -13,11 +13,12 @@ import { JobSearchView } from "./search-view";
 export function LiteJobs() {
   const urlParams = Object.fromEntries(useSearchParams().entries());
   return (
-    <LiteData load={(q) => q.loadProfile()} tables={["profile"]} fallback={<ResultsSkeleton withForm />}>
-      {({ profile }) => {
+    <LiteData load={(q) => q.loadJobSearch()} tables={["profile", "followed_company"]} fallback={<ResultsSkeleton withForm />}>
+      {({ profile, companies }) => {
         const search = parseJobSearch(urlParams, profile);
-        const key = JSON.stringify({ params: search.params, sort: search.sort });
-        return <JobSearchView profile={profile} search={search} results={<LiteResults key={key} params={search.params} sort={search.sort} />} />;
+        // Following or unfollowing a company changes the results, so it's part of the key.
+        const key = JSON.stringify({ params: search.params, sort: search.sort, companies: companies.map((c) => c.id) });
+        return <JobSearchView profile={profile} search={search} companies={companies} results={<LiteResults key={key} params={search.params} sort={search.sort} />} />;
       }}
     </LiteData>
   );

@@ -1,10 +1,11 @@
-import { Briefcase, Flame, Layers, MapPin } from "lucide-react";
+import { Briefcase, Building2, Flame, Layers, MapPin } from "lucide-react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { MatchRing } from "@/components/ui/match-ring";
 import type { JobListItem } from "@/lib/jobs/data";
 import { daysUntil, vetoReason } from "@/lib/jobs/fit";
 import { formatSalary, timeAgo, WORK_SETUP_LABEL } from "@/lib/jobs/format";
+import { isCompanySource } from "@/lib/jobs/sources/companies/types";
 import { AiScore } from "./ai-score";
 import { ScoreSlot, SelectableJob } from "./analyze-jobs";
 import { SaveButton } from "./save-button";
@@ -48,6 +49,11 @@ export function JobCard({ job }: { job: JobListItem }) {
             {job.workSetup && <Badge>{WORK_SETUP_LABEL[job.workSetup]}</Badge>}
             {salary && <Badge tone="success">{salary}</Badge>}
             {posted && <span>{posted}</span>}
+            {isCompanySource(job.source) && (
+              <Badge tone="brand" title="Listed on the company's own careers page, from a company you follow">
+                <Building2 /> From the company
+              </Badge>
+            )}
             {job.extras.possiblyStale && <Badge tone="warning">May be old</Badge>}
             {job.extras.alsoOn.length > 0 && (
               <Badge title={`Also on ${job.extras.alsoOn.length} other board${job.extras.alsoOn.length === 1 ? "" : "s"}`}>

@@ -4,6 +4,11 @@ import type { NormalizedJob } from "../../types";
 export const ATS_IDS = ["greenhouse", "lever", "ashby", "smartrecruiters", "workable", "recruitee"] as const;
 export type AtsId = (typeof ATS_IDS)[number];
 
+/** Jobs from a company feed ("From the company" in the results), by their source id. */
+export function isCompanySource(source: string): boolean {
+  return (ATS_IDS as readonly string[]).includes(source);
+}
+
 /** Display names, kept here (not on the boards) so pages in both editions can show them. */
 export const ATS_LABELS: Record<AtsId, string> = {
   greenhouse: "Greenhouse",
