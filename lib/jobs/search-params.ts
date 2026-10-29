@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { findCountry } from "@/lib/geo/countries";
 import { PH_LOCATIONS } from "@/lib/ph-locations";
+import type { CompanyJobFilters } from "./sources/companies/match";
+import { ATS_IDS, MAX_FOLLOWED, SLUG_PATTERN } from "./sources/companies/types";
 import type { JobSearchParams, WorkSetup } from "./types";
 
 /*
@@ -68,3 +70,58 @@ export const jobSearchParamsSchema = z
     (p) => p.locationId === undefined || p.locationId === "remote" || (p.country === "PH" && PH_LOCATIONS.some((l) => l.id === p.locationId)),
     { message: "Unknown location", path: ["locationId"] },
   );
+
+/** The "Jobs at companies you follow" view: /jobs?view=companies, optionally narrowed to one company. */
+export type ParsedCompanyBrowse = {
+  /** A followed company's id, or undefined for all of them. */
+  company: string | undefined;
+  /** Words to look for; optional here, unlike a search. */
+  query: string;
+  /** Undefined for any country. */
+  country: string | undefined;
+  workSetup: WorkSetup | undefined;
+  postedWithinDays: number | undefined;
+  sort: JobSort;
+};
+
+export function isCompanyBrowse(sp: UrlParams): boolean {
+  return one(sp.view) === "companies";
+}
+
+export function parseCompanyBrowse(sp: UrlParams): ParsedCompanyBrowse {
+  const setup = one(sp.setup) as WorkSetup | undefined;
+  const days = Number(one(sp.days)) || undefined;
+  return {
+    company: one(sp.company)?.slice(0, 100),
+    query: one(sp.q)?.slice(0, 120) ?? "",
+    country: findCountry(one(sp.country))?.code,
+    workSetup: setup && WORK_SETUPS.includes(setup) ? setup : undefined,
+    postedWithinDays: days && POSTED_WITHIN_DAYS.includes(days) ? days : undefined,
+    // Newest first by default: this view is for seeing what a company has open.
+    sort: one(sp.sort) === "match" ? "match" : "date",
+  };
+}
+
+/** What the company feeds are filtered by. */
+export function companyJobFilters({ query, country, workSetup, postedWithinDays }: ParsedCompanyBrowse): CompanyJobFilters {
+  return { query: query || undefined, country, workSetup, postedWithinDays };
+}
+
+/** The browse filters arriving from a browser (the lite company-jobs route). */
+export const companyJobFiltersSchema = z
+  .object({
+    query: z.string().trim().max(120).optional(),
+    country: z
+      .string()
+      .refine((code) => findCountry(code)?.code === code, "Unknown country")
+      .optional(),
+    workSetup: z.enum(["onsite", "hybrid", "remote"]).optional(),
+    postedWithinDays: z.number().int().refine((d) => POSTED_WITHIN_DAYS.includes(d)).optional(),
+  })
+  .strict();
+
+/** The companies a lite user follows, sent along with each request (they're kept in the browser). */
+export const companyRefsSchema = z
+  .array(z.object({ ats: z.enum(ATS_IDS), slug: z.string().regex(SLUG_PATTERN), name: z.string().trim().min(1).max(120) }))
+  .max(MAX_FOLLOWED)
+  .catch([]);

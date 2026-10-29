@@ -1,7 +1,5 @@
-import { z } from "zod";
 import { HOSTED_SOURCES, searchAllSources } from "@/lib/jobs/search";
-import { jobSearchParamsSchema } from "@/lib/jobs/search-params";
-import { ATS_IDS, MAX_FOLLOWED, SLUG_PATTERN } from "@/lib/jobs/sources/companies/types";
+import { companyRefsSchema, jobSearchParamsSchema } from "@/lib/jobs/search-params";
 import { isLite } from "@/lib/mode";
 import { clientAddress, createRateLimit } from "@/lib/rate-limit";
 
@@ -16,12 +14,6 @@ import { clientAddress, createRateLimit } from "@/lib/rate-limit";
 // About one search every 3 seconds per address, with room for a short burst.
 const take = createRateLimit({ capacity: 20, refillPerMinute: 20 });
 
-// The companies the user follows travel with each search (they're kept in the browser).
-const companiesSchema = z
-  .array(z.object({ ats: z.enum(ATS_IDS), slug: z.string().regex(SLUG_PATTERN), name: z.string().trim().min(1).max(120) }))
-  .max(MAX_FOLLOWED)
-  .catch([]);
-
 export async function POST(request: Request) {
   // Self-hosted installs search in their own server code; don't expose an open proxy.
   if (!isLite) return new Response(null, { status: 404 });
@@ -35,7 +27,7 @@ export async function POST(request: Request) {
   const { companies: rawCompanies, ...search } = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
   const parsed = jobSearchParamsSchema.safeParse(search);
   if (!parsed.success) return Response.json({ error: "Invalid search." }, { status: 400 });
-  const companies = companiesSchema.parse(rawCompanies ?? []);
+  const companies = companyRefsSchema.parse(rawCompanies ?? []);
 
   const rapidApiKey = request.headers.get("x-rapidapi-key")?.trim().slice(0, 200) || null;
   const { jobs, statuses } = await searchAllSources(parsed.data, { rapidApiKey, jobspyEnabled: false, companies }, HOSTED_SOURCES);

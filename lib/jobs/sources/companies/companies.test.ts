@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { fixture, mockFetch } from "@/test/mock-fetch";
 import type { JobSearchParams } from "../../types";
-import { BOARDS, boardFromHtml, boardFromUrl, COMPANY_SOURCES } from "./index";
+import { isCompanyBrowse, parseCompanyBrowse } from "../../search-params";
+import { BOARDS, boardFromHtml, boardFromUrl, COMPANY_SOURCES, readCompanyJobs } from "./index";
 import { matchesSearch } from "./match";
 import type { CompanyJob, CompanyRef } from "./types";
 
@@ -148,6 +149,43 @@ describe("matchesSearch", () => {
     expect(matchesSearch(job({ countries: ["PH"], location: "Cebu City, Philippines" }), ph({ locationId: "metro-manila" }))).toBe(false);
     const old = new Date(Date.now() - 40 * 86_400_000).toISOString();
     expect(matchesSearch(job({ countries: ["PH"], postedAt: old }), ph({ postedWithinDays: 30 }))).toBe(false);
+  });
+
+  it("without a country or words, keeps every job (the companies view)", () => {
+    expect(matchesSearch(job({ location: "Austin, Texas" }), {})).toBe(true);
+    expect(matchesSearch(job({ countries: ["US"] }), { workSetup: "remote" })).toBe(false);
+  });
+});
+
+describe("readCompanyJobs", () => {
+  it("lists every open job at the followed companies on one board, filtered without a search", async () => {
+    mockFetch({ body: fx("greenhouse-jobs.json") });
+    const jobs = await readCompanyJobs("greenhouse", [{ ats: "greenhouse", slug: "examplelabs", name: "Example Labs" }, { ats: "lever", slug: "other", name: "Other" }], {});
+    expect(jobs.length).toBeGreaterThan(1);
+    expect(new Set(jobs.map((j) => j.company))).toEqual(new Set(["Example Labs"]));
+  });
+});
+
+describe("parseCompanyBrowse", () => {
+  it("reads the view from the URL, with no country or words needed and newest first", () => {
+    expect(isCompanyBrowse({ view: "companies" })).toBe(true);
+    expect(isCompanyBrowse({ q: "engineer" })).toBe(false);
+    expect(parseCompanyBrowse({ view: "companies", company: "abc" })).toEqual({
+      company: "abc",
+      query: "",
+      country: undefined,
+      workSetup: undefined,
+      postedWithinDays: undefined,
+      sort: "date",
+    });
+    expect(parseCompanyBrowse({ country: "sg", setup: "remote", days: "7", sort: "match", q: "design" })).toMatchObject({
+      country: "SG",
+      workSetup: "remote",
+      postedWithinDays: 7,
+      sort: "match",
+      query: "design",
+    });
+    expect(parseCompanyBrowse({ country: "nowhere", setup: "beach", days: "5" })).toMatchObject({ country: undefined, workSetup: undefined, postedWithinDays: undefined });
   });
 });
 

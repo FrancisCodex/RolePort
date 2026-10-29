@@ -1,5 +1,6 @@
 import { companyRefs, readFollowedCompanies } from "@/lib/companies/queries";
 import { getBrowserDb, type BrowserDb } from "@/lib/db/browser";
+import type { CompanyJobFilters } from "@/lib/jobs/sources/companies/match";
 import { ATS_IDS, type CompanyRef } from "@/lib/jobs/sources/companies/types";
 import { LOCAL_USER } from "@/lib/db/local-user";
 import { mergeDuplicates } from "@/lib/jobs/dedupe";
@@ -81,4 +82,30 @@ async function run(
 
   const rows = await storeJobs(db, jobs);
   return { ids: rows.map((r) => r.id), statuses };
+}
+
+/** Every open job at the followed companies (or at one of them, by id), for the "companies you follow" view. */
+export async function liteBrowseCompanies(companyId: string | undefined, filters: CompanyJobFilters): Promise<LiteSearchResult> {
+  const db = await getBrowserDb();
+  const followed = await readFollowedCompanies(db, LOCAL_USER.id);
+  const companies = companyRefs(companyId ? followed.filter((c) => c.id === companyId) : followed);
+
+  const key = JSON.stringify(["companies", filters, companies]);
+  const hit = recent.get(key);
+  if (hit && Date.now() - hit.at < REUSE_MS) return hit.result;
+
+  const result = (async () => {
+    const res = await fetch("/api/lite/company-jobs", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...filters, companies }),
+    });
+    const body = (await res.json().catch(() => ({}))) as { jobs?: KeyedJob[]; statuses?: SourceStatus[]; error?: string };
+    if (!res.ok) throw new Error(body.error ?? `Couldn't load the jobs (${res.status}). Please try again.`);
+    const rows = await storeJobs(db, body.jobs ?? []);
+    return { ids: rows.map((r) => r.id), statuses: body.statuses ?? [] };
+  })();
+  recent.set(key, { at: Date.now(), result });
+  result.catch(() => recent.delete(key));
+  return result;
 }

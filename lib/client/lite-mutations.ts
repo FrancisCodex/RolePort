@@ -451,7 +451,7 @@ export async function fetchModels(raw: AiSettingsInput): Promise<Result<string[]
 }
 
 /** Lite: the server checks the link and the company's feed (/api/lite/company); the company is kept in this browser. */
-export async function followCompany(raw: { url: string; name?: string }): Promise<Result<{ name: string; openJobs: number }>> {
+export async function followCompany(raw: { url: string; name?: string }): Promise<Result<{ id: string; name: string; openJobs: number }>> {
   let resolved: Result<{ ats: AtsId; slug: string; name: string; careersUrl: string; openJobs: number }>;
   try {
     const res = await fetch("/api/lite/company", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(raw) });
@@ -462,11 +462,10 @@ export async function followCompany(raw: { url: string; name?: string }): Promis
   if (!resolved.ok) return resolved;
   const { ats, slug, name, careersUrl, openJobs } = resolved.data;
   if (!ATS_IDS.includes(ats)) return { ok: false, error: "Unexpected answer from the server." };
-  if (!(await insertFollowedCompany(await getBrowserDb(), LOCAL_USER.id, { ats, slug, name, careersUrl }))) {
-    return { ok: false, error: TOO_MANY_COMPANIES };
-  }
+  const row = await insertFollowedCompany(await getBrowserDb(), LOCAL_USER.id, { ats, slug, name, careersUrl });
+  if (!row) return { ok: false, error: TOO_MANY_COMPANIES };
   await invalidate("followed_company");
-  return { ok: true, data: { name, openJobs } };
+  return { ok: true, data: { id: row.id, name, openJobs } };
 }
 
 export async function unfollowCompany(raw: { id: string }): Promise<Result> {

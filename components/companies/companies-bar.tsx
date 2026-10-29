@@ -1,22 +1,34 @@
 "use client";
 
 import { Building2, X } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
+import { companyJobsHref } from "@/lib/companies/links";
 import type { FollowedCompanyView } from "@/lib/companies/queries";
+import { cn } from "@/lib/utils";
 import { CompanyManager } from "./company-manager";
 
 const SHOWN = 3;
 
+const chip = (on: boolean) =>
+  cn(
+    "inline-flex items-center gap-1 rounded-md border px-2 py-0.5 font-medium transition-colors",
+    on ? "border-brand/40 bg-brand-soft text-brand-ink" : "border-border text-muted hover:border-border-strong hover:text-fg",
+  );
+
 /**
- * On Jobs, under the search form: invites the user to follow companies (or shows the ones they
- * follow), and opens the guided dialog to add or remove them.
+ * On Jobs: invites the user to follow companies, or lists the ones they follow as links to all
+ * their jobs, and opens the guided dialog to add or remove them. `active` marks the company
+ * (or "all") whose jobs are showing.
  */
-export function CompaniesBar({ companies }: { companies: FollowedCompanyView[] }) {
+export function CompaniesBar({ companies, active }: { companies: FollowedCompanyView[]; active?: string }) {
   const [open, setOpen] = useState(false);
-  const names = companies.slice(0, SHOWN).map((c) => c.name);
-  const more = companies.length - names.length;
+  // The company being viewed stays visible even when it's past the first few.
+  const current = companies.find((c) => c.id === active);
+  const shown = [...(current ? [current] : []), ...companies.filter((c) => c !== current)].slice(0, SHOWN);
+  const more = companies.length - shown.length;
 
   return (
     <>
@@ -34,10 +46,13 @@ export function CompaniesBar({ companies }: { companies: FollowedCompanyView[] }
       ) : (
         <div className="-mt-2 flex flex-wrap items-center gap-1.5 text-xs">
           <span className="text-subtle">Following:</span>
-          {names.map((n) => (
-            <span key={n} className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-0.5 font-medium text-muted">
-              <Building2 className="size-3" /> {n}
-            </span>
+          <Link href={companyJobsHref()} className={chip(active === "all")}>
+            <Building2 className="size-3" /> All their jobs
+          </Link>
+          {shown.map((c) => (
+            <Link key={c.id} href={companyJobsHref(c.id)} title={`See every job at ${c.name}`} className={chip(active === c.id)}>
+              {c.name}
+            </Link>
           ))}
           {more > 0 && <span className="text-subtle">+{more} more</span>}
           <button type="button" onClick={() => setOpen(true)} className="ml-1 font-medium text-brand-ink hover:underline">
@@ -61,7 +76,7 @@ export function CompaniesBar({ companies }: { companies: FollowedCompanyView[] }
               <X />
             </Button>
           </div>
-          <CompanyManager companies={companies} />
+          <CompanyManager companies={companies} onNavigate={() => setOpen(false)} />
         </div>
       </Dialog>
     </>

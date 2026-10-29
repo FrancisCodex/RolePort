@@ -94,14 +94,15 @@ export async function fetchModels(raw: AiSettingsInput): Promise<Result<string[]
 
 /* Companies you follow ------------------------------------------------------ */
 
-export async function followCompany(raw: { url: string; name?: string }): Promise<Result<{ name: string; openJobs: number }>> {
+export async function followCompany(raw: { url: string; name?: string }): Promise<Result<{ id: string; name: string; openJobs: number }>> {
   const user = await getCurrentUser();
   const resolved = await resolveCompany(raw);
   if (!resolved.ok) return resolved;
   const { ats, slug, name, careersUrl, openJobs } = resolved.data;
-  if (!(await insertFollowedCompany(await getDb(), user.id, { ats, slug, name, careersUrl }))) return { ok: false, error: TOO_MANY_COMPANIES };
+  const row = await insertFollowedCompany(await getDb(), user.id, { ats, slug, name, careersUrl });
+  if (!row) return { ok: false, error: TOO_MANY_COMPANIES };
   refresh();
-  return { ok: true, data: { name, openJobs } };
+  return { ok: true, data: { id: row.id, name, openJobs } };
 }
 
 export async function unfollowCompany(raw: { id: string }): Promise<Result> {

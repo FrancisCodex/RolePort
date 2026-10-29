@@ -45,11 +45,14 @@ function words(query: string): string[] {
     .filter((w) => w.length > 1);
 }
 
-export function matchesSearch(job: CompanyJob, params: JobSearchParams): boolean {
+/** A search, or a look through the followed companies' jobs, where the words and the country are optional. */
+export type CompanyJobFilters = Omit<JobSearchParams, "query" | "country"> & { query?: string; country?: string };
+
+export function matchesSearch(job: CompanyJob, params: CompanyJobFilters): boolean {
   const remoteOnly = params.locationId === "remote" || params.workSetup === "remote";
   if (remoteOnly && job.workSetup !== "remote") return false;
   if (!remoteOnly && params.workSetup && job.workSetup && job.workSetup !== params.workSetup) return false;
-  if (!inCountry(job, params.country)) return false;
+  if (params.country && !inCountry(job, params.country)) return false;
 
   const area = params.country === "PH" && !remoteOnly ? findLocation(params.locationId) : undefined;
   const cities = area ? area.cities : params.city && !remoteOnly ? [params.city] : [];
@@ -61,7 +64,7 @@ export function matchesSearch(job: CompanyJob, params: JobSearchParams): boolean
     if (Date.parse(job.postedAt) < Date.now() - params.postedWithinDays * 86_400_000) return false;
   }
 
-  const wanted = words(params.query);
+  const wanted = words(params.query ?? "");
   if (wanted.length === 0) return true;
   const haystack = `${job.title} ${job.team ?? ""} ${toPlainText(job.description)}`.toLowerCase();
   return wanted.every((w) => haystack.includes(w));

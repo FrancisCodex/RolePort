@@ -1,11 +1,13 @@
 "use client";
 
 import { Building2, ChevronRight, ExternalLink, Loader2, Plus, X } from "lucide-react";
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
 import { followCompany, unfollowCompany } from "@/lib/client/mutations";
 import type { FollowedCompanyView } from "@/lib/companies/queries";
+import { companyJobsHref } from "@/lib/companies/links";
 
 // Real companies on different hiring services, so a first-timer can see it work in one click.
 const EXAMPLES = [
@@ -17,17 +19,17 @@ const EXAMPLES = [
 const STEPS = [
   <>Go to the company&apos;s website and open its <strong className="font-medium text-fg">Careers</strong> or <strong className="font-medium text-fg">Jobs</strong> page, the one that lists its open positions.</>,
   <>Copy the link from your browser&apos;s address bar and paste it below.</>,
-  <>Search as usual. That company&apos;s openings that match your search show up in your results, marked <strong className="font-medium text-fg">From the company</strong>.</>,
+  <>Search as usual. That company&apos;s openings that match your search show up in your results, marked <strong className="font-medium text-fg">From the company</strong>. To see all of a company&apos;s jobs at once, click its name above your results.</>,
 ];
 
 /**
  * Following companies, explained for someone doing it the first time: what it does, how to find
  * the right link, the form, and the companies already followed. Used on Jobs (in a dialog) and in Settings.
  */
-export function CompanyManager({ companies }: { companies: FollowedCompanyView[] }) {
+export function CompanyManager({ companies, onNavigate }: { companies: FollowedCompanyView[]; onNavigate?: () => void }) {
   const [url, setUrl] = useState("");
   const [name, setName] = useState("");
-  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const [message, setMessage] = useState<{ ok: boolean; text: string; companyId?: string } | null>(null);
   const [pending, start] = useTransition();
   const [removing, setRemoving] = useState<string | null>(null);
 
@@ -37,9 +39,10 @@ export function CompanyManager({ companies }: { companies: FollowedCompanyView[]
     start(async () => {
       const result = await followCompany({ url, name: name || undefined });
       if (!result.ok) return setMessage({ ok: false, text: result.error });
-      const { name: added, openJobs } = result.data;
+      const { id, name: added, openJobs } = result.data;
       setMessage({
         ok: true,
+        companyId: openJobs > 0 ? id : undefined,
         text:
           openJobs > 0
             ? `You're following ${added}. They have ${openJobs} open job${openJobs === 1 ? "" : "s"} right now; the ones that match your searches will show up in your results.`
@@ -110,6 +113,14 @@ export function CompanyManager({ companies }: { companies: FollowedCompanyView[]
             className={`rounded-md px-3 py-2 text-[13px] font-medium ${message.ok ? "border border-success/20 bg-success-soft text-success" : "border border-danger/20 bg-danger-soft text-danger"}`}
           >
             {message.text}
+            {message.companyId && (
+              <>
+                {" "}
+                <Link href={companyJobsHref(message.companyId)} onClick={onNavigate} className="underline underline-offset-2 hover:no-underline">
+                  See all their jobs
+                </Link>
+              </>
+            )}
           </p>
         )}
         <div>
@@ -154,6 +165,13 @@ export function CompanyManager({ companies }: { companies: FollowedCompanyView[]
                   <p className="truncate text-[13px] font-medium text-fg">{c.name}</p>
                   <p className="text-xs text-subtle">Jobs read from {c.boardLabel}</p>
                 </div>
+                <Link
+                  href={companyJobsHref(c.id)}
+                  onClick={onNavigate}
+                  className="rounded-md px-2 py-1 text-xs font-medium text-brand-ink hover:bg-surface-3"
+                >
+                  See jobs
+                </Link>
                 {c.careersUrl && (
                   <a
                     href={c.careersUrl}

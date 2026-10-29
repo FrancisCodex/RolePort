@@ -4,13 +4,14 @@ import { SOURCE_CREDITS } from "../credits";
 import { ashby } from "./ashby";
 import { greenhouse } from "./greenhouse";
 import { lever } from "./lever";
-import { matchesSearch } from "./match";
+import { matchesSearch, type CompanyJobFilters } from "./match";
 import { recruitee } from "./recruitee";
 import { smartRecruiters } from "./smartrecruiters";
 import { ATS_IDS, MAX_FOLLOWED, type AtsId, type CompanyBoard, type CompanyJob, type CompanyRef, type FeedHint } from "./types";
 import { workable } from "./workable";
 
 export { ATS_IDS, MAX_FOLLOWED, type AtsId, type CompanyRef } from "./types";
+export type { CompanyJobFilters } from "./match";
 
 export const BOARDS: Record<AtsId, CompanyBoard> = { greenhouse, lever, ashby, smartrecruiters: smartRecruiters, workable, recruitee };
 
@@ -55,6 +56,21 @@ function toNormalized(job: CompanyJob, company: string): NormalizedJob {
 }
 
 /**
+ * The open jobs at these companies (all on `board`) that pass `filters`. A search passes its
+ * params as `hint` too, so hiring software that filters on its side gets the words and country.
+ */
+export async function readCompanyJobs(board: AtsId, companies: CompanyRef[], filters: CompanyJobFilters, hint?: JobSearchParams): Promise<NormalizedJob[]> {
+  const mine = companies.filter((c) => c.ats === board).slice(0, MAX_FOLLOWED);
+  const settled = await mapLimited(mine, CONCURRENCY, (c) => fetchCompanyFeed(c, hint));
+  const failures = settled.filter((s) => s.status === "rejected");
+  // One company's feed failing shouldn't hide the others; all of them failing is a source failure.
+  if (failures.length === settled.length && failures.length > 0) throw (failures[0] as PromiseRejectedResult).reason;
+  return settled.flatMap((s, i) =>
+    s.status === "fulfilled" ? s.value.jobs.filter((j) => matchesSearch(j, filters)).map((j) => toNormalized(j, mine[i].name)) : [],
+  );
+}
+
+/**
  * One search source per hiring software. Each reads the feeds of the companies the user follows
  * on it and keeps the jobs that fit the search. Hidden from the source list until the user
  * follows a company there.
@@ -67,16 +83,7 @@ function companySource(board: CompanyBoard): JobSource {
     enabled: (ctx) => ctx.companies.some((c) => c.ats === board.id),
     listWhenOff: false,
     covers: () => true,
-    async search(params, ctx) {
-      const companies = ctx.companies.filter((c) => c.ats === board.id).slice(0, MAX_FOLLOWED);
-      const settled = await mapLimited(companies, CONCURRENCY, (c) => fetchCompanyFeed(c, params));
-      const failures = settled.filter((s) => s.status === "rejected");
-      // One company's feed failing shouldn't hide the others; all of them failing is a source failure.
-      if (failures.length === settled.length && failures.length > 0) throw (failures[0] as PromiseRejectedResult).reason;
-      return settled.flatMap((s, i) =>
-        s.status === "fulfilled" ? s.value.jobs.filter((j) => matchesSearch(j, params)).map((j) => toNormalized(j, companies[i].name)) : [],
-      );
-    },
+    search: (params, ctx) => readCompanyJobs(board.id, ctx.companies, params, params),
   };
 }
 
