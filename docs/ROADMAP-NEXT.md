@@ -2,7 +2,7 @@
 
 Goal: RolePort works for job seekers in any country. The Philippines stays the default and the first market.
 
-Order: **1. More job sources → 2. Paste a job → 3. Email applications and follow-ups → 4. Desktop app (and the agent question)**.
+Order: **1. More job sources → 2. Paste a job → 3. Email applications and follow-ups → 4. Documentation page → 5. Desktop app (and the agent question)**.
 Each step ships on its own branch and works in self-hosted and Lite, unless it says otherwise.
 
 ## Status
@@ -17,7 +17,8 @@ Each step ships on its own branch and works in self-hosted and Lite, unless it s
 | 2. Paste a job (and "still open" checks) | Next | — |
 | 3. Email applications and follow-ups | Not started | — |
 | MCP server | Not started | — |
-| 4. Desktop app: job scout, apply assistant | Not started | — |
+| 4. Documentation page (`/docs`) with search | Not started | — |
+| 5. Desktop app: job scout, apply assistant | Not started | — |
 
 ---
 
@@ -123,7 +124,32 @@ All of this lives on the application page (`/applied/[id]`) and reuses the cover
 
 **Done when:** from an applied job you can produce an application email and a follow-up after 7 days, mark both as sent, and see the next one on the dashboard.
 
-## 4. Desktop app and the in-app AI agent
+## 4. Documentation page (`/docs`)
+
+One place where anyone can learn RolePort end to end, before the desktop app adds a third way to run it. It's public (no sign-in), part of the marketing site, and works the same for self-hosted and Lite, since it's static pages.
+
+### What's in it
+
+- **Introduction:** what RolePort is, who it's for, the two editions (self-hosted and Lite) and how to choose, and what "bring your own key" means.
+- **Quick start:** one short path per edition: open Lite or install self-hosted, add an AI key (or a local model), import your CV, set your countries, run your first search, evaluate a job.
+- **How the app works,** one page per area: Profile and CV import, Jobs (search, filters, date range, why old and ghost postings are hidden), Companies you follow, match scores and AI evaluations, tailored CVs and cover letters, the Applied tracker, the Interview Coach, emails and follow-ups (Phase 3), Paste a job (Phase 2), Settings.
+- **Job portal guides:** one page per job source: what it covers, what it needs (a key, an opt-in), how to set it up, and its limits. The source list and its details come from the registry (`kind`, `coverage`, `needs`) like the README table, so the docs never fall behind the code. Also a guide to following companies by hiring system (Greenhouse, Lever and the others), with how to find a company's careers link.
+- **AI providers and models:** setting up each provider's key, using a local model, what works on small models, and what each feature costs roughly.
+- **Privacy and data:** where data lives in each edition, what the Lite relay sees, how to export and delete it. Links to the Privacy page rather than repeating it.
+- **FAQ:** short answers to the common questions ("Why don't I see LinkedIn jobs?", "Why did a job disappear?", "Does RolePort apply for me?", "Is my CV sent anywhere?").
+- **Contributing:** adding a job source or a starter list (from `docs/ADDING_A_JOB_SOURCE.md`), proposing one, and running the project locally.
+
+### How it works
+
+- **Pages:** written in Markdown/MDX in the repo, one file per page, so contributors can fix the docs in the same pull request as the code. Sidebar navigation by section, a table of contents on each page, previous/next links, and "Edit this page on GitHub".
+- **Search:** a search box in the landing page header and in the docs (also opened with `Ctrl K` / `⌘ K`). It searches page titles, headings and text, and jumps to the matching section. The search index is built with the site, so searching needs no server or outside service and works in Lite.
+- **In the app:** a "Docs" link in the app's navigation, and small "Learn more" links from screens to their page (for example the job sources card in Settings opens the job portal guides).
+- **Screenshots** from the demo's sample data, never from a real user's data.
+- Follows the site's existing look, light and dark mode, and works on phones.
+
+**Done when:** `/docs` has the introduction, the quick start for both editions, a page for every app area and every job source, and the FAQ; the landing page's search finds a page by a word in its text; and a test fails if a job source has no docs page.
+
+## 5. Desktop app and the in-app AI agent
 
 ### Recommendation: not a general chat agent. Build two narrow desktop-only features instead.
 
@@ -155,6 +181,7 @@ Desktop-only isn't required for any of this except the two features above. Keep 
 | 1B. Government and remote feeds ✅ (more to come) | M (per source: S) | 0 |
 | 1C. Contributor kit ✅ | S | 1A |
 | MCP server | S–M | — |
-| 4. Desktop app: job scout, apply assistant | L | 1A, 2 |
+| 4. Documentation page with search | M | 1C (sources table), ideally 2 and 3 so their pages are written once |
+| 5. Desktop app: job scout, apply assistant | L | 1A, 2, 4 |
 
-1B and 1C can run alongside 2 and 3, since they touch different files.
+1B and 1C can run alongside 2 and 3, since they touch different files. The docs' framework, search and first pages can start any time; the pages for Phases 2 and 3 are finished as those ship.
