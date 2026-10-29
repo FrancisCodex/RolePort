@@ -2,6 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 import { isLite } from "@/lib/mode";
+import { isLocalUrl } from "./local-server";
 import type { AiConfig } from "./settings";
 
 /*
@@ -22,6 +23,12 @@ export type StructuredRequest<Schema extends z.ZodType> = {
   schema: Schema;
   /** Depth of reasoning for providers that support it. */
   effort?: "low" | "medium" | "high";
+  /**
+   * Local models only: the longest a string (in characters) and a list may be, by default and
+   * per property name. The server's JSON grammar enforces them, so a small model that keeps
+   * writing one string (it happens) has to close it. Hosted models ignore them.
+   */
+  limits?: { text: number; list: number; fields?: Record<string, number> };
   config: AiConfig;
 };
 
@@ -73,20 +80,31 @@ async function anthropicStructured<Schema extends z.ZodType>(
 /* -------------------------------------------------------------------------- */
 
 const LOCAL_TIMEOUT_MS = 5 * 60_000; // local models can take minutes on the first (cold) call
+// A small model can loop inside a JSON string forever; capping the reply turns that into a
+// quick, clear failure instead of the timeout. Hosted servers keep their own limits.
+const LOCAL_MAX_TOKENS = 8192;
 
-/** Strict-mode JSON Schema: every property required, no extra keys (nullable fields stay nullable). */
-function toStrictJsonSchema(schema: z.ZodType): Record<string, unknown> {
+/** A model running on the user's own machine (Ollama, LM Studio): small context, slow, worth keeping prompts lean. */
+export function isLocalModel(config: AiConfig): boolean {
+  return config.provider === "openai_compatible" && isLocalUrl(config.baseUrl);
+}
+
+/** Strict-mode JSON Schema: every property required, no extra keys (nullable fields stay nullable), and any `limits` as maxLength and maxItems. */
+export function toStrictJsonSchema(schema: z.ZodType, limits?: StructuredRequest<z.ZodType>["limits"]): Record<string, unknown> {
   const json = z.toJSONSchema(schema) as Record<string, unknown>;
   delete json.$schema;
-  const visit = (node: unknown) => {
+  const visit = (node: unknown, name?: string) => {
     if (!node || typeof node !== "object") return;
     const obj = node as Record<string, unknown>;
     if (obj.type === "object" && obj.properties && typeof obj.properties === "object") {
       obj.additionalProperties = false;
       obj.required = Object.keys(obj.properties);
     }
-    for (const value of Object.values(obj)) {
-      if (Array.isArray(value)) value.forEach(visit);
+    if (limits && obj.type === "string" && !("enum" in obj)) obj.maxLength ??= limits.fields?.[name ?? ""] ?? limits.text;
+    if (limits && obj.type === "array") obj.maxItems ??= limits.fields?.[name ?? ""] ?? limits.list;
+    for (const [key, value] of Object.entries(obj)) {
+      if (Array.isArray(value)) value.forEach((v) => visit(v));
+      else if (key === "properties" && value && typeof value === "object") for (const [prop, v] of Object.entries(value)) visit(v, prop);
       else visit(value);
     }
   };
@@ -122,6 +140,7 @@ async function chatCompletion(
       response_format: responseFormat,
       temperature: 0.2,
       ...(config.reasoningEffort ? { reasoning_effort: config.reasoningEffort } : {}),
+      ...(isLocalModel(config) ? { max_tokens: LOCAL_MAX_TOKENS } : {}),
     }),
     signal: AbortSignal.timeout(LOCAL_TIMEOUT_MS),
   });
@@ -129,9 +148,9 @@ async function chatCompletion(
 
 async function openAiCompatibleStructured<Schema extends z.ZodType>(
   config: Extract<AiConfig, { provider: "openai_compatible" }>,
-  { system, prompt, schema }: StructuredRequest<Schema>,
+  { system, prompt, schema, limits }: StructuredRequest<Schema>,
 ): Promise<z.infer<Schema>> {
-  const jsonSchema = toStrictJsonSchema(schema);
+  const jsonSchema = toStrictJsonSchema(schema, isLocalModel(config) ? limits : undefined);
   const schemaFormat = { type: "json_schema", json_schema: { name: "result", strict: true, schema: jsonSchema } };
   // Fallback for servers without json_schema support: plain JSON mode with the schema in the prompt.
   const jsonModeSystem = `${system}\n\nReply with a single JSON object that matches this JSON Schema exactly:\n${JSON.stringify(jsonSchema)}`;
@@ -157,8 +176,12 @@ async function openAiCompatibleStructured<Schema extends z.ZodType>(
       throw new Error(`The AI provider responded ${res.status}${body ? `: ${body.slice(0, 200)}` : ""}`);
     }
 
-    const data = (await res.json()) as { choices?: { message?: { content?: string | null } }[] };
+    const data = (await res.json()) as { choices?: { message?: { content?: string | null }; finish_reason?: string }[] };
     const content = data.choices?.[0]?.message?.content ?? "";
+    if (data.choices?.[0]?.finish_reason === "length" && isLocalModel(config)) {
+      // Asking again with the runaway reply attached would only make the next one longer.
+      throw new Error("The model kept writing without finishing its answer. Try again, or turn thinking off for this model in Settings.");
+    }
 
     let problem: string;
     try {

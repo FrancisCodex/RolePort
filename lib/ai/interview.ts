@@ -15,10 +15,10 @@ import {
   type QuestionResult,
   type RefinedAnswer,
 } from "@/lib/interview/types";
-import { quoteInPosting } from "./evaluate-job";
+import { clip, quoteInPosting } from "./evaluate-job";
 import { interviewerSystemPrompt, STYLE_INFO, STYLE_NOTES, type InterviewStyle } from "./interview-prompt";
 import type { AiConfig } from "./settings";
-import { generateStructured } from "./structured";
+import { generateStructured, isLocalModel } from "./structured";
 import { numbersIn } from "./tailor-cv";
 
 /*
@@ -38,6 +38,20 @@ const FIXED_RULES = `RULES ROLEPORT ALWAYS ADDS
 const fence = (text: string) => text.replace(/<\/?\s*(job_posting|candidate_profile|transcript|question)\s*>/gi, " ");
 const tidy = (s: string) => s.replace(/\s+/g, " ").trim();
 const tidyList = (items: string[], max: number) => items.map(tidy).filter(Boolean).slice(0, max);
+
+/** Caps for the review calls on local models: a sentence or two per field, three points per list. */
+const REVIEW_LIMITS = { text: 400, list: 3 };
+
+/**
+ * Prose a length cap may have cut mid-sentence ("…in a real-world setting. This is"): drop the
+ * unfinished end when an earlier sentence is complete.
+ */
+export function wholeSentences(text: string): string {
+  const s = text.trim();
+  if (/[.!?…"”)\]]$/.test(s)) return s;
+  const last = [...s.matchAll(/[.!?…](?=\s)/g)].pop();
+  return last ? s.slice(0, last.index + 1) : s;
+}
 
 function contextBlocks(context: InterviewContext, role: string, company: string | null): string[] {
   return [
@@ -136,6 +150,7 @@ export async function planInterview(
     prompt: buildPlanPrompt(input.context, input.role, input.company, input.cvText, input.count),
     schema: planSchema,
     effort: "medium",
+    limits: { text: 300, list: 4, fields: { questions: input.count } },
     config,
   });
   const questions = raw.questions
@@ -206,6 +221,7 @@ export async function decideTurn(
     prompt: buildTurnPrompt(input),
     schema: turnSchema,
     effort: "low",
+    limits: { text: 300, list: 3 },
     config,
   });
   const followUp = tidy(raw.followUp);
@@ -252,20 +268,46 @@ export function buildGradePrompt(input: { role: string; company: string | null; 
 }
 
 export async function gradeAnswer(input: Parameters<typeof buildGradePrompt>[0], config: AiConfig): Promise<AnswerGrade> {
-  const raw = await generateStructured({ system: GRADE_SYSTEM_PROMPT, prompt: buildGradePrompt(input), schema: answerGradeSchema, effort: "medium", config });
+  const raw = await generateStructured({ system: GRADE_SYSTEM_PROMPT, prompt: buildGradePrompt(input), schema: answerGradeSchema, effort: "medium", limits: REVIEW_LIMITS, config });
   return {
     scores: raw.scores,
-    summary: tidy(raw.summary).slice(0, 400),
+    summary: wholeSentences(tidy(raw.summary)).slice(0, 400),
     strengths: tidyList(raw.strengths, 3),
     improvements: tidyList(raw.improvements, 3),
   };
 }
 
-/* After grading: check against what was sent, and write a stronger answer ----- */
+/* After grading: check against what was sent, then write a stronger answer ---- */
 
-const MAX_DOC_CHARS = 6000;
+/*
+ * Two calls per question rather than one, so each prompt and reply stays small. With every
+ * document attached, one combined call overflowed a local model's context (Ollama drops the
+ * start of the prompt, instructions included) and ran until it timed out.
+ */
 
-export const coachSchema = z.object({
+export type CoachInput = { question: PlannedQuestion; exchange: InterviewTurn[]; context: InterviewContext };
+
+/** How much of the profile and the documents a prompt carries: all of it for hosted models, a share that fits ~8k tokens for local ones. */
+export type CoachBudget = { profileChars: number | null; docChars: number; perDoc: boolean };
+
+export const HOSTED_BUDGET: CoachBudget = { profileChars: null, docChars: 6000, perDoc: true };
+export const LOCAL_BUDGET: CoachBudget = { profileChars: 4000, docChars: 5000, perDoc: false };
+
+export const coachBudget = (config: AiConfig) => (isLocalModel(config) ? LOCAL_BUDGET : HOSTED_BUDGET);
+
+/** The documents as prompt blocks, each clipped to its share of the budget. */
+export function documentBlocks(documents: InterviewContext["documents"], budget: CoachBudget): string[] {
+  const share = budget.perDoc ? budget.docChars : Math.floor(budget.docChars / Math.max(1, documents.length));
+  return documents.map((d) => [`<document label="${d.label}">`, clip(fence(d.text), share), "</document>"].join("\n"));
+}
+
+const profileBlock = (candidate: string, budget: CoachBudget) => [
+  "<candidate_profile>",
+  budget.profileChars ? clip(fence(candidate), budget.profileChars) : fence(candidate),
+  "</candidate_profile>",
+];
+
+export const claimsSchema = z.object({
   claims: z.array(
     z.object({
       kind: z.enum(["contradiction", "inflation", "unbacked"]),
@@ -275,40 +317,56 @@ export const coachSchema = z.object({
       note: z.string(),
     }),
   ),
-  refinedAnswer: z.string(),
-  notes: z.string(),
 });
 
-export const COACH_SYSTEM_PROMPT = `You are an interview coach. You have the candidate's answers to one interview question and the documents they sent the employer. Do two things.
+export const CLAIMS_SYSTEM_PROMPT = `You are an interview coach. You have the candidate's answers to one interview question and the documents they sent the employer. Check their claims against the documents.
 
-1. CHECK THEIR CLAIMS against the documents. List only real problems, at most 3:
+List only real problems, at most 3:
 - contradiction: what they said conflicts with a document (a different title, employer, date, tool, team size or result).
 - inflation: they claimed more than a document shows (a bigger number, a more senior role, sole ownership of team work).
 - unbacked: a specific, checkable claim (a number, a result, a tool, a title) that no document or profile mentions. An interviewer may ask them to back it up.
 For each: said = the candidate's exact words (copy them); source = the document's label as given (or "Profile" for the candidate profile), or "" for unbacked; sourceQuote = the document's exact words it conflicts with (copy them), or "" for unbacked; note = one sentence on what to fix or be ready for.
 General statements, opinions and things that simply aren't in the documents but aren't specific claims are NOT problems. If nothing is wrong, return an empty list.
 
-2. WRITE A STRONGER ANSWER the candidate could give, in their voice, first person, spoken style, 120-220 words.
-- Use only facts from their answers, the profile and the documents. Never invent employers, titles, tools, numbers or results.
+${FIXED_RULES}`;
+
+export function buildClaimsPrompt(input: CoachInput, budget: CoachBudget = HOSTED_BUDGET): string {
+  const docs = documentBlocks(input.context.documents, budget);
+  return [
+    ...profileBlock(input.context.candidate, budget),
+    "",
+    ...(docs.length ? ["What the candidate sent:", ...docs] : ["(The candidate sent no documents: check claims against the profile only.)"]),
+    "",
+    `Main question: ${input.question.question}`,
+    "",
+    "<transcript>",
+    exchangeText(input.exchange),
+    "</transcript>",
+    "",
+    "Check the claims. Reply with the JSON object only.",
+  ].join("\n");
+}
+
+export const refineSchema = z.object({
+  refinedAnswer: z.string(),
+  notes: z.string(),
+});
+
+export const REFINE_SYSTEM_PROMPT = `You are an interview coach. You have the candidate's answers to one interview question and their profile. Write a stronger answer the candidate could give, in their voice, first person, spoken style, 120-220 words.
+
+- Use only facts from their answers and the profile. Never invent employers, titles, tools, numbers or results.
 - Lead with what they did themselves, then the result. Follow the situation, action, result shape for stories.
 - Where a number or detail would help but isn't known, write a placeholder in square brackets for them to fill in, like [how many users], never a made-up value.
-- Leave out anything flagged as a contradiction or inflation.
+- Leave out anything listed under "Don't repeat".
 notes = one or two sentences on what changed and why.
 
 ${FIXED_RULES}`;
 
-export function buildCoachPrompt(input: {
-  question: PlannedQuestion;
-  exchange: InterviewTurn[];
-  context: InterviewContext;
-}): string {
-  const docs = input.context.documents.map((d) => [`<document label="${d.label}">`, fence(d.text).slice(0, MAX_DOC_CHARS), "</document>"].join("\n"));
+export function buildRefinePrompt(input: CoachInput & { flags: ConsistencyFlag[] }, budget: CoachBudget = HOSTED_BUDGET): string {
+  // Only conflicts are left out; an unbacked claim may be true, so it stays for the candidate to check.
+  const avoid = input.flags.filter((f) => f.kind !== "unbacked").map((f) => `- "${fence(f.said)}": ${f.note}`);
   return [
-    "<candidate_profile>",
-    fence(input.context.candidate),
-    "</candidate_profile>",
-    "",
-    ...(docs.length ? ["What the candidate sent:", ...docs] : ["(The candidate sent no documents: check claims against the profile only.)"]),
+    ...profileBlock(input.context.candidate, budget),
     "",
     `Main question: ${input.question.question}`,
     `A strong answer includes: ${input.question.strongSignals.join("; ") || "a clear, specific answer"}`,
@@ -316,8 +374,9 @@ export function buildCoachPrompt(input: {
     "<transcript>",
     exchangeText(input.exchange),
     "</transcript>",
+    ...(avoid.length ? ["", "Don't repeat (it doesn't match what they sent the employer):", ...avoid] : []),
     "",
-    "Check the claims and write the stronger answer. Reply with the JSON object only.",
+    "Write the stronger answer. Reply with the JSON object only.",
   ].join("\n");
 }
 
@@ -343,13 +402,9 @@ function isCheckable(said: string): boolean {
  * contradiction or inflation, `sourceQuote` in the named document. A conflict whose source
  * can't be found becomes "not in what you sent", which is still worth knowing.
  */
-export function reviewCoaching(
-  raw: z.infer<typeof coachSchema>,
-  input: { exchange: InterviewTurn[]; context: InterviewContext },
-): { flags: ConsistencyFlag[]; refined: RefinedAnswer | null } {
-  const answers = input.exchange.filter((t) => t.kind === "answer").map((t) => t.text).join("\n");
+export function reviewClaims(raw: z.infer<typeof claimsSchema>, input: { exchange: InterviewTurn[]; context: InterviewContext }): ConsistencyFlag[] {
+  const answers = answersOf(input.exchange);
   const docs = new Map([["profile", input.context.candidate], ...input.context.documents.map((d) => [d.label.toLowerCase(), d.text] as const)]);
-  const everything = [input.context.candidate, ...input.context.documents.map((d) => d.text)].join("\n");
 
   const flags: ConsistencyFlag[] = [];
   for (const c of raw.claims) {
@@ -364,13 +419,25 @@ export function reviewCoaching(
       // The model saw a conflict it can't point to: keep it only as an unbacked claim.
       flags.push({ kind: "unbacked", said, source: null, sourceQuote: null, note: "Your documents don't mention this, so be ready to back it up." });
     } else {
-      flags.push({ kind: c.kind, said, source: verified ? tidy(c.source) : null, sourceQuote: verified ? sourceQuote : null, note: tidy(c.note).slice(0, 300) });
+      flags.push({ kind: c.kind, said, source: verified ? tidy(c.source) : null, sourceQuote: verified ? sourceQuote : null, note: wholeSentences(tidy(c.note)).slice(0, 300) });
     }
   }
+  return flags.slice(0, 3);
+}
 
-  const answer = raw.refinedAnswer.replace(/\*\*|__|^#+\s/gm, "").replace(/[ \t]+/g, " ").trim();
-  if (!answer) return { flags: flags.slice(0, 3), refined: null };
-  const known = new Set(numbersIn(`${everything}\n${answers}`));
+const answersOf = (exchange: InterviewTurn[]) =>
+  exchange
+    .filter((t) => t.kind === "answer")
+    .map((t) => t.text)
+    .join("\n");
+
+/** The stronger answer, with warnings for numbers nobody stated and placeholders still to fill in. */
+export function reviewRefined(raw: z.infer<typeof refineSchema>, input: { exchange: InterviewTurn[]; context: InterviewContext }): RefinedAnswer | null {
+  const answer = wholeSentences(raw.refinedAnswer).replace(/\*\*|__|^#+\s/gm, "").replace(/[ \t]+/g, " ").trim();
+  if (!answer) return null;
+  // Checked against everything sent, even when the prompt carried only part of it.
+  const everything = [input.context.candidate, ...input.context.documents.map((d) => d.text)].join("\n");
+  const known = new Set(numbersIn(`${everything}\n${answersOf(input.exchange)}`));
   // Placeholders aren't claims; numbers inside them don't count.
   const unknown = [...new Set(numbersIn(answer.replace(PLACEHOLDER, " ")).filter((n) => !known.has(n)))];
   const placeholders = answer.match(PLACEHOLDER)?.length ?? 0;
@@ -378,15 +445,31 @@ export function reviewCoaching(
     unknown.length ? `It states ${unknown.join(", ")}, which you didn't say and isn't in your documents. Check it or take it out.` : null,
     placeholders ? `Fill in the ${placeholders === 1 ? "placeholder" : `${placeholders} placeholders`} in [brackets] with your real figures before you use it.` : null,
   ].filter((w): w is string => w !== null);
-  return { flags: flags.slice(0, 3), refined: { answer, notes: tidy(raw.notes).slice(0, 400), warnings } };
+  return { answer, notes: wholeSentences(tidy(raw.notes)).slice(0, 400), warnings };
 }
 
-export async function coachAnswer(
-  input: Parameters<typeof buildCoachPrompt>[0],
-  config: AiConfig,
-): Promise<{ flags: ConsistencyFlag[]; refined: RefinedAnswer | null }> {
-  const raw = await generateStructured({ system: COACH_SYSTEM_PROMPT, prompt: buildCoachPrompt(input), schema: coachSchema, effort: "medium", config });
-  return reviewCoaching(raw, input);
+export async function checkClaims(input: CoachInput, config: AiConfig): Promise<ConsistencyFlag[]> {
+  const raw = await generateStructured({
+    system: CLAIMS_SYSTEM_PROMPT,
+    prompt: buildClaimsPrompt(input, coachBudget(config)),
+    schema: claimsSchema,
+    effort: "medium",
+    limits: REVIEW_LIMITS,
+    config,
+  });
+  return reviewClaims(raw, input);
+}
+
+export async function refineAnswer(input: CoachInput & { flags: ConsistencyFlag[] }, config: AiConfig): Promise<RefinedAnswer | null> {
+  const raw = await generateStructured({
+    system: REFINE_SYSTEM_PROMPT,
+    prompt: buildRefinePrompt(input, coachBudget(config)),
+    schema: refineSchema,
+    effort: "medium",
+    limits: { text: 400, list: 3, fields: { refinedAnswer: 1800 } },
+    config,
+  });
+  return reviewRefined(raw, input);
 }
 
 /* Before the interview: the briefing ----------------------------------------- */
@@ -421,9 +504,9 @@ export async function prepareBriefing(
   input: Parameters<typeof buildBriefingPrompt>[0] & { roles: string[] },
   config: AiConfig,
 ): Promise<Omit<InterviewBriefing, "model" | "at">> {
-  const raw = await generateStructured({ system: BRIEFING_SYSTEM_PROMPT, prompt: buildBriefingPrompt(input), schema: briefingSchema, effort: "medium", config });
+  const raw = await generateStructured({ system: BRIEFING_SYSTEM_PROMPT, prompt: buildBriefingPrompt(input), schema: briefingSchema, effort: "medium", limits: { text: 500, list: 5 }, config });
   return {
-    roleSummary: tidy(raw.roleSummary).slice(0, 600),
+    roleSummary: wholeSentences(tidy(raw.roleSummary)).slice(0, 600),
     mustHaves: tidyList(raw.mustHaves, 5),
     // Posting quotes must really be in the posting.
     themes: raw.themes.slice(0, 5).map((t) => ({
@@ -487,11 +570,11 @@ export function buildSummaryPrompt(input: {
 }
 
 export async function summarizeInterview(input: Parameters<typeof buildSummaryPrompt>[0], config: AiConfig): Promise<InterviewSummary> {
-  const raw = await generateStructured({ system: SUMMARY_SYSTEM_PROMPT, prompt: buildSummaryPrompt(input), schema: summarySchema, effort: "low", config });
+  const raw = await generateStructured({ system: SUMMARY_SYSTEM_PROMPT, prompt: buildSummaryPrompt(input), schema: summarySchema, effort: "low", limits: REVIEW_LIMITS, config });
   return {
-    headline: tidy(raw.headline).slice(0, 400),
+    headline: wholeSentences(tidy(raw.headline)).slice(0, 400),
     strengths: tidyList(raw.strengths, 3),
     focusAreas: tidyList(raw.focusAreas, 3),
-    questionsFeedback: tidy(raw.questionsFeedback).slice(0, 500),
+    questionsFeedback: wholeSentences(tidy(raw.questionsFeedback)).slice(0, 500),
   };
 }

@@ -176,11 +176,17 @@ function Progress({
 }) {
   const { done, total } = reportProgress(view);
   const results = view.report.results;
+  // Same order as the steps on the server: grades, summary, then each answer's check and stronger version.
+  const next = results.findIndex((r) => r?.status === "graded" && !r.coached);
   const step = view.plan.some((_, i) => !results[i] && view.turns.some((t) => t.q === i && t.kind === "answer"))
     ? "Grading your answers…"
-    : results.some((r) => r?.status === "graded" && !r.coached)
-      ? "Checking your answers against what you sent, and writing stronger versions…"
-      : "Writing your summary…";
+    : !view.report.summary
+      ? "Writing your summary…"
+      : next === -1
+        ? "Finishing up…"
+        : !(results[next] as Graded).checked
+          ? `Checking Q${next + 1} against what you sent…`
+          : `Writing a stronger answer for Q${next + 1}…`;
   return (
     <Card>
       <CardContent className="flex flex-col gap-3">
@@ -194,7 +200,12 @@ function Progress({
         <div className="h-1 overflow-hidden rounded-full bg-surface-3" aria-hidden>
           <div className="h-full rounded-full bg-brand transition-[width] duration-500" style={{ width: `${(done / total) * 100}%` }} />
         </div>
-        {grading && <p className="text-xs text-muted">Each answer is reviewed on its own. Local models can take a minute per step; you can leave and come back.</p>}
+        {grading && (
+          <p className="text-xs text-muted">
+            Each answer is reviewed on its own, one small step at a time. Local models can take a minute per step; you can leave and come back.
+          </p>
+        )}
+        {!grading && view.report.summary && <p className="text-xs text-muted">Your scores and summary are ready below; only the stronger answers are left.</p>}
         {!aiEnabled && (
           <p className="text-xs text-muted">
             <Link href="/settings" className="font-medium text-brand-ink hover:underline">

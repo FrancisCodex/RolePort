@@ -241,7 +241,9 @@ export type QuestionResult =
       status: "graded";
       words: number;
       followUps: number;
-      /** Set once the answer has been checked against the documents and rewritten (a second step after grading). */
+      /** Set once the answer has been checked against the documents (`flags`), a step after grading. */
+      checked?: boolean;
+      /** Set once a stronger answer has been written (`refined`), the step after that. */
       coached?: boolean;
       flags?: ConsistencyFlag[];
       refined?: RefinedAnswer | null;
@@ -396,8 +398,9 @@ export function reportProgress(view: Pick<InterviewView, "plan" | "turns" | "rep
   view.plan.forEach((_, i) => {
     const r = view.report.results[i];
     if (!view.turns.some((t) => t.q === i && t.kind === "answer")) return;
-    total += 2;
-    if (r?.status === "graded") done += r.coached ? 2 : 1;
+    total += 3;
+    // Grade, check, stronger answer. Sessions graded before the check was its own step have coached without checked.
+    if (r?.status === "graded") done += r.coached ? 3 : r.checked ? 2 : 1;
   });
   return { done, total };
 }

@@ -1,6 +1,6 @@
 import { and, asc, desc, eq } from "drizzle-orm";
 import { clip, jobBlock } from "@/lib/ai/evaluate-job";
-import { coachAnswer, decideTurn, gradeAnswer, planInterview, prepareBriefing, summarizeInterview } from "@/lib/ai/interview";
+import { checkClaims, decideTurn, gradeAnswer, planInterview, prepareBriefing, refineAnswer, summarizeInterview } from "@/lib/ai/interview";
 import { describeAiConfig, type AiConfig } from "@/lib/ai/settings";
 import { candidateBlock } from "@/lib/ai/tailor-cv";
 import { readCv } from "@/lib/cv/queries";
@@ -340,10 +340,11 @@ export async function endInterview(db: AnyDb, userId: string, id: string): Promi
 const wordCount = (text: string) => (text.trim().match(/\S+/g) ?? []).length;
 
 /**
- * One step of the report, one model call each: grade the next ungraded question, then check
- * each graded answer against the documents and write a stronger version, then write the
- * summary and mark the session done. The page calls this until it's done, so a local model
- * only ever has one request at a time and progress survives a reload.
+ * One step of the report, one model call each: grade the next ungraded question, then write
+ * the summary (so the verdict shows as soon as the grades are in), then for each graded answer
+ * check it against the documents and write a stronger version, then mark the session done.
+ * The page calls this until it's done, so a local model only ever has one request at a time
+ * and progress survives a reload.
  */
 export async function gradeInterviewStep(db: AnyDb, userId: string, id: string, config: AiConfig): Promise<InterviewView> {
   const row = await mustRead(db, userId, id);
@@ -375,28 +376,38 @@ export async function gradeInterviewStep(db: AnyDb, userId: string, id: string, 
     return save(db, row, { report: { ...view.report, results, model: describeAiConfig(config), at: now() } });
   }
 
-  for (let i = 0; i < view.plan.length; i++) {
-    const r = results[i];
-    if (r?.status !== "graded" || r.coached) continue;
-    const coaching = await coachAnswer({ question: view.plan[i], exchange: view.turns.filter((t) => t.q === i), context: row.context }, config);
-    results[i] = { ...r, coached: true, ...coaching };
-    return save(db, row, { report: { ...view.report, results, at: now() } });
-  }
-
-  const candidateQuestions = view.turns
-    .filter((t) => t.q === view.plan.length && t.kind === "answer")
-    .map((t) => t.text)
-    .join("\n");
   const graded = results.some((r) => r?.status === "graded");
-  const summary = graded
-    ? await summarizeInterview({ role: view.targetRole, plan: view.plan, results, candidateQuestions }, config)
-    : {
+  if (!view.report.summary) {
+    if (!graded) {
+      const summary = {
         headline: "You ended the interview before answering a question, so there's nothing to grade yet.",
         strengths: [],
         focusAreas: ["Run the interview again and answer at least one question."],
         questionsFeedback: "",
       };
-  return save(db, row, { report: { results, summary, model: graded ? describeAiConfig(config) : null, at: now() }, status: "done" });
+      return save(db, row, { report: { results, summary, model: null, at: now() }, status: "done" });
+    }
+    const candidateQuestions = view.turns
+      .filter((t) => t.q === view.plan.length && t.kind === "answer")
+      .map((t) => t.text)
+      .join("\n");
+    const summary = await summarizeInterview({ role: view.targetRole, plan: view.plan, results, candidateQuestions }, config);
+    return save(db, row, { report: { ...view.report, results, summary, model: describeAiConfig(config), at: now() } });
+  }
+
+  for (let i = 0; i < view.plan.length; i++) {
+    const r = results[i];
+    if (r?.status !== "graded" || r.coached) continue;
+    const input = { question: view.plan[i], exchange: view.turns.filter((t) => t.q === i), context: row.context };
+    if (!r.checked) {
+      results[i] = { ...r, checked: true, flags: await checkClaims(input, config) };
+    } else {
+      results[i] = { ...r, coached: true, refined: await refineAnswer({ ...input, flags: r.flags ?? [] }, config) };
+    }
+    return save(db, row, { report: { ...view.report, results, at: now() } });
+  }
+
+  return save(db, row, { status: "done" });
 }
 
 export async function readInterviewPrompt(db: AnyDb, userId: string): Promise<string | null> {
