@@ -1,0 +1,37 @@
+[
+  {
+    "name": "HelloFresh",
+    "ats": "greenhouse",
+    "slug": "hellofresh"
+  },
+  {
+    "name": "Datadog",
+    "ats": "greenhouse",
+    "slug": "datadog"
+  },
+  {
+    "name": "MongoDB",
+    "ats": "greenhouse",
+    "slug": "mongodb"
+  },
+  {
+    "name": "OpenAI",
+    "ats": "ashby",
+    "slug": "openai"
+  },
+  {
+    "name": "Okta",
+    "ats": "greenhouse",
+    "slug": "okta"
+  },
+  {
+    "name": "Stripe",
+    "ats": "greenhouse",
+    "slug": "stripe"
+  },
+  {
+    "name": "Vercel",
+    "ats": "greenhouse",
+    "slug": "vercel"
+  }
+]

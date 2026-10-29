@@ -24,6 +24,7 @@ import { readDashboard } from "@/lib/jobs/dashboard";
 import { readFitMatches, readJob, readJobsByIds, readTrackedJobs, sortJobs, toListItem, type JobListItem } from "@/lib/jobs/queries";
 import type { JobSort } from "@/lib/jobs/search-params";
 import { sourceCredit } from "@/lib/jobs/sources/credits";
+import { followedCompanyView, readFollowedCompanies, type FollowedCompanyView } from "@/lib/companies/queries";
 import { readOnboarding, readProfile, type ProfileView } from "@/lib/profile/queries";
 import { maskSecret } from "@/lib/secret-hint";
 import { readSettings } from "@/lib/settings/queries";
@@ -48,6 +49,13 @@ export async function loadProfile(): Promise<ProfileView & { aiEnabled: boolean 
   const db = await getBrowserDb();
   const [view, ai] = await Promise.all([readProfile(db, await me(db)), aiEnabled(db)]);
   return { ...view, aiEnabled: ai };
+}
+
+/** Jobs: the profile (for the search defaults) and the companies the user follows. */
+export async function loadJobSearch(): Promise<ProfileView & { companies: FollowedCompanyView[] }> {
+  const db = await getBrowserDb();
+  const [view, companies] = await Promise.all([readProfile(db, await me(db)), readFollowedCompanies(db, LOCAL_USER.id)]);
+  return { ...view, companies: companies.map(followedCompanyView) };
 }
 
 export async function loadHome(): Promise<HomeData> {
@@ -98,6 +106,8 @@ export async function loadJob(
 export async function loadSettings(): Promise<{
   ai: AiSettingsView;
   rapidApiKeyHint: string | null;
+  companies: FollowedCompanyView[];
+  countries: string[];
   jobspyEnabled: boolean;
   cvPrompt: string | null;
   coverLetterPrompt: string | null;
@@ -105,10 +115,16 @@ export async function loadSettings(): Promise<{
   interviewPrompt: string | null;
 }> {
   const db = await getBrowserDb();
-  const row = await readSettings(db, LOCAL_USER.id);
+  const [row, companies, { profile }] = await Promise.all([
+    readSettings(db, LOCAL_USER.id),
+    readFollowedCompanies(db, LOCAL_USER.id),
+    readProfile(db, await me(db)),
+  ]);
   return {
     ai: aiSettingsView(row, readKey, aiConfigFromRow(row, readKey)),
     rapidApiKeyHint: maskSecret(readKey(row?.rapidApiKeyEnc)),
+    companies: companies.map(followedCompanyView),
+    countries: [profile.country, ...profile.targetCountries],
     jobspyEnabled: Boolean(row?.jobspyEnabled),
     cvPrompt: row?.cvPrompt ?? null,
     coverLetterPrompt: row?.coverLetterPrompt ?? null,

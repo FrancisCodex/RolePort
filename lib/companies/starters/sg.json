@@ -1,0 +1,47 @@
+[
+  {
+    "name": "Stripe",
+    "ats": "greenhouse",
+    "slug": "stripe"
+  },
+  {
+    "name": "OpenAI",
+    "ats": "ashby",
+    "slug": "openai"
+  },
+  {
+    "name": "Datadog",
+    "ats": "greenhouse",
+    "slug": "datadog"
+  },
+  {
+    "name": "Ninja Van",
+    "ats": "lever",
+    "slug": "ninjavan"
+  },
+  {
+    "name": "Linear",
+    "ats": "ashby",
+    "slug": "linear"
+  },
+  {
+    "name": "Okta",
+    "ats": "greenhouse",
+    "slug": "okta"
+  },
+  {
+    "name": "MongoDB",
+    "ats": "greenhouse",
+    "slug": "mongodb"
+  },
+  {
+    "name": "Coinbase",
+    "ats": "greenhouse",
+    "slug": "coinbase"
+  },
+  {
+    "name": "Airbnb",
+    "ats": "greenhouse",
+    "slug": "airbnb"
+  }
+]

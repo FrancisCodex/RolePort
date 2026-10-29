@@ -17,6 +17,7 @@ Before opening a pull request:
 ```bash
 npx tsc --noEmit
 npm run lint
+npm test
 npm run build
 ```
 

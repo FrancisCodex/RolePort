@@ -1,7 +1,9 @@
 import { Database, Lock } from "lucide-react";
 import { VoicePanel } from "@/components/speech/voice-settings";
+import { CompanyManager } from "@/components/companies/company-manager";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AiSettingsForm, type AiSettingsView } from "./ai-settings-form";
+import type { FollowedCompanyView } from "@/lib/companies/queries";
 import { BackupControls } from "./backup-controls";
 import { JobSourceForm, JobSpyToggle } from "./job-source-form";
 import { LocalJobSpy } from "./local-jobspy";
@@ -12,6 +14,9 @@ export type SettingsData = {
   /** AI calls run from this browser and data lives in it (the lite edition). */
   aiInBrowser?: boolean;
   rapidApiKeyHint: string | null;
+  companies: FollowedCompanyView[];
+  /** The user's countries (home first), for the starter company lists. */
+  countries: string[];
   /** The JobSpy switch, when this install can use it. */
   jobSpy: { enabled: boolean; reachable: boolean } | null;
   /** Lite: JobSpy on the user's computer, called from the browser. */
@@ -33,6 +38,8 @@ export function SettingsView({
   ai,
   aiInBrowser,
   rapidApiKeyHint,
+  companies,
+  countries,
   jobSpy,
   localJobSpy,
   cvPrompt,
@@ -112,14 +119,28 @@ export function SettingsView({
         <CardHeader>
           <CardTitle>Job sources</CardTitle>
           <CardDescription>
-            freehire and Jobicy work without a key, in every country. Add JSearch to include Google for Jobs listings from JobStreet,
-            Indeed, LinkedIn and Kalibrr.
+            freehire, the remote-job feeds (Jobicy, Remotive, Himalayas, Remote OK) and official boards like Platsbanken (Sweden) work
+            without a key and are searched whenever they cover your search. Add JSearch to include Google for Jobs listings from
+            JobStreet, Indeed, LinkedIn and Kalibrr.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <JobSourceForm rapidApiKeyHint={rapidApiKeyHint} />
           {jobSpy && <JobSpyToggle enabled={jobSpy.enabled} reachable={jobSpy.reachable} />}
           {localJobSpy && <LocalJobSpy enabled={localJobSpy.enabled} />}
+        </CardContent>
+      </Card>
+
+      <Card id="companies">
+        <CardHeader>
+          <CardTitle>Companies you follow</CardTitle>
+          <CardDescription>
+            Know a company you&apos;d love to work for? Follow it, and every job search also checks that company&apos;s own list of openings,
+            in any country. You can also do this from the Jobs page.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <CompanyManager companies={companies} countries={countries} />
         </CardContent>
       </Card>
 

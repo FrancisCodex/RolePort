@@ -1,0 +1,7 @@
+{
+  "total": { "value": 2 },
+  "hits": [
+    { "id": "31000001", "headline": "Junior Designer", "webpage_url": "https://arbetsformedlingen.se/platsbanken/annonser/31000001", "logo_url": null, "employer": { "name": "Exempel AB", "url": null }, "workplace_address": { "municipality": "Stockholm", "region": "Stockholms län", "country": "Sverige", "city": "Stockholm" }, "employment_type": { "label": "Tillsvidareanställning (inkl. eventuell provanställning)" }, "working_hours_type": { "label": "Heltid" }, "description": { "text": "Du designar.\n\nVi erbjuder <mycket>.", "text_formatted": null }, "publication_date": "2026-10-20T16:09:45", "last_publication_date": "2099-10-30T23:59:59", "removed": false },
+    { "id": "31000002", "headline": "Designer, vikariat", "webpage_url": "https://arbetsformedlingen.se/platsbanken/annonser/31000002", "employer": { "name": "Gammal AB" }, "workplace_address": { "municipality": "Malmö", "region": "Skåne län" }, "employment_type": { "label": "Tidsbegränsad anställning" }, "working_hours_type": { "label": "Deltid" }, "description": { "text_formatted": "<p>Vikariat.</p>" }, "publication_date": "2026-09-01T10:00:00", "last_publication_date": "2026-09-15T23:59:59", "removed": false }
+  ]
+}

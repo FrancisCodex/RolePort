@@ -3,11 +3,13 @@ import Form from "next/form";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { EmptyState } from "@/components/app/empty-state";
+import { CompaniesBar } from "@/components/companies/companies-bar";
 import { LocationFields } from "@/components/jobs/location-fields";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { findCountry, orderedCountries } from "@/lib/geo/countries";
-import type { ParsedJobSearch } from "@/lib/jobs/search-params";
+import type { FollowedCompanyView } from "@/lib/companies/queries";
+import { DEFAULT_POSTED_DAYS, POSTED_OPTIONS, type ParsedJobSearch } from "@/lib/jobs/search-params";
 import { PH_LOCATIONS } from "@/lib/ph-locations";
 import type { ProfileInput } from "@/lib/profile/schema";
 import { cn } from "@/lib/utils";
@@ -17,13 +19,6 @@ const SETUP_OPTIONS = [
   { value: "onsite", label: "Onsite" },
   { value: "hybrid", label: "Hybrid" },
   { value: "remote", label: "Remote" },
-];
-const POSTED_OPTIONS = [
-  { value: "", label: "Any time" },
-  { value: "1", label: "Past 24 hours" },
-  { value: "3", label: "Past 3 days" },
-  { value: "7", label: "Past week" },
-  { value: "30", label: "Past month" },
 ];
 const SORT_OPTIONS = [
   { value: "match", label: "Best match" },
@@ -37,10 +32,12 @@ const SORT_OPTIONS = [
 export function JobSearchView({
   profile,
   search: { params, sort, query, city },
+  companies,
   results,
 }: {
   profile: Pick<ProfileInput, "country" | "targetCountries" | "desiredRoles">;
   search: ParsedJobSearch;
+  companies: FollowedCompanyView[];
   results: ReactNode;
 }) {
   const country = params.country;
@@ -75,7 +72,7 @@ export function JobSearchView({
           <Select name="setup" defaultValue={params.workSetup ?? ""} aria-label="Work setup" options={SETUP_OPTIONS} />
           <Select
             name="days"
-            defaultValue={params.postedWithinDays ? String(params.postedWithinDays) : ""}
+            defaultValue={String(params.postedWithinDays ?? DEFAULT_POSTED_DAYS)}
             aria-label="Date posted"
             options={POSTED_OPTIONS}
           />
@@ -129,6 +126,8 @@ export function JobSearchView({
           ))}
         </div>
       )}
+
+      <CompaniesBar companies={companies} countries={[profile.country, ...profile.targetCountries]} />
 
       {query ? (
         results

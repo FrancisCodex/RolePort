@@ -6,6 +6,18 @@ export const SOURCE_CREDITS: Record<string, { name: string; url: string }> = {
   jsearch: { name: "Google for Jobs via JSearch", url: "https://rapidapi.com/letscrunch/api/jsearch" },
   freehire: { name: "freehire.me", url: "https://freehire.me" },
   jobicy: { name: "Jobicy", url: "https://jobicy.com" },
+  remotive: { name: "Remotive", url: "https://remotive.com" },
+  remoteok: { name: "Remote OK", url: "https://remoteok.com" },
+  himalayas: { name: "Himalayas", url: "https://himalayas.app" },
+  arbeitnow: { name: "Arbeitnow", url: "https://www.arbeitnow.com" },
+  platsbanken: { name: "Platsbanken (Arbetsförmedlingen), via JobTech", url: "https://arbetsformedlingen.se/platsbanken" },
+  // Company job-board feeds (lib/jobs/sources/companies): postings straight from the employer.
+  greenhouse: { name: "Greenhouse (the company's careers page)", url: "https://www.greenhouse.com" },
+  lever: { name: "Lever (the company's careers page)", url: "https://www.lever.co" },
+  ashby: { name: "Ashby (the company's careers page)", url: "https://www.ashbyhq.com" },
+  smartrecruiters: { name: "SmartRecruiters (the company's careers page)", url: "https://www.smartrecruiters.com" },
+  workable: { name: "Workable (the company's careers page)", url: "https://www.workable.com" },
+  recruitee: { name: "Recruitee (the company's careers page)", url: "https://recruitee.com" },
   // JobSpy boards (lib/jobs/sources/jobspy.ts): the credit is the board itself.
   linkedin: { name: "LinkedIn", url: "https://www.linkedin.com/jobs" },
   indeed: { name: "Indeed", url: "https://www.indeed.com" },

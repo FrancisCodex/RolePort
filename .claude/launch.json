@@ -1,6 +1,13 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "roleport-dev", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 3000 }
+    { "name": "roleport-dev", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev"], "port": 3000 },
+    {
+      "name": "roleport-test",
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": ["-NoProfile", "-Command", "$env:PGLITE_DIR=\"$env:TEMP/roleport-test-pglite\"; npx next dev --port 3200"],
+      "port": 3200
+    },
+    { "name": "roleport-lite-test", "runtimeExecutable": "npm", "runtimeArgs": ["run", "dev:lite"], "port": 3100 }
   ]
 }

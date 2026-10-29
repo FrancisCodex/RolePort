@@ -21,3 +21,8 @@ export function createRateLimit({ capacity, refillPerMinute }: { capacity: numbe
     return 0;
   };
 }
+
+/** The caller's address behind the host's proxy, for rate-limit keys. */
+export function clientAddress(request: Request): string {
+  return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown";
+}

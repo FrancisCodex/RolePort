@@ -22,6 +22,9 @@ async function fetchJobSpy(baseUrl: string, query: string): Promise<JobSpyJob[]>
 export const jobSpySources: JobSource[] = JOBSPY_BOARDS.map(({ board, label, covers }) => ({
   id: board,
   label,
+  kind: "opt-in",
+  coverage: "Depends on the board: see the JobSpy section",
+  needs: "Self-hosted only: run the JobSpy service and turn it on in Settings",
   attribution: SOURCE_CREDITS[board],
   enabled: (ctx) => Boolean(jobSpyUrl) && ctx.jobspyEnabled,
   disabledNote: "Turn on JobSpy in Settings (self-hosted only) to search this board",

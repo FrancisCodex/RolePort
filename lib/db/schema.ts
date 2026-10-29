@@ -372,6 +372,27 @@ export const interviewSession = pgTable(
 /* Settings — bring-your-own keys and AI provider                             */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Companies the user follows: searches also read these companies' own job feeds
+ * (lib/jobs/sources/companies). `ats` is the hiring software, `slug` the company's name on it.
+ */
+export const followedCompany = pgTable(
+  "followed_company",
+  {
+    id: id(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    ats: text("ats").notNull(),
+    slug: text("slug").notNull(),
+    name: text("name").notNull(),
+    /** The link the user pasted, to open the careers page from Settings. */
+    careersUrl: text("careers_url"),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("followed_company_user_board_idx").on(t.userId, t.ats, t.slug)],
+);
+
 export const aiProvider = pgEnum("ai_provider", ["anthropic", "openai_compatible"]);
 
 /** Per-user settings. Secrets are encrypted with lib/secrets.ts and never sent to the browser. */

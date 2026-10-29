@@ -37,7 +37,8 @@ const TYPES: Record<string, EmploymentType> = {
 const PERIODS: Record<string, SalaryPeriod> = { HOUR: "hour", DAY: "day", MONTH: "month", YEAR: "year" };
 
 function datePosted(days?: number) {
-  if (!days) return "all";
+  // Past a month JSearch has no setting; ask for everything and let lib/jobs/freshness.ts trim it.
+  if (!days || days > 30) return "all";
   if (days <= 1) return "today";
   if (days <= 3) return "3days";
   if (days <= 7) return "week";
@@ -114,6 +115,9 @@ function normalize(job: JSearchJob, fallbackCurrency: string): NormalizedJob {
 export const jsearchSource: JobSource = {
   id: "jsearch",
   label: "JSearch",
+  kind: "board",
+  coverage: "Every country (Google for Jobs: JobStreet, Indeed, LinkedIn, Kalibrr and more)",
+  needs: "A free RapidAPI key",
   attribution: SOURCE_CREDITS.jsearch,
   enabled: (ctx) => Boolean(ctx.rapidApiKey),
   disabledNote: "Add a RapidAPI key in Settings to include JobStreet, Indeed, LinkedIn and Kalibrr listings",

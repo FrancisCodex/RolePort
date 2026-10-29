@@ -1,0 +1,11 @@
+{
+  "comments": "Made-up sample in Himalayas' shape, for tests.",
+  "offset": 0,
+  "limit": 20,
+  "totalCount": 3,
+  "jobs": [
+    { "title": "Senior UX Designer", "excerpt": "Design.", "companyName": "Example Labs", "companySlug": "example-labs", "companyLogo": null, "employmentType": "Full Time", "minSalary": 60000, "maxSalary": 80000, "salaryPeriod": "annual", "currency": "USD", "seniority": ["Senior"], "locationRestrictions": ["Philippines", "Singapore", "Malaysia", "Vietnam"], "timezoneRestrictions": [8], "categories": ["UX-Designer"], "parentCategories": ["Design"], "description": "<p>Lead design.</p>", "pubDate": 1792675549, "expiryDate": 4102444800, "applicationLink": "https://himalayas.app/companies/example-labs/jobs/senior-ux-designer?utm_source=api", "guid": "https://himalayas.app/companies/example-labs/jobs/senior-ux-designer" },
+    { "title": "UI Designer", "companyName": "Anywhere Inc", "employmentType": "Contractor", "locationRestrictions": [], "categories": [], "parentCategories": ["Design"], "description": "<p>Anywhere.</p>", "pubDate": 1792675549, "expiryDate": 4102444800, "applicationLink": "https://himalayas.app/companies/anywhere/jobs/ui-designer?utm_source=api", "guid": "https://himalayas.app/companies/anywhere/jobs/ui-designer" },
+    { "title": "Designer", "companyName": "Closed Co", "employmentType": "Full Time", "locationRestrictions": ["Philippines"], "description": "<p>Closed.</p>", "pubDate": 1792675549, "expiryDate": 1700000000, "applicationLink": "https://himalayas.app/companies/closed/jobs/designer?utm_source=api", "guid": "https://himalayas.app/companies/closed/jobs/designer" }
+  ]
+}

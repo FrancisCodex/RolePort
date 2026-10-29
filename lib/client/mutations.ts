@@ -43,6 +43,13 @@ export const testAiConnection: typeof settings.testAiConnection = isLite
   ? async (...a) => (await lite()).testAiConnection(...a)
   : settings.testAiConnection;
 export const fetchModels: typeof settings.fetchModels = isLite ? async (...a) => (await lite()).fetchModels(...a) : settings.fetchModels;
+export const followCompany: typeof settings.followCompany = isLite ? async (...a) => (await lite()).followCompany(...a) : settings.followCompany;
+export const unfollowCompany: typeof settings.unfollowCompany = isLite
+  ? async (...a) => (await lite()).unfollowCompany(...a)
+  : settings.unfollowCompany;
+export const followStarterCompanies: typeof settings.followStarterCompanies = isLite
+  ? async (...a) => (await lite()).followStarterCompanies(...a)
+  : settings.followStarterCompanies;
 export const saveRapidApiKey: typeof settings.saveRapidApiKey = isLite ? async (...a) => (await lite()).saveRapidApiKey(...a) : settings.saveRapidApiKey;
 export const saveJobSpyEnabled: typeof settings.saveJobSpyEnabled = isLite
   ? async (...a) => (await lite()).saveJobSpyEnabled(...a)

@@ -35,7 +35,7 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
   const actions = (
     <>
       {data.url && (
-        <a href={data.url} target="_blank" rel="noopener noreferrer nofollow" className={buttonVariants()}>
+        <a href={data.url} target="_blank" rel="noopener" className={buttonVariants()}>
           {status === "saved" ? "Open job posting" : "Continue to job posting"} <ExternalLink />
         </a>
       )}

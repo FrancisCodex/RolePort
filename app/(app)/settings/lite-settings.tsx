@@ -8,7 +8,7 @@ export function LiteSettings() {
   return (
     <LiteData
       load={(q) => q.loadSettings()}
-      tables={["user_settings"]}
+      tables={["user_settings", "followed_company", "profile"]}
       fallback={<div className="h-96 animate-pulse rounded-xl bg-surface-3" />}
     >
       {({ jobspyEnabled, ...data }) => (

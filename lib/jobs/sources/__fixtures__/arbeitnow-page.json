@@ -1,0 +1,8 @@
+{
+  "data": [
+    { "slug": "frontend-developer-berlin-1", "company_name": "Example GmbH", "title": "Frontend Developer (m/w/d)", "description": "&lt;p&gt;React und &lt;strong&gt;TypeScript&lt;/strong&gt;&lt;/p&gt;", "remote": false, "url": "https://www.arbeitnow.com/jobs/companies/example/frontend-developer-berlin-1", "tags": ["IT"], "job_types": ["Vollzeit"], "location": "Berlin", "created_at": 1792675549 },
+    { "slug": "werkstudent-marketing-2", "company_name": "Example GmbH", "title": "Werkstudent Marketing", "description": "&lt;p&gt;Marketing&lt;/p&gt;", "remote": true, "url": "https://www.arbeitnow.com/jobs/companies/example/werkstudent-marketing-2", "tags": [], "job_types": ["Werkstudent"], "location": "München, Germany", "created_at": 1792675549 }
+  ],
+  "links": { "next": null },
+  "meta": { "info": "Made-up sample in Arbeitnow's shape, for tests." }
+}

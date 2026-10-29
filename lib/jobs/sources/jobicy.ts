@@ -3,6 +3,7 @@ import { findCountry } from "@/lib/geo/countries";
 import { cleanDescription } from "../html";
 import type { EmploymentType, JobSource, NormalizedJob, SalaryPeriod } from "../types";
 import { SOURCE_CREDITS } from "./credits";
+import { fetchJson } from "./http";
 
 // Jobicy's terms: credit Jobicy with a link, and send applicants to the original job URL.
 type JobicyJob = {
@@ -43,12 +44,9 @@ async function fetchJobicy(geo: string, tag: string): Promise<JobicyJob[]> {
 
   const q = new URLSearchParams({ count: "30", geo });
   if (tag) q.set("tag", tag);
-  const res = await fetch(`https://jobicy.com/api/v2/remote-jobs?${q}`, {
-    headers: { Accept: "application/json", "User-Agent": "RolePort/0.1 (job search)" },
-    signal: AbortSignal.timeout(15_000),
+  const body = await fetchJson<{ jobs?: JobicyJob[] }>(`https://jobicy.com/api/v2/remote-jobs?${q}`, {
+    allowedHosts: ["jobicy.com"],
   });
-  if (!res.ok) throw new Error(`Jobicy responded ${res.status}`);
-  const body = (await res.json()) as { jobs?: JobicyJob[] };
   return body.jobs ?? [];
 }
 
@@ -80,6 +78,8 @@ function normalize(job: JobicyJob): NormalizedJob {
 export const jobicySource: JobSource = {
   id: "jobicy",
   label: "Jobicy",
+  kind: "remote",
+  coverage: "Remote jobs open to people in the countries it lists",
   attribution: SOURCE_CREDITS.jobicy,
   enabled: () => true,
   // Jobicy only lists remote roles, filtered by where the applicant lives.

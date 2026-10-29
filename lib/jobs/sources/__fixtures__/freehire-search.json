@@ -1,0 +1,39 @@
+{
+  "data": [
+    {
+      "public_slug": "example-labs-backend-engineer-1",
+      "url": "https://careers.example.com/jobs/backend-engineer",
+      "title": "Backend Engineer",
+      "company": "Example Labs",
+      "location": "Makati, Philippines",
+      "description": "<p>Design APIs.</p><img src=x onerror=alert(1)>",
+      "skills": ["TypeScript", "PostgreSQL"],
+      "work_mode": "hybrid",
+      "cities": ["Makati"],
+      "posted_at": "2026-10-25T00:00:00Z",
+      "enrichment": {
+        "summary": "Backend role on the payments team.",
+        "employment_type": "full_time",
+        "salary_min": 80000,
+        "salary_max": 120000,
+        "salary_period": "month",
+        "requirements": [
+          { "text": "3+ years with Node.js", "priority": "required" },
+          { "text": "Experience with Kafka", "priority": "preferred" }
+        ]
+      },
+      "reality": { "class": "fresh" }
+    },
+    {
+      "public_slug": "sample-co-data-analyst-2",
+      "url": "https://careers.example.com/jobs/data-analyst",
+      "title": "Data Analyst",
+      "company": null,
+      "location": null,
+      "description": null,
+      "work_mode": "unknown",
+      "posted_at": null,
+      "reality": { "class": "stale" }
+    }
+  ]
+}

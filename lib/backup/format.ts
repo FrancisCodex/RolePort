@@ -28,10 +28,11 @@ export const BACKUP_TABLES = {
   applicationEvent: schema.applicationEvent,
   document: schema.document,
   interviewSession: schema.interviewSession,
+  followedCompany: schema.followedCompany,
 } satisfies Record<string, Table>;
 
 /** Tables added after the first backup version: a backup made before them simply has none. */
-const LATER_TABLES = new Set<string>(["interviewSession"]);
+const LATER_TABLES = new Set<string>(["interviewSession", "followedCompany"]);
 
 type BackupTables = typeof BACKUP_TABLES;
 export type BackupRows = { [K in keyof BackupTables]: InferSelectModel<BackupTables[K]>[] };

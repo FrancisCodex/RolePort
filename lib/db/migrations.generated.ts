@@ -158,5 +158,15 @@ export const migrations: MigrationMeta[] = [
     "bps": true,
     "folderMillis": 1793184219384,
     "hash": "8c46bd0477251c50c6058af093a8eb3044e19d78b29749bc315711b92ce826b6"
+  },
+  {
+    "sql": [
+      "CREATE TABLE \"followed_company\" (\n\t\"id\" text PRIMARY KEY NOT NULL,\n\t\"user_id\" text NOT NULL,\n\t\"ats\" text NOT NULL,\n\t\"slug\" text NOT NULL,\n\t\"name\" text NOT NULL,\n\t\"careers_url\" text,\n\t\"created_at\" timestamp with time zone DEFAULT now() NOT NULL,\n\t\"updated_at\" timestamp with time zone DEFAULT now() NOT NULL\n);\n",
+      "\nALTER TABLE \"followed_company\" ADD CONSTRAINT \"followed_company_user_id_user_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"user\"(\"id\") ON DELETE cascade ON UPDATE no action;",
+      "\nCREATE UNIQUE INDEX \"followed_company_user_board_idx\" ON \"followed_company\" USING btree (\"user_id\",\"ats\",\"slug\");"
+    ],
+    "bps": true,
+    "folderMillis": 1793246107508,
+    "hash": "d4fbbb45b02963b5ed6bdd0b824566041f6758cfcf4967fa38b6fdcb4f514d79"
   }
 ];

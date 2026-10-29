@@ -1,0 +1,42 @@
+[
+  {
+    "name": "Celonis",
+    "ats": "greenhouse",
+    "slug": "celonis"
+  },
+  {
+    "name": "HelloFresh",
+    "ats": "greenhouse",
+    "slug": "hellofresh"
+  },
+  {
+    "name": "N26",
+    "ats": "greenhouse",
+    "slug": "n26"
+  },
+  {
+    "name": "Bosch",
+    "ats": "smartrecruiters",
+    "slug": "BoschGroup"
+  },
+  {
+    "name": "Delivery Hero",
+    "ats": "smartrecruiters",
+    "slug": "DeliveryHero"
+  },
+  {
+    "name": "Figma",
+    "ats": "greenhouse",
+    "slug": "figma"
+  },
+  {
+    "name": "Vercel",
+    "ats": "greenhouse",
+    "slug": "vercel"
+  },
+  {
+    "name": "Datadog",
+    "ats": "greenhouse",
+    "slug": "datadog"
+  }
+]

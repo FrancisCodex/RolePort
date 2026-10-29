@@ -9,6 +9,9 @@ import { aiInput, aiSettingsValues, checkBaseUrl, CONNECTION_TEST, resolveAiInpu
 import { exportBackup } from "@/lib/backup/export";
 import { importErrorMessage, readBackupForm } from "@/lib/backup/form";
 import { importBackup, type ImportSummary } from "@/lib/backup/import";
+import { deleteFollowedCompany, insertFollowedCompany, insertStarterCompanies, TOO_MANY_COMPANIES } from "@/lib/companies/queries";
+import { resolveCompany } from "@/lib/companies/resolve";
+import { starterKeysSchema } from "@/lib/companies/starters";
 import { getDb } from "@/lib/db";
 import { jobSpyUrl } from "@/lib/env";
 import type { Result } from "@/lib/result";
@@ -88,6 +91,38 @@ export async function fetchModels(raw: AiSettingsInput): Promise<Result<string[]
   } catch (error) {
     return { ok: false, error: errorMessage(error) };
   }
+}
+
+/* Companies you follow ------------------------------------------------------ */
+
+export async function followCompany(raw: { url: string; name?: string }): Promise<Result<{ id: string; name: string; openJobs: number }>> {
+  const user = await getCurrentUser();
+  const resolved = await resolveCompany(raw);
+  if (!resolved.ok) return resolved;
+  const { ats, slug, name, careersUrl, openJobs } = resolved.data;
+  const row = await insertFollowedCompany(await getDb(), user.id, { ats, slug, name, careersUrl });
+  if (!row) return { ok: false, error: TOO_MANY_COMPANIES };
+  refresh();
+  return { ok: true, data: { id: row.id, name, openJobs } };
+}
+
+export async function unfollowCompany(raw: { id: string }): Promise<Result> {
+  const user = await getCurrentUser();
+  const input = z.object({ id: z.string().min(1).max(100) }).safeParse(raw);
+  if (!input.success) return { ok: false, error: "Invalid company." };
+  await deleteFollowedCompany(await getDb(), user.id, input.data.id);
+  refresh();
+  return { ok: true, data: undefined };
+}
+
+/** Follows companies from the starter lists, by key; only listed companies are accepted. */
+export async function followStarterCompanies(raw: { keys: string[] }): Promise<Result<{ added: string[]; full: boolean }>> {
+  const user = await getCurrentUser();
+  const input = starterKeysSchema.safeParse(raw);
+  if (!input.success) return { ok: false, error: "Invalid companies." };
+  const result = await insertStarterCompanies(await getDb(), user.id, input.data.keys);
+  refresh();
+  return { ok: true, data: result };
 }
 
 export async function saveRapidApiKey(raw: { apiKey: string | null; clear: boolean }): Promise<Result> {

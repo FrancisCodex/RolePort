@@ -95,7 +95,8 @@ export function JobDetailView({
                 <>
                   <ApplyButton job={job} />
                   {(!job.application || job.application.status === "saved") && <SaveButton jobId={job.id} saved={job.saved} withLabel />}
-                  <a href={job.url} target="_blank" rel="noopener noreferrer nofollow" className={buttonVariants({ variant: "ghost" })}>
+                  {/* A plain link, followed and with the referrer: some sources' terms (Remote OK) ask for traffic back. */}
+                  <a href={job.url} target="_blank" rel="noopener" className={buttonVariants({ variant: "ghost" })}>
                     View posting <ExternalLink />
                   </a>
                 </>
@@ -106,7 +107,7 @@ export function JobDetailView({
                 <Layers className="size-3.5" /> Also posted on
                 {job.extras.alsoOn.map((link, i) => (
                   <span key={link.source}>
-                    <a href={link.url} target="_blank" rel="noopener noreferrer nofollow" className="font-medium text-muted underline-offset-2 hover:text-fg hover:underline">
+                    <a href={link.url} target="_blank" rel="noopener" className="font-medium text-muted underline-offset-2 hover:text-fg hover:underline">
                       {sourceCredit(link.source)?.name ?? link.source}
                     </a>
                     {i < job.extras.alsoOn.length - 1 && ","}

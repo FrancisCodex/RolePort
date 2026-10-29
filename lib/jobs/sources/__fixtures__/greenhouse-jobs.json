@@ -1,0 +1,35 @@
+{
+  "jobs": [
+    {
+      "id": 1001,
+      "title": "Senior Backend Engineer",
+      "absolute_url": "https://boards.greenhouse.io/examplelabs/jobs/1001",
+      "company_name": "Example Labs",
+      "location": { "name": "Manila, Philippines" },
+      "content": "&lt;p&gt;Build our &lt;strong&gt;payments&lt;/strong&gt; API in TypeScript.&lt;/p&gt;&lt;script&gt;x()&lt;/script&gt;",
+      "departments": [{ "id": 1, "name": "Engineering" }],
+      "first_published": "2026-10-20T10:00:00-04:00",
+      "updated_at": "2026-10-21T10:00:00-04:00"
+    },
+    {
+      "id": 1002,
+      "title": "Account Executive",
+      "absolute_url": "https://boards.greenhouse.io/examplelabs/jobs/1002",
+      "company_name": "Example Labs",
+      "location": { "name": "Remote - United States" },
+      "content": "&lt;p&gt;Sell to mid-market customers.&lt;/p&gt;",
+      "departments": [{ "id": 2, "name": "Sales" }],
+      "first_published": "2026-10-01T10:00:00-04:00"
+    },
+    {
+      "id": 1003,
+      "title": "Support Engineer",
+      "absolute_url": "https://boards.greenhouse.io/examplelabs/jobs/1003",
+      "company_name": "Example Labs",
+      "location": { "name": "Remote, APAC" },
+      "content": "&lt;p&gt;Help customers with our API.&lt;/p&gt;",
+      "departments": []
+    }
+  ],
+  "meta": { "total": 3 }
+}

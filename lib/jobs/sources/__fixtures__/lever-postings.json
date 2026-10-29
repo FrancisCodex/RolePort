@@ -1,0 +1,23 @@
+[
+  {
+    "id": "a1b2c3",
+    "text": "Frontend Engineer",
+    "hostedUrl": "https://jobs.lever.co/samplehq/a1b2c3",
+    "createdAt": 1792800000000,
+    "country": "SG",
+    "workplaceType": "hybrid",
+    "description": "<p>Own our React app.</p>",
+    "lists": [{ "text": "What you'll need", "content": "<li>3+ years of React</li>" }],
+    "additional": "<p>Equal opportunity employer.</p>",
+    "categories": { "location": "Singapore, Singapore", "team": "Product Engineering", "commitment": "Full-time", "allLocations": ["Singapore, Singapore"] },
+    "salaryRange": { "min": 8000, "max": 11000, "currency": "SGD", "interval": "per-month-salary" }
+  },
+  {
+    "id": "d4e5f6",
+    "text": "Design Intern",
+    "hostedUrl": "https://jobs.lever.co/samplehq/d4e5f6",
+    "createdAt": 1792800000000,
+    "workplaceType": "onsite",
+    "categories": { "location": "Cebu City, Philippines", "team": "Design", "commitment": "Internship" }
+  }
+]

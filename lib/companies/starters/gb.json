@@ -1,0 +1,52 @@
+[
+  {
+    "name": "Palantir",
+    "ats": "lever",
+    "slug": "palantir"
+  },
+  {
+    "name": "Spotify",
+    "ats": "lever",
+    "slug": "spotify"
+  },
+  {
+    "name": "Stripe",
+    "ats": "greenhouse",
+    "slug": "stripe"
+  },
+  {
+    "name": "Canonical",
+    "ats": "greenhouse",
+    "slug": "canonical"
+  },
+  {
+    "name": "Celonis",
+    "ats": "greenhouse",
+    "slug": "celonis"
+  },
+  {
+    "name": "Figma",
+    "ats": "greenhouse",
+    "slug": "figma"
+  },
+  {
+    "name": "Datadog",
+    "ats": "greenhouse",
+    "slug": "datadog"
+  },
+  {
+    "name": "OpenAI",
+    "ats": "ashby",
+    "slug": "openai"
+  },
+  {
+    "name": "Ramp",
+    "ats": "ashby",
+    "slug": "ramp"
+  },
+  {
+    "name": "Vercel",
+    "ats": "greenhouse",
+    "slug": "vercel"
+  }
+]

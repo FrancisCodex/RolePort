@@ -92,6 +92,13 @@
       "when": 1793184219384,
       "tag": "0012_interview_panel",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1793246107508,
+      "tag": "0013_followed_companies",
+      "breakpoints": true
     }
   ]
 }

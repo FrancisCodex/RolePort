@@ -1,3 +1,5 @@
+import type { CompanyRef } from "./sources/companies/types";
+
 export type WorkSetup = "onsite" | "hybrid" | "remote";
 export type EmploymentType = "full_time" | "part_time" | "contract" | "freelance" | "internship";
 export type SalaryPeriod = "hour" | "day" | "month" | "year";
@@ -56,16 +58,35 @@ export type SourceStatus = {
   failed?: boolean;
 };
 
-/** Per-request keys and opt-ins for sources that need one. */
-export type SourceContext = { rapidApiKey: string | null; jobspyEnabled: boolean };
+/** Per-request keys and opt-ins for sources that need one, and the companies the user follows. */
+export type SourceContext = {
+  rapidApiKey: string | null;
+  jobspyEnabled: boolean;
+  /** Read by the company job-board sources (lib/jobs/sources/companies). */
+  companies: CompanyRef[];
+};
+
+/**
+ * What kind of source it is, for the README's table and the source policy (docs/ADDING_A_JOB_SOURCE.md):
+ * a job board or aggregator, a government's official job board, a remote-jobs feed, a company's own
+ * hiring software, or a scraper the user switches on for a self-hosted install.
+ */
+export type SourceKind = "board" | "official" | "remote" | "company" | "opt-in";
 
 export interface JobSource {
   id: string;
   label: string;
+  kind: SourceKind;
+  /** Where its jobs are, in a few words for the README: "Sweden", "Remote jobs open worldwide". */
+  coverage: string;
+  /** What the user has to set up first, if anything: "A free RapidAPI key". */
+  needs?: string;
   /** Credit line and link required by the source's terms. */
   attribution: { name: string; url: string };
   enabled(ctx: SourceContext): boolean;
   disabledNote?: string;
+  /** false keeps a switched-off source out of the search's source list (the company feeds, until one is followed). */
+  listWhenOff?: boolean;
   /** Whether this source has anything for the given search (e.g. remote-only feeds). */
   covers(params: JobSearchParams): boolean;
   search(params: JobSearchParams, ctx: SourceContext): Promise<NormalizedJob[]>;
