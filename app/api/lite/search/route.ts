@@ -1,7 +1,9 @@
+import { z } from "zod";
 import { HOSTED_SOURCES, searchAllSources } from "@/lib/jobs/search";
 import { jobSearchParamsSchema } from "@/lib/jobs/search-params";
+import { ATS_IDS, MAX_FOLLOWED, SLUG_PATTERN } from "@/lib/jobs/sources/companies/types";
 import { isLite } from "@/lib/mode";
-import { createRateLimit } from "@/lib/rate-limit";
+import { clientAddress, createRateLimit } from "@/lib/rate-limit";
 
 /*
  * The lite edition's one server route (docs/LITE.md §5): runs a public job search and
@@ -14,9 +16,11 @@ import { createRateLimit } from "@/lib/rate-limit";
 // About one search every 3 seconds per address, with room for a short burst.
 const take = createRateLimit({ capacity: 20, refillPerMinute: 20 });
 
-function clientAddress(request: Request): string {
-  return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "unknown";
-}
+// The companies the user follows travel with each search (they're kept in the browser).
+const companiesSchema = z
+  .array(z.object({ ats: z.enum(ATS_IDS), slug: z.string().regex(SLUG_PATTERN), name: z.string().trim().min(1).max(120) }))
+  .max(MAX_FOLLOWED)
+  .catch([]);
 
 export async function POST(request: Request) {
   // Self-hosted installs search in their own server code; don't expose an open proxy.
@@ -27,10 +31,13 @@ export async function POST(request: Request) {
     return Response.json({ error: "Too many searches. Try again in a moment." }, { status: 429, headers: { "Retry-After": String(wait) } });
   }
 
-  const parsed = jobSearchParamsSchema.safeParse(await request.json().catch(() => null));
+  const body: unknown = await request.json().catch(() => null);
+  const { companies: rawCompanies, ...search } = body && typeof body === "object" ? (body as Record<string, unknown>) : {};
+  const parsed = jobSearchParamsSchema.safeParse(search);
   if (!parsed.success) return Response.json({ error: "Invalid search." }, { status: 400 });
+  const companies = companiesSchema.parse(rawCompanies ?? []);
 
   const rapidApiKey = request.headers.get("x-rapidapi-key")?.trim().slice(0, 200) || null;
-  const { jobs, statuses } = await searchAllSources(parsed.data, { rapidApiKey, jobspyEnabled: false }, HOSTED_SOURCES);
+  const { jobs, statuses } = await searchAllSources(parsed.data, { rapidApiKey, jobspyEnabled: false, companies }, HOSTED_SOURCES);
   return Response.json({ jobs, statuses }, { headers: { "Cache-Control": "no-store" } });
 }

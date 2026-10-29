@@ -9,6 +9,8 @@ import { aiInput, aiSettingsValues, checkBaseUrl, CONNECTION_TEST, resolveAiInpu
 import { exportBackup } from "@/lib/backup/export";
 import { importErrorMessage, readBackupForm } from "@/lib/backup/form";
 import { importBackup, type ImportSummary } from "@/lib/backup/import";
+import { deleteFollowedCompany, insertFollowedCompany, TOO_MANY_COMPANIES } from "@/lib/companies/queries";
+import { resolveCompany } from "@/lib/companies/resolve";
 import { getDb } from "@/lib/db";
 import { jobSpyUrl } from "@/lib/env";
 import type { Result } from "@/lib/result";
@@ -88,6 +90,27 @@ export async function fetchModels(raw: AiSettingsInput): Promise<Result<string[]
   } catch (error) {
     return { ok: false, error: errorMessage(error) };
   }
+}
+
+/* Companies you follow ------------------------------------------------------ */
+
+export async function followCompany(raw: { url: string; name?: string }): Promise<Result<{ name: string; openJobs: number }>> {
+  const user = await getCurrentUser();
+  const resolved = await resolveCompany(raw);
+  if (!resolved.ok) return resolved;
+  const { ats, slug, name, careersUrl, openJobs } = resolved.data;
+  if (!(await insertFollowedCompany(await getDb(), user.id, { ats, slug, name, careersUrl }))) return { ok: false, error: TOO_MANY_COMPANIES };
+  refresh();
+  return { ok: true, data: { name, openJobs } };
+}
+
+export async function unfollowCompany(raw: { id: string }): Promise<Result> {
+  const user = await getCurrentUser();
+  const input = z.object({ id: z.string().min(1).max(100) }).safeParse(raw);
+  if (!input.success) return { ok: false, error: "Invalid company." };
+  await deleteFollowedCompany(await getDb(), user.id, input.data.id);
+  refresh();
+  return { ok: true, data: undefined };
 }
 
 export async function saveRapidApiKey(raw: { apiKey: string | null; clear: boolean }): Promise<Result> {

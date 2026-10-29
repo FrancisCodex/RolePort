@@ -2,7 +2,9 @@ import { Database, Lock } from "lucide-react";
 import { VoicePanel } from "@/components/speech/voice-settings";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AiSettingsForm, type AiSettingsView } from "./ai-settings-form";
+import type { FollowedCompanyView } from "@/lib/companies/queries";
 import { BackupControls } from "./backup-controls";
+import { FollowedCompanies } from "./followed-companies";
 import { JobSourceForm, JobSpyToggle } from "./job-source-form";
 import { LocalJobSpy } from "./local-jobspy";
 import { AnswerPromptForm, CvPromptForm, InterviewerPromptForm, LetterPromptForm } from "./prompt-form";
@@ -12,6 +14,7 @@ export type SettingsData = {
   /** AI calls run from this browser and data lives in it (the lite edition). */
   aiInBrowser?: boolean;
   rapidApiKeyHint: string | null;
+  companies: FollowedCompanyView[];
   /** The JobSpy switch, when this install can use it. */
   jobSpy: { enabled: boolean; reachable: boolean } | null;
   /** Lite: JobSpy on the user's computer, called from the browser. */
@@ -33,6 +36,7 @@ export function SettingsView({
   ai,
   aiInBrowser,
   rapidApiKeyHint,
+  companies,
   jobSpy,
   localJobSpy,
   cvPrompt,
@@ -120,6 +124,19 @@ export function SettingsView({
           <JobSourceForm rapidApiKeyHint={rapidApiKeyHint} />
           {jobSpy && <JobSpyToggle enabled={jobSpy.enabled} reachable={jobSpy.reachable} />}
           {localJobSpy && <LocalJobSpy enabled={localJobSpy.enabled} />}
+        </CardContent>
+      </Card>
+
+      <Card id="companies">
+        <CardHeader>
+          <CardTitle>Companies you follow</CardTitle>
+          <CardDescription>
+            Paste a company&apos;s careers page and its open jobs join your searches, straight from the employer. Works with companies that
+            hire through Greenhouse, Lever, Ashby, SmartRecruiters, Workable or Recruitee, in any country.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <FollowedCompanies companies={companies} />
         </CardContent>
       </Card>
 

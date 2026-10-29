@@ -8,13 +8,14 @@ import { APP_VERSION, BACKUP_FORMAT, BACKUP_VERSION, SCHEMA_VERSION, type Backup
  * saved or evaluated go in. API keys are left out.
  */
 export async function exportBackup(db: AnyDb, user: { id: string; name: string }): Promise<Backup> {
-  const [profile, settings, jobMatch, application, document, interviewSession] = await Promise.all([
+  const [profile, settings, jobMatch, application, document, interviewSession, followedCompany] = await Promise.all([
     db.select().from(schema.profile).where(eq(schema.profile.userId, user.id)),
     db.select().from(schema.userSettings).where(eq(schema.userSettings.userId, user.id)),
     db.select().from(schema.jobMatch).where(eq(schema.jobMatch.userId, user.id)),
     db.select().from(schema.application).where(eq(schema.application.userId, user.id)),
     db.select().from(schema.document).where(eq(schema.document.userId, user.id)),
     db.select().from(schema.interviewSession).where(eq(schema.interviewSession.userId, user.id)),
+    db.select().from(schema.followedCompany).where(eq(schema.followedCompany.userId, user.id)),
   ]);
 
   const appIds = application.map((a) => a.id);
@@ -40,6 +41,7 @@ export async function exportBackup(db: AnyDb, user: { id: string; name: string }
       applicationEvent,
       document,
       interviewSession,
+      followedCompany,
     },
   };
 }

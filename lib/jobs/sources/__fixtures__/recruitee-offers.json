@@ -1,0 +1,25 @@
+{
+  "offers": [
+    {
+      "id": 2794356,
+      "title": "Customer Success Manager",
+      "status": "published",
+      "description": "<p>Help hosts succeed.</p>",
+      "requirements": "<ul><li>2 years in SaaS</li></ul>",
+      "location": "Austin, Texas, United States",
+      "city": "Austin",
+      "country_code": "US",
+      "locations": [{ "city": "Austin", "country_code": "US" }, { "city": "Toronto", "country_code": "CA" }],
+      "remote": true,
+      "hybrid": false,
+      "on_site": false,
+      "employment_type_code": "fulltime_permanent",
+      "careers_url": "https://careers.example.com/o/customer-success-manager",
+      "published_at": "2026-10-22 13:10:36 UTC",
+      "company_name": "Example Stays",
+      "department": "Customer Success",
+      "salary": { "min": "60000", "max": "80000", "currency": "USD", "period": "year" }
+    },
+    { "id": 2, "title": "Draft role", "status": "draft" }
+  ]
+}

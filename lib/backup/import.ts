@@ -19,6 +19,7 @@ export type ImportSummary = {
   events: number;
   documents: number;
   interviews: number;
+  companies: number;
 };
 
 function omit<T extends object, K extends keyof T>(row: T, keys: readonly K[]): Omit<T, K> {
@@ -40,7 +41,17 @@ export async function importBackup(db: AnyDb, userId: string, backup: Backup, mo
     merge ? sql`excluded.${sql.raw(excluded)} > ${column}` : undefined;
 
   return db.transaction(async (tx) => {
-    const summary: ImportSummary = { profile: false, settings: false, jobs: 0, evaluations: 0, applications: 0, events: 0, documents: 0, interviews: 0 };
+    const summary: ImportSummary = {
+      profile: false,
+      settings: false,
+      jobs: 0,
+      evaluations: 0,
+      applications: 0,
+      events: 0,
+      documents: 0,
+      interviews: 0,
+      companies: 0,
+    };
 
     if (!merge) {
       await tx.delete(schema.interviewSession).where(eq(schema.interviewSession.userId, userId));
@@ -213,6 +224,16 @@ export async function importBackup(db: AnyDb, userId: string, backup: Backup, mo
       if (existing) continue;
       await tx.insert(schema.interviewSession).values({ ...omit(row, ["id", "userId", "applicationId"]), userId, applicationId });
       summary.interviews++;
+    }
+
+    // Following the same company twice is one follow; replacing keeps the ones already here too.
+    for (const row of t.followedCompany) {
+      const added = await tx
+        .insert(schema.followedCompany)
+        .values({ ...omit(row, ["id", "userId"]), userId })
+        .onConflictDoNothing()
+        .returning({ id: schema.followedCompany.id });
+      summary.companies += added.length;
     }
 
     return summary;

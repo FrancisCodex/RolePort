@@ -24,6 +24,7 @@ import { readDashboard } from "@/lib/jobs/dashboard";
 import { readFitMatches, readJob, readJobsByIds, readTrackedJobs, sortJobs, toListItem, type JobListItem } from "@/lib/jobs/queries";
 import type { JobSort } from "@/lib/jobs/search-params";
 import { sourceCredit } from "@/lib/jobs/sources/credits";
+import { followedCompanyView, readFollowedCompanies, type FollowedCompanyView } from "@/lib/companies/queries";
 import { readOnboarding, readProfile, type ProfileView } from "@/lib/profile/queries";
 import { maskSecret } from "@/lib/secret-hint";
 import { readSettings } from "@/lib/settings/queries";
@@ -98,6 +99,7 @@ export async function loadJob(
 export async function loadSettings(): Promise<{
   ai: AiSettingsView;
   rapidApiKeyHint: string | null;
+  companies: FollowedCompanyView[];
   jobspyEnabled: boolean;
   cvPrompt: string | null;
   coverLetterPrompt: string | null;
@@ -105,10 +107,11 @@ export async function loadSettings(): Promise<{
   interviewPrompt: string | null;
 }> {
   const db = await getBrowserDb();
-  const row = await readSettings(db, LOCAL_USER.id);
+  const [row, companies] = await Promise.all([readSettings(db, LOCAL_USER.id), readFollowedCompanies(db, LOCAL_USER.id)]);
   return {
     ai: aiSettingsView(row, readKey, aiConfigFromRow(row, readKey)),
     rapidApiKeyHint: maskSecret(readKey(row?.rapidApiKeyEnc)),
+    companies: companies.map(followedCompanyView),
     jobspyEnabled: Boolean(row?.jobspyEnabled),
     cvPrompt: row?.cvPrompt ?? null,
     coverLetterPrompt: row?.coverLetterPrompt ?? null,

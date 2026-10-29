@@ -17,7 +17,7 @@ Each step ships on its own branch and works in self-hosted and Lite, unless it s
 
 Three kinds of source, in this order. Each one is one file in `lib/jobs/sources/` implementing `JobSource`, with `covers(country)`.
 
-### 1A. Company job-board feeds + "Companies I follow"
+### 1A. Company job-board feeds + "Companies I follow" (built)
 
 Most employers post through hiring software that publishes a public, key-less JSON feed for each company's careers page.
 
@@ -35,7 +35,7 @@ Later: Teamtailor, Personio, BambooHR, Workday (harder).
 - **Companies I follow** (new table `followed_companies`: name, hiring software, slug, country, added date). Add a company by pasting its careers page URL. RolePort detects which hiring software it uses from the URL, plus a JSON-LD/HTML fallback for branded careers domains.
 - **How search uses them:** a search also runs over the followed companies' feeds, filtered by the query, country and work setup in code. Feeds are cached for a few hours.
 - **Starter lists:** an optional seed list of well-known employers per country (`lib/jobs/seed-companies/{country}.json`). It's contributed per country, and users can import it in one click.
-- **Still open:** a job from a feed is open while it's still in its company's feed. Saved and applied jobs show "Closed" when it disappears. This also feeds Phase 2.
+- **Still open (moved to Phase 2):** a job from a feed is open while it's still in its company's feed. Saved and applied jobs show "Closed" when it disappears. Built together with Phase 2's "Check again", so both kinds of job share one check.
 - **Lite:** the search relay (`/api/lite/search`) fetches the feeds with the host allowlist above. Followed companies live in the browser's database like everything else.
 - **Porting:** career-ops (MIT) has working modules for these in `providers/*.mjs`. Port the logic to TypeScript and credit it in `THIRD_PARTY_NOTICES.md`.
 

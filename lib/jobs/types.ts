@@ -1,3 +1,5 @@
+import type { CompanyRef } from "./sources/companies/types";
+
 export type WorkSetup = "onsite" | "hybrid" | "remote";
 export type EmploymentType = "full_time" | "part_time" | "contract" | "freelance" | "internship";
 export type SalaryPeriod = "hour" | "day" | "month" | "year";
@@ -56,8 +58,13 @@ export type SourceStatus = {
   failed?: boolean;
 };
 
-/** Per-request keys and opt-ins for sources that need one. */
-export type SourceContext = { rapidApiKey: string | null; jobspyEnabled: boolean };
+/** Per-request keys and opt-ins for sources that need one, and the companies the user follows. */
+export type SourceContext = {
+  rapidApiKey: string | null;
+  jobspyEnabled: boolean;
+  /** Read by the company job-board sources (lib/jobs/sources/companies). */
+  companies: CompanyRef[];
+};
 
 export interface JobSource {
   id: string;
@@ -66,6 +73,8 @@ export interface JobSource {
   attribution: { name: string; url: string };
   enabled(ctx: SourceContext): boolean;
   disabledNote?: string;
+  /** false keeps a switched-off source out of the search's source list (the company feeds, until one is followed). */
+  listWhenOff?: boolean;
   /** Whether this source has anything for the given search (e.g. remote-only feeds). */
   covers(params: JobSearchParams): boolean;
   search(params: JobSearchParams, ctx: SourceContext): Promise<NormalizedJob[]>;

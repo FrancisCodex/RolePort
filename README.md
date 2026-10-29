@@ -98,6 +98,7 @@ Run Lite yourself with `npm run dev:lite` (port 3100), or build it with `npm run
 | Feature | Needs |
 | --- | --- |
 | Job search in your country or abroad: jobs from [freehire](https://freehire.me), remote roles from [Jobicy](https://jobicy.com). Set where you live and which countries you'd move to in your profile. The same opening posted on several boards shows once, with links to the others, and results come 20 to a page | Nothing |
+| Companies you follow: paste a company's careers page and its open jobs join every search, straight from the employer. Works with companies that hire through Greenhouse, Lever, Ashby, SmartRecruiters, Workable or Recruitee, in any country (**Settings → Companies you follow**) | Nothing |
 | Quick match score from your skills on every job | Nothing |
 | Applied jobs: **Apply** opens a page for that job with the saved posting, its status history and your notes, and your application kit: the tailored CV to download and the cover letter to copy, each made in one click (or both with **Prepare all with AI**) | Nothing (AI for the one-click drafts) |
 | Pipeline: save jobs, track Saved → Applied → Interview → Offer | Nothing |

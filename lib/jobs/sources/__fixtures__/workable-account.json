@@ -1,0 +1,19 @@
+{
+  "name": "Sample Studio",
+  "description": "",
+  "jobs": [
+    {
+      "title": "Machine Learning Engineer - EMEA Remote",
+      "shortcode": "ABC123",
+      "employment_type": "Full-time",
+      "telecommuting": true,
+      "department": "Research",
+      "url": "https://apply.workable.com/j/ABC123",
+      "published_on": "2026-10-01",
+      "country": "France",
+      "city": "Paris",
+      "locations": [{ "country": "France", "countryCode": "FR", "city": "Paris", "region": "Île-de-France", "hidden": false }],
+      "description": "<p>Train models.</p>"
+    }
+  ]
+}

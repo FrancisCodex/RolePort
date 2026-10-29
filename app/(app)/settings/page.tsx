@@ -3,6 +3,9 @@ import { Suspense } from "react";
 import { BackToGuide } from "@/components/app/back-to-guide";
 import { PageHeader } from "@/components/app/page-header";
 import { getAiConfig, getMySettingsRow } from "@/lib/ai/config";
+import { followedCompanyView, readFollowedCompanies } from "@/lib/companies/queries";
+import { getDb } from "@/lib/db";
+import { getCurrentUser } from "@/lib/session";
 import { jobSpyUrl } from "@/lib/env";
 import { isLite } from "@/lib/mode";
 import { maskSecret } from "@/lib/secret-hint";
@@ -50,16 +53,19 @@ async function jobSpyReachable(): Promise<boolean> {
 
 async function SettingsContent() {
   const showJobSpy = Boolean(jobSpyUrl);
-  const [row, active, reachable] = await Promise.all([
+  const user = await getCurrentUser();
+  const [row, active, reachable, companies] = await Promise.all([
     getMySettingsRow(),
     getAiConfig(),
     showJobSpy ? jobSpyReachable() : false,
+    getDb().then((db) => readFollowedCompanies(db, user.id)),
   ]);
 
   return (
     <SettingsView
       ai={aiSettingsView(row, decryptSecret, active)}
       rapidApiKeyHint={maskSecret(decryptSecret(row?.rapidApiKeyEnc))}
+      companies={companies.map(followedCompanyView)}
       jobSpy={showJobSpy ? { enabled: Boolean(row?.jobspyEnabled), reachable } : null}
       cvPrompt={row?.cvPrompt ?? null}
       coverLetterPrompt={row?.coverLetterPrompt ?? null}

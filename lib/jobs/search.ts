@@ -1,6 +1,7 @@
 import "server-only";
 import { mergeDuplicates } from "./dedupe";
 import { jobKey } from "./job-key";
+import { COMPANY_SOURCES } from "./sources/companies";
 import { freehireSource } from "./sources/freehire";
 import { jobicySource } from "./sources/jobicy";
 import { jobSpySources } from "./sources/jobspy";
@@ -9,7 +10,8 @@ import type { KeyedJob } from "./queries";
 import type { JobSearchParams, JobSource, SourceContext, SourceStatus } from "./types";
 
 /** Order matters: when two sources carry the same posting, the earlier one is shown and links to the others. */
-export const JOB_SOURCES = [jsearchSource, ...jobSpySources, freehireSource, jobicySource];
+// Company feeds come first: a posting straight from the employer beats a copy on a job board.
+export const JOB_SOURCES = [...COMPANY_SOURCES, jsearchSource, ...jobSpySources, freehireSource, jobicySource];
 
 /**
  * What the hosted lite edition searches from its server: never the JobSpy boards, whose
@@ -50,7 +52,7 @@ export async function searchAllSources(
 
   for (const source of sources) {
     // Boards that don't cover this search's country stay out of the list, even when switched off.
-    if (!source.enabled(ctx) && source.covers(params)) statuses.push({ id: source.id, label: source.label, count: 0, note: source.disabledNote });
+    if (!source.enabled(ctx) && source.listWhenOff !== false && source.covers(params)) statuses.push({ id: source.id, label: source.label, count: 0, note: source.disabledNote });
   }
 
   return { jobs, statuses };

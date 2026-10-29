@@ -40,6 +40,12 @@ export default function PrivacyPage() {
           logs.
         </p>
         <p>
+          <strong>Companies you follow go along with each search.</strong> The list (each company&apos;s name and its name on the hiring
+          software it uses) is sent with your search terms so the server can read those companies&apos; public job feeds. When you follow a
+          company, the careers link you paste goes to RolePort&apos;s server, which opens that page to find the company&apos;s job feed. Neither
+          is stored.
+        </p>
+        <p>
           <strong>Your JSearch key is sent along with a search when you add one,</strong> used for that single request to RapidAPI,
           and never stored or logged.
         </p>

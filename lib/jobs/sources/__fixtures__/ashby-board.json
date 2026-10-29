@@ -1,0 +1,28 @@
+{
+  "apiVersion": "1",
+  "jobs": [
+    {
+      "id": "job-1",
+      "title": "Data Scientist",
+      "department": "Data",
+      "team": "Analytics",
+      "employmentType": "FullTime",
+      "location": "London",
+      "secondaryLocations": [{ "location": "Remote - Philippines", "address": { "postalAddress": { "addressCountry": "Philippines" } } }],
+      "isListed": true,
+      "isRemote": null,
+      "workplaceType": "Remote",
+      "address": { "postalAddress": { "addressCountry": "United Kingdom", "addressLocality": "London" } },
+      "jobUrl": "https://jobs.ashbyhq.com/acmeai/job-1",
+      "descriptionHtml": "<p>Model customer churn with Python.</p>",
+      "publishedAt": "2026-10-10T00:00:00.000+00:00",
+      "compensation": {
+        "summaryComponents": [
+          { "compensationType": "EquityCashValue", "interval": "1 YEAR", "currencyCode": "USD", "minValue": null, "maxValue": null },
+          { "compensationType": "Salary", "interval": "1 YEAR", "currencyCode": "GBP", "minValue": 70000, "maxValue": 90000 }
+        ]
+      }
+    },
+    { "id": "job-2", "title": "Hidden Role", "isListed": false, "jobUrl": "https://jobs.ashbyhq.com/acmeai/job-2" }
+  ]
+}

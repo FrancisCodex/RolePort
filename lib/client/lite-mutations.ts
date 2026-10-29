@@ -43,7 +43,9 @@ import { interviewSetupSchema, MAX_INTERVIEW_ANSWER, spokenTime, type InterviewS
 import { draftQuestionAnswer, saveQuestionList } from "@/lib/questions/questions";
 import { questionsSchema, type QuestionItem } from "@/lib/questions/types";
 import { letterContentSchema, type LetterContent } from "@/lib/letter/types";
+import { deleteFollowedCompany, insertFollowedCompany, TOO_MANY_COMPANIES } from "@/lib/companies/queries";
 import { getBrowserDb, type BrowserDb } from "@/lib/db/browser";
+import { ATS_IDS, type AtsId } from "@/lib/jobs/sources/companies/types";
 import { LOCAL_USER } from "@/lib/db/local-user";
 import {
   markApplied,
@@ -446,6 +448,33 @@ export async function fetchModels(raw: AiSettingsInput): Promise<Result<string[]
   } catch (error) {
     return { ok: false, error: await providerError(error, baseUrl, null) };
   }
+}
+
+/** Lite: the server checks the link and the company's feed (/api/lite/company); the company is kept in this browser. */
+export async function followCompany(raw: { url: string; name?: string }): Promise<Result<{ name: string; openJobs: number }>> {
+  let resolved: Result<{ ats: AtsId; slug: string; name: string; careersUrl: string; openJobs: number }>;
+  try {
+    const res = await fetch("/api/lite/company", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(raw) });
+    resolved = await res.json();
+  } catch {
+    return { ok: false, error: "Couldn't reach RolePort to check that link. Try again." };
+  }
+  if (!resolved.ok) return resolved;
+  const { ats, slug, name, careersUrl, openJobs } = resolved.data;
+  if (!ATS_IDS.includes(ats)) return { ok: false, error: "Unexpected answer from the server." };
+  if (!(await insertFollowedCompany(await getBrowserDb(), LOCAL_USER.id, { ats, slug, name, careersUrl }))) {
+    return { ok: false, error: TOO_MANY_COMPANIES };
+  }
+  await invalidate("followed_company");
+  return { ok: true, data: { name, openJobs } };
+}
+
+export async function unfollowCompany(raw: { id: string }): Promise<Result> {
+  const input = z.object({ id: z.string().min(1).max(100) }).safeParse(raw);
+  if (!input.success) return { ok: false, error: "Invalid company." };
+  await deleteFollowedCompany(await getBrowserDb(), LOCAL_USER.id, input.data.id);
+  await invalidate("followed_company");
+  return { ok: true, data: undefined };
 }
 
 export async function saveRapidApiKey(raw: { apiKey: string | null; clear: boolean }): Promise<Result> {

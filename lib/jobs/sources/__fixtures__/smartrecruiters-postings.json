@@ -1,0 +1,17 @@
+{
+  "offset": 0,
+  "limit": 100,
+  "totalFound": 1,
+  "content": [
+    {
+      "id": "744000000000001",
+      "name": "Mechanical Design Engineer",
+      "releasedDate": "2026-10-25T03:34:29.559Z",
+      "company": { "identifier": "ExampleGroup", "name": "Example Group" },
+      "location": { "city": "Makati", "region": "Metro Manila", "country": "ph", "remote": false, "hybrid": true, "fullLocation": "Makati, Metro Manila, Philippines" },
+      "typeOfEmployment": { "id": "permanent", "label": "Full-time" },
+      "department": {},
+      "function": { "id": "engineering", "label": "Engineering" }
+    }
+  ]
+}

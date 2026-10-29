@@ -66,4 +66,4 @@ describe("freehire", () => {
   });
 });
 
-const ctx = { rapidApiKey: null, jobspyEnabled: false };
+const ctx = { rapidApiKey: null, jobspyEnabled: false, companies: [] };

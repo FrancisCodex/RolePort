@@ -1,5 +1,6 @@
 import "server-only";
 import { getJobSpyEnabled, getRapidApiKey } from "@/lib/ai/config";
+import { companyRefs, readFollowedCompanies } from "@/lib/companies/queries";
 import { getDb } from "@/lib/db";
 import { getMyProfile } from "@/lib/profile/data";
 import { getCurrentUser } from "@/lib/session";
@@ -17,9 +18,9 @@ export async function searchJobs(
 ): Promise<{ jobs: JobListItem[]; statuses: SourceStatus[]; hasSkills: boolean }> {
   const user = await getCurrentUser();
   const db = await getDb();
-  const [rapidApiKey, jobspyEnabled] = await Promise.all([getRapidApiKey(), getJobSpyEnabled()]);
+  const [rapidApiKey, jobspyEnabled, followed] = await Promise.all([getRapidApiKey(), getJobSpyEnabled(), readFollowedCompanies(db, user.id)]);
   const [{ jobs, statuses }, { profile }, saved] = await Promise.all([
-    searchAllSources(params, { rapidApiKey, jobspyEnabled }),
+    searchAllSources(params, { rapidApiKey, jobspyEnabled, companies: companyRefs(followed) }),
     getMyProfile(),
     readTrackedJobs(db, user.id),
   ]);
