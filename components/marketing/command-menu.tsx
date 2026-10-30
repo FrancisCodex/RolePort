@@ -8,6 +8,7 @@ import {
   Compass,
   CornerDownLeft,
   Download,
+  FileText,
   FileUp,
   KanbanSquare,
   Moon,
@@ -20,12 +21,23 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent } from "react";
 import { createPortal } from "react-dom";
 import { toggleTheme } from "@/components/theme-toggle";
+import { searchDocs, searchTerms, type DocEntry } from "@/lib/docs/search";
 import { cn } from "@/lib/utils";
 import { GitHubMark, REPO_URL } from "./setup-guide";
 
-type Command = { id: string; group: string; label: string; icon: LucideIcon | typeof GitHubMark; hint?: string; run: (go: (href: string) => void) => void };
+type Command = {
+  id: string;
+  group: string;
+  label: string;
+  icon: LucideIcon | typeof GitHubMark;
+  hint?: string;
+  /** A line from the documentation under the label. */
+  snippet?: string;
+  run: (go: (href: string) => void) => void;
+};
 
 const COMMANDS: Command[] = [
+  { id: "docs", group: "Jump into RolePort", label: "Read the docs", icon: BookOpen, hint: "Guides", run: (go) => go("/docs") },
   { id: "open", group: "Jump into RolePort", label: "Open RolePort", icon: ArrowRight, hint: "Dashboard", run: (go) => go("/home") },
   { id: "search", group: "Jump into RolePort", label: "Search jobs", icon: Search, hint: "At home or abroad", run: (go) => go("/jobs") },
   { id: "cv", group: "Jump into RolePort", label: "Import your CV", icon: FileUp, hint: "Profile", run: (go) => go("/profile") },
@@ -53,9 +65,24 @@ function useModKey() {
 /** Opens the command menu from anywhere on the page: dispatched by the hero's hint and the CTA. */
 export const OPEN_COMMAND_MENU = "roleport:open-command-menu";
 
+/** `text` with the words searched for picked out. */
+function Highlighted({ text, query }: { text: string; query: string }) {
+  const terms = searchTerms(query).map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
+  if (terms.length === 0) return text;
+  return text.split(new RegExp(`(${terms.join("|")})`, "gi")).map((part, i) =>
+    i % 2 ? (
+      <mark key={i} className="rounded-sm bg-brand-soft text-brand-ink">
+        {part}
+      </mark>
+    ) : (
+      part
+    ),
+  );
+}
+
 /**
- * Raycast-style command menu for the landing page: ⌘K / Ctrl+K (or the nav button) opens it,
- * typing filters, arrow keys move, Enter runs.
+ * Raycast-style command menu for the landing page and the docs: ⌘K / Ctrl+K (or the nav button)
+ * opens it, typing filters the commands and searches the documentation, arrow keys move, Enter runs.
  */
 export function CommandMenu() {
   const router = useRouter();
@@ -63,7 +90,21 @@ export function CommandMenu() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
+  const [docs, setDocs] = useState<DocEntry[]>([]);
+  const docsRequested = useRef(false);
   const listRef = useRef<HTMLUListElement>(null);
+
+  // The index is fetched the first time the menu opens, so the landing page doesn't carry it.
+  useEffect(() => {
+    if (!open || docsRequested.current) return;
+    docsRequested.current = true;
+    fetch("/docs-index.json")
+      .then((res) => (res.ok ? (res.json() as Promise<DocEntry[]>) : Promise.reject(new Error(res.statusText))))
+      .then(setDocs)
+      .catch(() => {
+        docsRequested.current = false;
+      });
+  }, [open]);
 
   useEffect(() => {
     function onKey(e: globalThis.KeyboardEvent) {
@@ -83,8 +124,20 @@ export function CommandMenu() {
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return q ? COMMANDS.filter((c) => `${c.label} ${c.hint ?? ""} ${c.group}`.toLowerCase().includes(q)) : COMMANDS;
-  }, [query]);
+    if (!q) return COMMANDS;
+    const hits = searchDocs(docs, q).map(
+      (hit): Command => ({
+        id: `doc-${hit.href}`,
+        group: "Documentation",
+        label: hit.heading ?? hit.page,
+        icon: FileText,
+        hint: hit.heading ? hit.page : hit.section,
+        snippet: hit.snippet,
+        run: (go) => go(hit.href),
+      }),
+    );
+    return [...COMMANDS.filter((c) => `${c.label} ${c.hint ?? ""}`.toLowerCase().includes(q)), ...hits];
+  }, [query, docs]);
 
   useEffect(() => {
     listRef.current?.querySelector(`[data-index="${active}"]`)?.scrollIntoView({ block: "nearest" });
@@ -123,11 +176,14 @@ export function CommandMenu() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="hidden h-8 items-center gap-2 rounded-md border border-border bg-surface pr-1.5 pl-2.5 text-[13px] text-subtle shadow-[var(--shadow-soft)] transition-colors hover:border-border-strong hover:text-muted sm:flex"
+        aria-label="Search the docs or jump to a page"
+        className="flex size-8 items-center justify-center gap-2 rounded-md border border-border bg-surface text-[13px] text-subtle shadow-[var(--shadow-soft)] transition-colors hover:border-border-strong hover:text-muted sm:w-auto sm:justify-start sm:pr-1.5 sm:pl-2.5"
       >
         <Search className="size-3.5" />
-        <span className="w-24 text-left">Jump to…</span>
-        <Kbd>{mod}K</Kbd>
+        <span className="hidden w-24 text-left sm:block">Search docs…</span>
+        <span className="hidden sm:contents">
+          <Kbd>{mod}K</Kbd>
+        </span>
       </button>
 
       {typeof document !== "undefined" &&
@@ -164,8 +220,8 @@ export function CommandMenu() {
                         setActive(0);
                       }}
                       onKeyDown={onKeyDown}
-                      placeholder="Type a command or search…"
-                      aria-label="Search commands"
+                      placeholder="Search the docs or jump to a page…"
+                      aria-label="Search the docs and commands"
                       aria-controls="command-list"
                       aria-activedescendant={results[active] ? `cmd-${results[active].id}` : undefined}
                       className="h-12 flex-1 bg-transparent text-sm outline-none placeholder:text-subtle"
@@ -191,8 +247,17 @@ export function CommandMenu() {
                             )}
                           >
                             <cmd.icon className={cn("size-4 shrink-0", i === active ? "text-brand" : "text-subtle")} />
-                            <span className="flex-1">{cmd.label}</span>
-                            {cmd.hint && <span className="text-[11px] text-subtle">{cmd.hint}</span>}
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate">
+                                <Highlighted text={cmd.label} query={query} />
+                              </span>
+                              {cmd.snippet && (
+                                <span className="mt-0.5 line-clamp-2 block text-xs text-subtle">
+                                  <Highlighted text={cmd.snippet} query={query} />
+                                </span>
+                              )}
+                            </span>
+                            {cmd.hint && <span className="shrink-0 text-[11px] text-subtle">{cmd.hint}</span>}
                             {i === active && <CornerDownLeft className="size-3.5 text-subtle" />}
                           </div>
                         </li>

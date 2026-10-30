@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { LearnMore } from "@/components/app/learn-more";
 import { PageHeader } from "@/components/app/page-header";
 import { getMyApplications } from "@/lib/jobs/data";
 import { isLite } from "@/lib/mode";
@@ -12,7 +13,14 @@ export const metadata: Metadata = { title: "Pipeline" };
 export default function PipelinePage() {
   return (
     <>
-      <PageHeader title="Pipeline" description="Every application, from saved to signed. Drag a card to move it." />
+      <PageHeader
+        title="Pipeline"
+        description={
+          <>
+            Every application, from saved to signed. Drag a card to move it. <LearnMore doc="guides/pipeline" />
+          </>
+        }
+      />
       {isLite ? (
         <LitePipeline />
       ) : (

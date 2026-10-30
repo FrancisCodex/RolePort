@@ -26,6 +26,10 @@ export default function MarketingLayout({ children }: LayoutProps<"/">) {
               Francis
             </a>{" "}
             ·{" "}
+            <Link href="/docs" className="underline-offset-4 hover:text-fg hover:underline">
+              Docs
+            </Link>{" "}
+            ·{" "}
             <Link href="/privacy" className="underline-offset-4 hover:text-fg hover:underline">
               Privacy
             </Link>

@@ -25,7 +25,8 @@ npm run build
 
 | Path | What lives there |
 | --- | --- |
-| `app/(marketing)` | Landing page |
+| `app/(marketing)` | Landing page, privacy page and the docs site |
+| `content/docs` | The documentation, one Markdown file per page. The sidebar is `lib/docs/nav.ts`. Update these in the same pull request as the feature |
 | `app/(app)` | The app: home, jobs, pipeline, profile, settings. Server actions sit next to each page in `actions.ts`. |
 | `lib/jobs` | Job sources, dedup, quick match, job storage |
 | `lib/ai` | Provider config, `generateStructured()`, prompts |

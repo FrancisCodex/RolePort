@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { LearnMore } from "@/components/app/learn-more";
 import { PageHeader } from "@/components/app/page-header";
 import { getMyApplications } from "@/lib/jobs/data";
 import { isLite } from "@/lib/mode";
@@ -14,7 +15,12 @@ export default function AppliedPage() {
     <>
       <PageHeader
         title="Applied jobs"
-        description="Jobs you applied to or saved. Open one to see the posting, track its progress and prepare your application."
+        description={
+          <>
+            Jobs you applied to or saved. Open one to see the posting, track its progress and prepare your application.{" "}
+            <LearnMore doc="guides/applications" />
+          </>
+        }
       />
       {isLite ? (
         <LiteApplied />

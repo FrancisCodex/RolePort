@@ -53,6 +53,9 @@ export function SiteHeader() {
           <Link href="/#get-started" className={navLink}>
             Install
           </Link>
+          <Link href="/docs" className={navLink}>
+            Docs
+          </Link>
         </div>
         <div className="flex items-center gap-1">
           <CommandMenu />

@@ -17,10 +17,10 @@ Each step ships on its own branch and works in self-hosted and Lite, unless it s
 | 2. Paste a job (and "still open" checks) | ✅ Done | `feat/paste-a-job` |
 | 3. Email applications and follow-ups | ✅ Done (pasting an employer's reply is still for later, see 3B) | `feat/email-and-follow-ups` |
 | MCP server | Not started | — |
-| 4. Documentation page (`/docs`) with search | ⏭️ Next | — |
-| 5. Desktop app: job scout, apply assistant | Not started | — |
+| 4. Documentation page (`/docs`) with search | ✅ Done (screenshots still to add) | `feat/docs-page` |
+| 5. Desktop app: job scout, apply assistant | ⏭️ Next | — |
 
-**Next up: Phase 4, the documentation page.** Everything marked ✅ Done is finished.
+**Next up: Phase 5, the desktop app.** Everything marked ✅ Done is finished.
 
 ---
 
@@ -151,7 +151,7 @@ All of this lives on the application page (`/applied/[id]`) and reuses the cover
 - **Lite:** the same code runs on the browser database; drafts go from the browser to the user's AI.
 - **Tests:** `lib/outreach/rules.test.ts` (the rules, labels, mailto links) and `lib/ai/write-email.test.ts` (composing, checks, the prompt).
 
-## 4. Documentation page (`/docs`)
+## 4. Documentation page (`/docs`) ✅ Done
 
 One place where anyone can learn RolePort end to end, before the desktop app adds a third way to run it. It's public (no sign-in), part of the marketing site, and works the same for self-hosted and Lite, since it's static pages.
 
@@ -174,7 +174,15 @@ One place where anyone can learn RolePort end to end, before the desktop app add
 - **Screenshots** from the demo's sample data, never from a real user's data.
 - Follows the site's existing look, light and dark mode, and works on phones.
 
-**Done when:** `/docs` has the introduction, the quick start for both editions, a page for every app area and every job source, and the FAQ; the landing page's search finds a page by a word in its text; and a test fails if a job source has no docs page.
+**Done when:** `/docs` has the introduction, the quick start for both editions, a page for every app area and every job source, and the FAQ; the landing page's search finds a page by a word in its text; and a test fails if a job source has no docs page. *(All done. Screenshots are still to add.)*
+
+### How it was built
+
+- **Pages:** one Markdown file per page in `content/docs`, listed in `lib/docs/nav.ts`, rendered with `react-markdown` when the site is built, so they're static in both editions. Plain Markdown rather than MDX, so nothing in the build changes and a contributor only needs to know Markdown.
+- **Job source pages:** a page names its sources in its front matter (`sources: remotive`), and `lib/docs/content.ts` adds their facts from the registry. All the JobSpy boards share one page, and so do the company hiring systems.
+- **Search:** `/docs-index.json` is prerendered with one entry per heading. The landing page's command menu (`Ctrl K` / `⌘ K`, also on every docs page) fetches it the first time it opens and searches in the browser (`lib/docs/search.ts`). Results jump to the heading.
+- **In the app:** a **Docs** link in the sidebar and the mobile header, and **Learn more** links on Jobs, Applied, Pipeline, Coach, Profile and each Settings card. They take a page's slug, so a wrong link fails type checking.
+- **Tests:** `lib/docs/docs.test.ts` fails if a page and the sidebar disagree, a page has no title or description, a job source has no page, or a link inside the docs points at a missing page or heading.
 
 ## 5. Desktop app and the in-app AI agent
 

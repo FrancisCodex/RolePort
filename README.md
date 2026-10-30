@@ -6,6 +6,8 @@ Bring your own AI: Claude, OpenAI, OpenRouter, Groq, or a free local model throu
 Don't want to install anything? [RolePort Lite](#roleport-lite-in-your-browser) runs the same app in your browser.
 Inspired by [ai-job-search](https://github.com/MadsLorentzen/ai-job-search). See [docs/PLAN.md](docs/PLAN.md) for the roadmap.
 
+The guide to every feature is in the app at `/docs`, and its pages are in [content/docs](content/docs).
+
 ## Quick start
 
 There are two ways to run RolePort. Both keep your data on your computer and need no sign-in.
