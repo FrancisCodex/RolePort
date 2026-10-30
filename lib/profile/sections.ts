@@ -6,8 +6,8 @@ import { MAX_ITEM_DETAILS, MAX_SECTIONS, MAX_SECTION_ITEMS, type ProfileSection,
  * AI extractor, the prompts and the PDF treat them alike.
  */
 
-/** What the form suggests for a section it knows. Any other title gets the plain wording. */
-type SectionHints = { item: string; subtitle: string; date: string; details: string };
+/** What the form suggests for a section it knows. Any other title gets the plain wording. A null subtitle means the section has none. */
+type SectionHints = { item: string; subtitle: string | null; date: string; details: string };
 
 const DEFAULT_HINTS: SectionHints = {
   item: "Name",
@@ -21,9 +21,9 @@ export const SECTION_SUGGESTIONS: { title: string; hints: SectionHints }[] = [
     title: "Projects",
     hints: {
       item: "Project name",
-      subtitle: "Your role or the tech used",
+      subtitle: null,
       date: "Date (e.g. 2023 - 2024)",
-      details: "What you built and what came of it, one per line",
+      details: "What you built, the tech used and what came of it, one per line",
     },
   },
   {
@@ -75,8 +75,9 @@ export function tidySections(sections: ProfileSection[]): ProfileSection[] {
 
 /**
  * Overlay sections read from a CV onto the form. A section the CV has is added to the one of
- * that name, its entries replacing those with the same title; everything else the user has
- * stays, so a re-read never loses a section they typed by hand.
+ * that name, its entries replacing those with the same title (or that entry's name filed as
+ * the subtitle by an earlier read); everything else the user has stays, so a re-read never
+ * loses a section they typed by hand.
  */
 export function mergeSections(current: ProfileSection[], draft: ProfileSection[]): ProfileSection[] {
   const merged = current.map((s) => ({ ...s, items: [...s.items] }));
@@ -86,7 +87,7 @@ export function mergeSections(current: ProfileSection[], draft: ProfileSection[]
       merged.push(section);
       continue;
     }
-    same.items = [...same.items.filter((i) => !section.items.some((n) => sameTitle(n.title, i.title))), ...section.items];
+    same.items = [...same.items.filter((i) => !section.items.some((n) => sameTitle(n.title, i.title) || sameTitle(n.title, i.subtitle))), ...section.items];
   }
   return tidySections(merged);
 }

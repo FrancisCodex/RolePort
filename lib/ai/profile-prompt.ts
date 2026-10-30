@@ -26,7 +26,8 @@ ${SUMMARY_RULE}
 - workSetups: only if the CV states a preference; otherwise an empty list.
 - languages: as stated, e.g. {"name": "English", "level": "Fluent"}, {"name": "Filipino", "level": "Native"}.
 - sections: every other part of the CV that has its own heading, such as Projects, Certifications, Publications, Achievements, Awards, Volunteer work or Training. Make one section per heading, titled as the CV titles it, in the CV's order. Never repeat what already went into experience, education, skills or languages, and leave out headings the CV doesn't have.
-- sections items: title is the entry's name, or the whole line if it's just one line; subtitle is the issuer, publisher, organization, or the candidate's role or tech stack on a project; date as written in the CV; link is the entry's own URL; details are its bullets, up to 5, close to the CV's own wording. Use null or an empty list when something is missing.`;
+- sections items: title is the entry's name, or the whole line if it's just one line; subtitle is the issuer, publisher or organization; date as written in the CV; link is the entry's own URL; details are its bullets, up to 5, close to the CV's own wording. Use null or an empty list when something is missing.
+- Projects: title is the project's own name, never the candidate's role on it. subtitle is always null. Put the tech used in details.`;
 
 /** Always added after the instructions, whatever the user wrote. */
 export const PROFILE_FIXED_RULES = `RULES ROLEPORT ALWAYS ADDS

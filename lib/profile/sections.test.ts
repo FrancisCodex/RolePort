@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { cleanExtractedSections } from "@/lib/ai/extract-profile";
+import { cleanExtractedSections, fitProfileLimits } from "@/lib/ai/extract-profile";
 import { DEFAULT_PROFILE_PROMPT, profileSystemPrompt, PROFILE_FIXED_RULES, withSection, withWrittenSummary } from "@/lib/ai/profile-prompt";
 import { candidateBlock, sourceOf } from "@/lib/ai/tailor-cv";
 import { cvFromProfile } from "@/lib/cv/queries";
 import { cvContentSchema } from "@/lib/cv/types";
-import { emptyProfile, profileSchema, type ProfileSection } from "./schema";
+import { emptyProfile, profileError, profileSchema, type ProfileSection } from "./schema";
 import { mergeSections, sectionBlock, tidySections } from "./sections";
 
 const item = (title: string, details: string[] = []) => ({ title, subtitle: "", date: "", link: "", details });
@@ -37,6 +37,37 @@ describe("mergeSections", () => {
     expect(merged.map((s) => s.title)).toEqual(["Projects", "Talks", "Certifications"]);
     expect(merged[0].items).toEqual([item("Mine"), item("roleport", ["New wording"])]);
   });
+
+  it("replaces an entry an earlier read filed under its role", () => {
+    const swapped = { ...item("Lead Developer"), subtitle: "RolePort" };
+    const merged = mergeSections([{ title: "Projects", items: [swapped] }], [{ title: "Projects", items: [item("RolePort")] }]);
+    expect(merged[0].items).toEqual([item("RolePort")]);
+  });
+});
+
+describe("what a model writes", () => {
+  it("fits the saved limits, and a long field is named when it doesn't", () => {
+    const long = "x".repeat(500);
+    const draft = fitProfileLimits({
+      name: "Juan",
+      headline: long,
+      summary: null,
+      city: null,
+      region: null,
+      yearsExperience: null,
+      desiredRoles: [],
+      workSetups: [],
+      skills: [],
+      experience: [],
+      education: [{ school: long, degree: long, field: null, year: null }],
+      languages: [],
+      careerGoals: [],
+    });
+    const valid = profileSchema.safeParse({ ...emptyProfile, ...draft });
+    expect(valid.success).toBe(true);
+    const tooLong = profileSchema.safeParse({ ...emptyProfile, name: "Juan", headline: long });
+    expect(profileError(tooLong.error!)).toBe("Your headline is too long. Keep it to 160 characters.");
+  });
 });
 
 describe("cleanExtractedSections", () => {
@@ -57,6 +88,13 @@ describe("cleanExtractedSections", () => {
   it("turns a nameless one-line entry's bullet into its name, and nulls into blanks", () => {
     const out = cleanExtractedSections([raw("Achievements", [{ title: null, details: ["Won the 2023 hackathon"] }, { title: null, details: [] }])]);
     expect(out).toEqual([{ title: "Achievements", items: [item("Won the 2023 hackathon")] }]);
+  });
+
+  it("keeps a project's name as its title and leaves roles out", () => {
+    const project = (title: string, subtitle: string) => ({ title: "Projects", items: [{ title, subtitle, date: null, link: null, details: [] }] });
+    expect(cleanExtractedSections([project("Lead Developer", "RolePort")])[0].items).toEqual([item("RolePort")]);
+    expect(cleanExtractedSections([project("RolePort", "Lead Developer")])[0].items).toEqual([item("RolePort")]);
+    expect(cleanExtractedSections([project("Task Manager", "React, Node")])[0].items).toEqual([item("Task Manager", ["React, Node"])]);
   });
 
   it("calms headings written in capitals", () => {

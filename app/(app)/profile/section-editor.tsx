@@ -165,7 +165,16 @@ function SectionCard({
                 maxLength={300}
                 onChange={(e) => setItem(i, { title: e.target.value })}
               />
-              <Input aria-label={hints.subtitle} placeholder={hints.subtitle} value={item.subtitle} maxLength={160} onChange={(e) => setItem(i, { subtitle: e.target.value })} />
+              {/* A section with no subtitle still shows one it already holds, so it can be cleared. */}
+              {(hints.subtitle || item.subtitle) && (
+                <Input
+                  aria-label={hints.subtitle ?? "Extra line"}
+                  placeholder={hints.subtitle ?? "Extra line (optional)"}
+                  value={item.subtitle}
+                  maxLength={160}
+                  onChange={(e) => setItem(i, { subtitle: e.target.value })}
+                />
+              )}
               <Input aria-label={hints.date} placeholder={hints.date} value={item.date} maxLength={40} onChange={(e) => setItem(i, { date: e.target.value })} />
               <Input aria-label="Link" placeholder="Link (optional)" value={item.link} maxLength={200} onChange={(e) => setItem(i, { link: e.target.value })} />
             </div>

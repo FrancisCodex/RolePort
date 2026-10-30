@@ -73,7 +73,7 @@ import { readJobRow } from "@/lib/jobs/queries";
 import { readCvFile, type CvImport } from "@/lib/profile/cv-file";
 import { draftFromCv } from "@/lib/profile/cv-import";
 import { ONBOARDING_DONE, readProfilePrompt, readStoredCv, writeCv, writeOnboardingStep, writeProfile } from "@/lib/profile/queries";
-import { profileSchema, type ProfileInput } from "@/lib/profile/schema";
+import { profileError, profileSchema, type ProfileInput } from "@/lib/profile/schema";
 import type { Result } from "@/lib/result";
 import { readSettings, writeSettings } from "@/lib/settings/queries";
 import { invalidate } from "./bus";
@@ -105,7 +105,7 @@ async function providerError(error: unknown, baseUrl: string | null, model: stri
 export async function saveProfile(input: ProfileInput): Promise<Result> {
   const parsed = profileSchema.safeParse(input);
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Some fields are invalid." };
+    return { ok: false, error: profileError(parsed.error) };
   }
   await writeProfile(await getBrowserDb(), LOCAL_USER.id, parsed.data);
   await invalidate("profile");

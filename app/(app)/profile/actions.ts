@@ -7,7 +7,7 @@ import { getDb } from "@/lib/db";
 import { readCvFile, type CvImport } from "@/lib/profile/cv-file";
 import { draftFromCv } from "@/lib/profile/cv-import";
 import { ONBOARDING_DONE, readProfilePrompt, readStoredCv, writeCv, writeOnboardingStep, writeProfile } from "@/lib/profile/queries";
-import { profileSchema, type ProfileInput } from "@/lib/profile/schema";
+import { profileError, profileSchema, type ProfileInput } from "@/lib/profile/schema";
 import type { Result } from "@/lib/result";
 import { getCurrentUser } from "@/lib/session";
 import { writeSettings } from "@/lib/settings/queries";
@@ -18,7 +18,7 @@ export async function saveProfile(input: ProfileInput): Promise<Result> {
   const user = await getCurrentUser();
   const parsed = profileSchema.safeParse(input);
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Some fields are invalid." };
+    return { ok: false, error: profileError(parsed.error) };
   }
 
   await writeProfile(await getDb(), user.id, parsed.data);

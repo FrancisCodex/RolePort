@@ -83,6 +83,33 @@ export const profileSchema = z.object({
 
 export type ProfileInput = z.infer<typeof profileSchema>;
 
+const FIELD_NAMES: Record<string, string> = {
+  name: "Your name",
+  headline: "Your headline",
+  email: "Your email",
+  phone: "Your phone number",
+  links: "A link",
+  summary: "Your summary",
+  city: "Your city",
+  region: "Your region",
+  desiredRoles: "A desired role",
+  skills: "A skill",
+  experience: "An experience entry",
+  education: "An education entry",
+  languages: "A language",
+  sections: "A section entry",
+  careerGoals: "A career goal",
+  dealBreakers: "A deal-breaker",
+};
+
+/** The first problem with a profile, saying which field when one is too long. */
+export function profileError(error: z.ZodError): string {
+  const issue = error.issues[0];
+  if (!issue) return "Some fields are invalid.";
+  if (issue.code !== "too_big" || issue.origin !== "string") return issue.message;
+  return `${FIELD_NAMES[String(issue.path[0])] ?? "A field"} is too long. Keep it to ${issue.maximum} characters.`;
+}
+
 export const emptyProfile: ProfileInput = {
   name: "",
   headline: null,
