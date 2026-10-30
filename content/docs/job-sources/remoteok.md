@@ -1,6 +1,7 @@
 ---
 title: Remote OK
 description: A remote-job feed, worldwide or for the countries each posting lists.
+updated: 2026-10-31
 sources: remoteok
 ---
 

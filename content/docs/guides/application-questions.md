@@ -1,6 +1,7 @@
 ---
 title: Application questions
 description: Paste a question from an application form and get an answer from your profile, CV and the posting.
+updated: 2026-10-31
 ---
 
 Open **Application questions** in an application's kit, and **Add a question** from the form you're filling in. With AI on, it's answered as soon as you add it.

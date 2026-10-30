@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import { JOB_SOURCES } from "@/lib/jobs/sources/registry";
 import { allDocs, buildDocsIndex, sourcePages, sourcesTable } from "./content";
 import { DOC_SLUGS, docHref } from "./nav";
-import { parseDoc, plainText, slugger, splitSections } from "./parse";
+import { formatDocDate, parseDoc, plainText, slugger, splitSections } from "./parse";
 import { searchDocs, type DocEntry } from "./search";
 
 const ROOT = join(process.cwd(), "content", "docs");
@@ -25,10 +25,11 @@ describe("documentation pages", () => {
     expect(markdownFiles(ROOT).map(fileSlug).sort()).toEqual([...DOC_SLUGS].sort());
   });
 
-  it("gives every page a title and a description", () => {
+  it("gives every page a title, a description and the date it was updated", () => {
     for (const doc of docs) {
       expect(doc.title, doc.slug).not.toBe("");
       expect(doc.description, doc.slug).not.toBe("");
+      expect(formatDocDate(doc.updated), `${doc.slug || "index"} needs updated: YYYY-MM-DD`).not.toBe("");
     }
   });
 
@@ -65,9 +66,15 @@ describe("the job sources table", () => {
 
 describe("parsing a page", () => {
   it("reads the front matter and keeps the body", () => {
-    const { meta, body } = parseDoc("---\ntitle: A: B\ndescription: Words\nsources: a, b\n---\n\nHello");
-    expect(meta).toEqual({ title: "A: B", description: "Words", sources: ["a", "b"] });
+    const { meta, body } = parseDoc("---\ntitle: A: B\ndescription: Words\nupdated: 2026-10-31\nsources: a, b\n---\n\nHello");
+    expect(meta).toEqual({ title: "A: B", description: "Words", updated: "2026-10-31", sources: ["a", "b"] });
     expect(body.trim()).toBe("Hello");
+  });
+
+  it("writes the date out, and refuses anything that isn't one", () => {
+    expect(formatDocDate("2026-10-31")).toBe("31 October 2026");
+    expect(formatDocDate("2026-13-40")).toBe("");
+    expect(formatDocDate("soon")).toBe("");
   });
 
   it("splits text at headings, ignoring # inside code", () => {

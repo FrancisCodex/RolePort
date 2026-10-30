@@ -1,6 +1,7 @@
 ---
 title: Home
 description: Your job search at a glance, with what needs your attention today.
+updated: 2026-10-31
 ---
 
 **Home** is your dashboard. It works without AI, and it fills in as you save and apply to jobs.

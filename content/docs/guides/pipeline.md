@@ -1,6 +1,7 @@
 ---
 title: Pipeline
 description: Every application on one board, from saved to signed.
+updated: 2026-10-31
 ---
 
 **Pipeline** shows your applications as cards in four columns.

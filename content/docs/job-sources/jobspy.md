@@ -1,6 +1,7 @@
 ---
 title: JobSpy (LinkedIn, Indeed and more)
 description: An optional service on your own computer that reads public job pages from LinkedIn, Indeed, Glassdoor and regional boards.
+updated: 2026-10-31
 sources: linkedin, indeed, google, glassdoor, bayt, naukri, bdjobs, zip_recruiter, hellowork
 ---
 

@@ -1,6 +1,7 @@
 ---
 title: Which edition should I use?
 description: RolePort Lite and the self-hosted install are the same app. They differ in where your data lives and where requests come from.
+updated: 2026-10-31
 ---
 
 **Choose Lite** to try RolePort now, or if you'd rather not install anything. **Choose self-hosted** if you want LinkedIn and Indeed included with no extra setup, want to reach RolePort from several devices, or want to work on the code.

@@ -1,6 +1,7 @@
 ---
 title: Arbeitnow (Germany)
 description: A free job board for Germany, showing its newest postings.
+updated: 2026-10-31
 sources: arbeitnow
 ---
 

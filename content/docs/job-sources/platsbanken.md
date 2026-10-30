@@ -1,6 +1,7 @@
 ---
 title: Platsbanken (Sweden)
 description: The Swedish Public Employment Service's job board, through JobTech's open data.
+updated: 2026-10-31
 sources: platsbanken
 ---
 

@@ -45,7 +45,7 @@ Then:
 
 1. Add one line for it to `JOB_SOURCES` in `lib/jobs/sources/registry.ts`. The order there decides which source wins when two carry the same posting (the employer's own page first, then big aggregators, then official boards, then remote feeds). A test fails if a source file isn't listed.
 2. Run `npm run docs:sources`. It rewrites the README's "Job sources" table from each source's `kind`, `coverage` and `needs`; a test fails if the table is out of date.
-3. Add a docs page: `content/docs/job-sources/<id>.md` with `sources: <id>` in its front matter, plus one line in `lib/docs/nav.ts`. Say what it covers, how to set it up and its limits. The facts table is added from the source's metadata, and a test fails if a source has no page.
+3. Add a docs page: `content/docs/job-sources/<id>.md` with `sources: <id>` and `updated: YYYY-MM-DD` in its front matter, plus one line in `lib/docs/nav.ts`. Say what it covers, how to set it up and its limits. The facts table is added from the source's metadata, and a test fails if a source has no page.
 
 **Feeds that return everything** (a remote-jobs feed, a whole board) can map their postings with `emptyJob()` and filter them with `keepMatching()` from `sources/feed.ts`: it applies the search's words, country (including regions like "Europe" or "APAC" in remote postings), area, work setup and date. `remotive.ts` is a short example; `platsbanken.ts` is one where the board does the searching.
 

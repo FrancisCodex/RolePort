@@ -1,6 +1,7 @@
 ---
 title: Paste a job
 description: Found a job on LinkedIn, in a Facebook group or in a recruiter's email? Paste it, and it joins your list like any other job.
+updated: 2026-10-31
 ---
 
 The **Add a job** card is on **Jobs** and **Home**. Paste one job link, or copy the whole posting and paste its text, then click **Read job**.

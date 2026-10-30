@@ -1,6 +1,7 @@
 ---
 title: Tailored CVs
 description: An ATS-friendly CV for one posting, built from your own facts, editable, and checked by reading its text back out.
+updated: 2026-10-31
 ---
 
 Open **Tailored CV** in an application's kit. The CV starts from your profile, so you can download a clean PDF without AI.

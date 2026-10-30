@@ -1,6 +1,7 @@
 ---
 title: Cover letters
 description: A letter written for one posting from your profile, or by you, ready to copy into a form or download as a PDF.
+updated: 2026-10-31
 ---
 
 Open **Cover letter** in an application's kit. Write it yourself, or click **Write my cover letter** to have AI draft it from your profile and the posting.

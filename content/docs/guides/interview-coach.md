@@ -1,6 +1,7 @@
 ---
 title: Interview Coach
 description: Mock interviews one question at a time, with follow-ups, a graded report and a stronger version of each answer.
+updated: 2026-10-31
 ---
 
 The Interview Coach needs an AI provider and a filled-in profile, because the interviewer asks about your real experience.

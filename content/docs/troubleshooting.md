@@ -1,6 +1,7 @@
 ---
 title: Troubleshooting
 description: What to do when something doesn't work.
+updated: 2026-10-31
 ---
 
 ## AI

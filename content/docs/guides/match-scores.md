@@ -1,6 +1,7 @@
 ---
 title: Match scores and AI evaluations
 description: Two ways to judge a job. An instant quick match from your skills, and a full AI evaluation that reads the posting.
+updated: 2026-10-31
 ---
 
 ## Quick match

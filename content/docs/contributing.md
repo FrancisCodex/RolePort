@@ -1,6 +1,7 @@
 ---
 title: Contributing
 description: Add a job source, a starter list or a fix. Job sources for other countries are especially welcome.
+updated: 2026-10-31
 ---
 
 RolePort is open source, and you don't need to be a developer to help. If a page here is wrong, use **Edit this page on GitHub** at the bottom of it.
@@ -44,4 +45,4 @@ Only add companies whose public job feed answers and that have open jobs in that
 
 ## Improve these docs
 
-Each page is one Markdown file in `content/docs`, and the sidebar is `lib/docs/nav.ts`. Fix the docs in the same pull request as the code they describe. `npm test` fails if a page is missing, a link inside the docs is broken, or a job source has no page.
+Each page is one Markdown file in `content/docs`, and the sidebar is `lib/docs/nav.ts`. Fix the docs in the same pull request as the code they describe, and set `updated:` at the top of each page you change to today's date, which is the date readers see. `npm test` fails if a page is missing, has no date, a link inside the docs is broken, or a job source has no page.

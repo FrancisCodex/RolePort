@@ -1,6 +1,7 @@
 ---
 title: Customizing the prompts
 description: Read and change exactly what RolePort asks the AI, so it writes the way you want.
+updated: 2026-10-31
 ---
 
 Nothing RolePort asks the AI is hidden. Six prompts can be read and changed in Settings, and the CV, email and other pages show exactly what's sent to your AI.

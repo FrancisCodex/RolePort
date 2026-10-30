@@ -1,6 +1,7 @@
 ---
 title: Jobicy
 description: A remote-job feed, with postings open to people in the countries they list.
+updated: 2026-10-31
 sources: jobicy
 ---
 

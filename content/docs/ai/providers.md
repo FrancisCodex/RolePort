@@ -1,6 +1,7 @@
 ---
 title: AI providers
 description: Choose where RolePort's AI runs. Use your own key with a hosted provider, or a free local model.
+updated: 2026-10-31
 ---
 
 RolePort works with any provider you choose, and charges nothing for it. AI is optional. Without it, job search, quick match, the pipeline, PDFs and reminders still work.

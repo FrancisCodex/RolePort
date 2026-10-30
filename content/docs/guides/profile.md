@@ -1,6 +1,7 @@
 ---
 title: Profile and CV import
 description: Your profile drives your searches, your match scores and everything RolePort writes for you.
+updated: 2026-10-31
 ---
 
 Everything RolePort writes comes from your profile, so a fuller profile gives better results. The AI may reword your facts but may not add to them.

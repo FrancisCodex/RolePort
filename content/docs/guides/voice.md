@@ -1,6 +1,7 @@
 ---
 title: Answering out loud
 description: Speak your interview answers, with built-in browser speech or an optional Whisper model on your own device.
+updated: 2026-10-31
 ---
 
 **Settings → Voice**, or **Voice settings** in any interview, picks and tests your microphone, chooses the interviewer's voice, and sets how speech becomes text. Questions can be read aloud, and the report shows your pace and filler words.

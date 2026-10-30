@@ -1,6 +1,7 @@
 ---
 title: Himalayas
 description: A remote-job board, worldwide or for the countries each posting lists.
+updated: 2026-10-31
 sources: himalayas
 ---
 

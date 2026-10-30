@@ -4,8 +4,6 @@ import { Check, Code, Container, Copy } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
-export const REPO_URL = "https://github.com/FrancisCodex/RolePort";
-
 const options = [
   {
     id: "docker",

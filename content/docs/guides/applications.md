@@ -1,6 +1,7 @@
 ---
 title: Applications
 description: Each job you apply to gets its own page, with the saved posting, your application kit, its history and your notes.
+updated: 2026-10-31
 ---
 
 ## What Apply does

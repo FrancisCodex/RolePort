@@ -1,6 +1,7 @@
 ---
 title: Emails and follow-ups
 description: A mailbox for each application. Draft application emails and follow-ups, keep your contacts, and never miss a reminder.
+updated: 2026-10-31
 ---
 
 Open **Emails and follow-ups** in an application's kit, or from Home's **Follow up** panel. **RolePort never sends anything.** You send each message yourself, then mark it as sent.

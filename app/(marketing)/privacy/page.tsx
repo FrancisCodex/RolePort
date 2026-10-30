@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { REPO_URL } from "@/components/marketing/setup-guide";
 import { isLite } from "@/lib/mode";
+import { REPO_URL } from "@/lib/repo";
 
 export const metadata: Metadata = { title: "Privacy" };
 

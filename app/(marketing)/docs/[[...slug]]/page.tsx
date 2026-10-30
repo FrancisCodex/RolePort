@@ -4,10 +4,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DocMarkdown } from "@/components/docs/markdown";
 import { DocsMobileNav, DocsSidebar } from "@/components/docs/docs-nav";
-import { REPO_URL } from "@/components/marketing/setup-guide";
 import { allDocs, getDoc, type Doc } from "@/lib/docs/content";
 import { DOC_SLUGS, docHref, docSection } from "@/lib/docs/nav";
-import { splitSections } from "@/lib/docs/parse";
+import { formatDocDate, splitSections } from "@/lib/docs/parse";
+import { REPO_URL } from "@/lib/repo";
 import { cn } from "@/lib/utils";
 
 type Props = { params: Promise<{ slug?: string[] }> };
@@ -62,6 +62,7 @@ export default async function DocPage({ params }: Props) {
           <p className="font-mono text-xs text-subtle">{docSection(slug)}</p>
           <h1 className="mt-2 text-3xl font-semibold tracking-[-0.025em] text-balance">{doc.title}</h1>
           {doc.description && <p className="mt-3 text-base text-muted text-pretty">{doc.description}</p>}
+          <p className="mt-3 text-xs text-subtle">Last updated {formatDocDate(doc.updated)}</p>
 
           <DocMarkdown body={doc.body} />
 

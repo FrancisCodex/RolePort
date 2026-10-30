@@ -1,6 +1,7 @@
 ---
 title: What uses AI, and what it costs
 description: Which features need AI, how many requests each one makes, and how to keep your bill low.
+updated: 2026-10-31
 ---
 
 RolePort charges nothing. With a hosted provider, you pay it directly for what you use. A local model costs nothing but your computer's time.

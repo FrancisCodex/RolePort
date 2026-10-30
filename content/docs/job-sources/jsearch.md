@@ -1,6 +1,7 @@
 ---
 title: JSearch
 description: Add Google for Jobs listings, including JobStreet, Indeed, LinkedIn and Kalibrr, with a free RapidAPI key.
+updated: 2026-10-31
 sources: jsearch
 ---
 

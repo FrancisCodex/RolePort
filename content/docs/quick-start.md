@@ -1,6 +1,7 @@
 ---
 title: Quick start
 description: From nothing to your first evaluated job in a few minutes, in RolePort Lite or on your own computer.
+updated: 2026-10-31
 ---
 
 ## Start RolePort

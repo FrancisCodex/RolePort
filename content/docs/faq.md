@@ -1,6 +1,7 @@
 ---
 title: FAQ
 description: Short answers to the questions people ask most.
+updated: 2026-10-31
 ---
 
 ## Is RolePort free?

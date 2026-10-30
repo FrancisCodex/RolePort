@@ -22,8 +22,9 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type Keyboa
 import { createPortal } from "react-dom";
 import { toggleTheme } from "@/components/theme-toggle";
 import { searchDocs, searchTerms, type DocEntry } from "@/lib/docs/search";
+import { REPO_URL } from "@/lib/repo";
 import { cn } from "@/lib/utils";
-import { GitHubMark, REPO_URL } from "./setup-guide";
+import { GitHubMark } from "./setup-guide";
 
 type Command = {
   id: string;

@@ -1,6 +1,7 @@
 ---
 title: Job sources overview
 description: Where RolePort's jobs come from, what each source covers and what it needs.
+updated: 2026-10-31
 sources: all
 ---
 

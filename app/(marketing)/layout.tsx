@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import { SiteHeader } from "@/components/marketing/site-header";
-import { REPO_URL } from "@/components/marketing/setup-guide";
+import { REPO_URL } from "@/lib/repo";
 
 export default function MarketingLayout({ children }: LayoutProps<"/">) {
   return (

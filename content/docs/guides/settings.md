@@ -1,6 +1,7 @@
 ---
 title: Settings
 description: Every card in Settings, what it does and where to read more.
+updated: 2026-10-31
 ---
 
 | Card | What it does | Read more |

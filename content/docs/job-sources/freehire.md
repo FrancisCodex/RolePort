@@ -1,6 +1,7 @@
 ---
 title: freehire
 description: A free job board covering every country, searched by default.
+updated: 2026-10-31
 sources: freehire
 ---
 

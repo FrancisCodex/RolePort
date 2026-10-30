@@ -1,6 +1,7 @@
 ---
 title: Privacy and your data
 description: Where your data lives in each edition, what leaves your device, and how to back it up or delete it.
+updated: 2026-10-31
 ---
 
 RolePort has no accounts, no analytics and no ads. The [Privacy page](/privacy) says exactly what goes where. This page is the short version.

@@ -1,6 +1,7 @@
 ---
 title: Companies you follow
 description: Add a company's careers page, and its open jobs join every search, straight from the employer.
+updated: 2026-10-31
 ---
 
 Following a company adds its own job list to your searches, in any country. You can follow up to 100 companies.

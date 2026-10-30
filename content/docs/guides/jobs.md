@@ -1,6 +1,7 @@
 ---
 title: Jobs and search
 description: Search every source at once, in your country or abroad, and see the jobs that fit you first.
+updated: 2026-10-31
 ---
 
 ## Search

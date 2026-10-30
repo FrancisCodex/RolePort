@@ -1,6 +1,7 @@
 ---
 title: Introduction
 description: RolePort is a free, open-source job search app. It finds jobs, shows how well each one fits you, prepares your applications, tracks them and coaches you for the interview.
+updated: 2026-10-31
 ---
 
 RolePort takes you through a whole job search in one place:

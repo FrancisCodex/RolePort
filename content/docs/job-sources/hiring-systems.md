@@ -1,6 +1,7 @@
 ---
 title: Following companies by hiring system
 description: Most employers post through hiring software with a public job feed. Here's how to find a company's careers link for each.
+updated: 2026-10-31
 sources: greenhouse, lever, ashby, smartrecruiters, workable, recruitee
 ---
 

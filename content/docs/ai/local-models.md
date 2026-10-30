@@ -1,6 +1,7 @@
 ---
 title: Local models
 description: Run RolePort's AI for free on your own computer, with nothing leaving your machine.
+updated: 2026-10-31
 ---
 
 A local model costs nothing and keeps your CV on your computer. It's slower than a hosted provider and needs a reasonably capable machine.

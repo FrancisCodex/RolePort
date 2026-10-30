@@ -7,6 +7,8 @@
 export type DocMeta = {
   title: string;
   description: string;
+  /** When the page last changed, as YYYY-MM-DD. Set by hand, since hosts and Docker builds have no git history. */
+  updated: string;
   /** Job source ids (lib/jobs/sources/registry.ts) this page covers, or "all" for every source. */
   sources: string[];
 };
@@ -25,10 +27,18 @@ export function parseDoc(raw: string): { meta: DocMeta; body: string } {
     meta: {
       title: fields.get("title") ?? "",
       description: fields.get("description") ?? "",
+      updated: fields.get("updated") ?? "",
       sources: (fields.get("sources") ?? "").split(",").map((s) => s.trim()).filter(Boolean),
     },
     body: match ? raw.slice(match[0].length) : raw,
   };
+}
+
+/** "2026-10-31" as "31 October 2026", or "" when it isn't a real date. */
+export function formatDocDate(date: string): string {
+  const parsed = /^\d{4}-\d{2}-\d{2}$/.test(date) ? new Date(`${date}T12:00:00Z`) : null;
+  if (!parsed || Number.isNaN(parsed.getTime())) return "";
+  return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" }).format(parsed);
 }
 
 /** A heading's id: the same words give the same link, and repeats get a number. */

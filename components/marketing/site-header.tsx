@@ -5,9 +5,10 @@ import { useSyncExternalStore } from "react";
 import { Logo } from "@/components/brand/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { buttonVariants } from "@/components/ui/button";
+import { REPO_URL } from "@/lib/repo";
 import { cn } from "@/lib/utils";
 import { CommandMenu } from "./command-menu";
-import { GitHubMark, REPO_URL } from "./setup-guide";
+import { GitHubMark } from "./setup-guide";
 
 function subscribeScroll(onChange: () => void) {
   window.addEventListener("scroll", onChange, { passive: true });
