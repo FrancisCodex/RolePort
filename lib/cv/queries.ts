@@ -45,6 +45,7 @@ export function cvFromProfile(profile: ProfileInput): CvContent {
     })),
     education: profile.education,
     languages: profile.languages.map((l) => (l.level ? `${l.name} (${l.level})` : l.name)),
+    sections: profile.sections,
     pageSize: defaultPageSize(profile.country),
   };
 }

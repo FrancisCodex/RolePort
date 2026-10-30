@@ -25,6 +25,7 @@ function cleaned(cv: CvContent): CvContent {
     skills: lines(cv.skills),
     contact: { ...cv.contact, links: lines(cv.contact.links) },
     experience: cv.experience.map((e) => ({ ...e, bullets: lines(e.bullets) })),
+    sections: cv.sections.map((s) => ({ ...s, items: s.items.map((i) => ({ ...i, details: lines(i.details) })) })),
   };
 }
 
@@ -242,6 +243,54 @@ export function CvWorkspace({ data }: { data: CvPageData }) {
             {cv.experience.length === 0 && <p className="text-[13px] text-muted">No experience in your profile yet.</p>}
           </div>
         </Section>
+
+        {cv.sections.map((section, i) => {
+          const setItems = (items: CvContent["sections"][number]["items"]) =>
+            update({ sections: cv.sections.map((s, j) => (j === i ? { ...s, items } : s)).filter((s) => s.items.length > 0) });
+          return (
+            <Section
+              key={section.title}
+              title={section.title}
+              description="One detail per line. Tailoring again or starting over brings back anything you remove."
+              aside={
+                <Button variant="ghost" size="sm" onClick={() => update({ sections: cv.sections.filter((_, j) => j !== i) })}>
+                  Leave out
+                </Button>
+              }
+            >
+              <div className="flex flex-col gap-4">
+                {section.items.map((item, j) => (
+                  <div key={j} className="flex flex-col gap-1.5">
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                      <p className="min-w-0 text-[13px] font-medium">
+                        {item.title} {item.subtitle && <span className="font-normal text-muted">· {item.subtitle}</span>}
+                      </p>
+                      <span className="flex items-center gap-2 text-xs text-subtle tabular-nums">
+                        {item.date}
+                        <button
+                          type="button"
+                          aria-label={`Leave out ${item.title}`}
+                          className="grid size-4 place-items-center rounded-sm hover:text-danger"
+                          onClick={() => setItems(section.items.filter((_, k) => k !== j))}
+                        >
+                          <X className="size-3.5" />
+                        </button>
+                      </span>
+                    </div>
+                    {item.details.length > 0 && (
+                      <Textarea
+                        aria-label={`Details for ${item.title}`}
+                        value={item.details.join("\n")}
+                        className="min-h-16 text-[13px]"
+                        onChange={(e) => setItems(section.items.map((it, k) => (k === j ? { ...it, details: e.target.value.split("\n").slice(0, 8) } : it)))}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </Section>
+          );
+        })}
 
         <Section title="Education and languages" description="From your profile.">
           <ul className="flex flex-col gap-1 text-[13px]">

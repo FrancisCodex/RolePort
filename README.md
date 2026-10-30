@@ -106,7 +106,8 @@ Run Lite yourself with `npm run dev:lite` (port 3100), or build it with `npm run
 | Dashboard: applications sent, response rate, interviews and offers, how far applications get, weekly pace, follow-ups due | Nothing |
 | Setup guide (`/welcome`): name, roles and CV in a few steps, then pointers to AI, JobSpy and more. New users start there in RolePort Lite; set `NEXT_PUBLIC_ROLEPORT_ONBOARDING=on` to do the same on a self-hosted install | Nothing |
 | CV import with automatic skill detection, plus your email, phone and profile links | Nothing |
-| AI fills in your whole profile from your CV | An AI provider |
+| Extra profile sections (Projects, Certifications, Publications, Achievements or any of your own) that print on your CV | Nothing |
+| AI fills in your whole profile from your CV, including those sections. The prompt is on the Profile page and in Settings to read and change, for example to have the AI write your summary or look for a section of your own | An AI provider |
 | AI fit evaluation: eligibility, language and location gates, four scored dimensions, strengths, gaps and a recommendation. Evaluate one job or the top 10 results | An AI provider |
 | JobStreet, Indeed, LinkedIn and Kalibrr listings via [JSearch](https://rapidapi.com/letscrunch/api/jsearch) | A RapidAPI key (free tier) |
 | LinkedIn, Indeed, Glassdoor, Bayt, Naukri and more via [JobSpy](https://github.com/speedyapply/JobSpy) | The JobSpy service, on a self-hosted install ([details](#jobspy-linkedin-indeed-and-more)) |

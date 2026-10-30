@@ -1,16 +1,18 @@
 "use client";
 
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Sparkles } from "lucide-react";
 import { useState, useTransition, type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/fields";
+import { Input } from "@/components/ui/input";
 import { ANSWER_FIXED_RULES, DEFAULT_ANSWER_PROMPT, MAX_ANSWER_PROMPT } from "@/lib/ai/answer-prompt";
 import { CV_FIXED_RULES, DEFAULT_CV_PROMPT, MAX_CV_PROMPT } from "@/lib/ai/cv-prompt";
 import { DEFAULT_INTERVIEWER_PROMPT, INTERVIEWER_FIXED_RULES, MAX_INTERVIEWER_PROMPT } from "@/lib/ai/interview-prompt";
 import { DEFAULT_EMAIL_PROMPT, EMAIL_FIXED_RULES, MAX_EMAIL_PROMPT } from "@/lib/ai/email-prompt";
 import { DEFAULT_LETTER_PROMPT, LETTER_FIXED_RULES, MAX_LETTER_PROMPT } from "@/lib/ai/letter-prompt";
-import { saveAnswerPrompt, saveCvPrompt, saveEmailPrompt, saveInterviewPrompt, saveLetterPrompt } from "@/lib/client/mutations";
+import { DEFAULT_PROFILE_PROMPT, MAX_PROFILE_PROMPT, PROFILE_FIXED_RULES, withSection, withWrittenSummary } from "@/lib/ai/profile-prompt";
+import { saveAnswerPrompt, saveCvPrompt, saveEmailPrompt, saveInterviewPrompt, saveLetterPrompt, saveProfilePrompt } from "@/lib/client/mutations";
 import type { Result } from "@/lib/result";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +29,7 @@ export function PromptForm({
   fixedNote,
   max,
   onSave,
+  tools,
 }: {
   id: string;
   /** The user's own prompt, or null when they use the default. */
@@ -37,6 +40,8 @@ export function PromptForm({
   fixedNote: ReactNode;
   max: number;
   onSave: (prompt: string | null) => Promise<Result>;
+  /** Shortcuts that edit the text, shown above it. */
+  tools?: (text: string, setText: (next: string) => void) => ReactNode;
 }) {
   const [text, setText] = useState(saved ?? defaultPrompt);
   const [pending, startTransition] = useTransition();
@@ -64,6 +69,10 @@ export function PromptForm({
         </label>
         <Badge tone={saved ? "brand" : "neutral"}>{saved ? "Your prompt" : "Default prompt"}</Badge>
       </div>
+      {tools?.(text, (next) => {
+        setText(next);
+        setStatus(null);
+      })}
       <Textarea
         id={id}
         value={text}
@@ -99,6 +108,58 @@ export function PromptForm({
         </div>
       </details>
     </div>
+  );
+}
+
+/** Common edits to the CV reading prompt, for people who'd rather not write the rule themselves. */
+function ProfilePromptTools({ text, setText }: { text: string; setText: (next: string) => void }) {
+  const [section, setSection] = useState("");
+  const writesSummary = withWrittenSummary(text) === text;
+  return (
+    <div className="flex flex-col gap-2 rounded-lg border border-border bg-surface-2 p-3">
+      <p className="text-[13px] font-medium">Quick changes</p>
+      <p className="text-xs text-muted">These add a rule to the prompt below. Save the prompt, then read your CV again to see the result.</p>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <Button variant="soft" size="sm" className="shrink-0" disabled={writesSummary} onClick={() => setText(withWrittenSummary(text))}>
+          <Sparkles /> {writesSummary ? "AI writes your summary" : "Have AI write my summary"}
+        </Button>
+        <form
+          className="flex flex-1 items-center gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!section.trim()) return;
+            setText(withSection(text, section));
+            setSection("");
+          }}
+        >
+          <Input
+            aria-label="Section to ask the AI for"
+            placeholder="Ask for a section, e.g. Open source"
+            value={section}
+            maxLength={60}
+            onChange={(e) => setSection(e.target.value)}
+          />
+          <Button type="submit" variant="secondary" size="sm" className="shrink-0" disabled={!section.trim()}>
+            Add to prompt
+          </Button>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+export function ProfilePromptForm({ saved, id = "profile-prompt-text" }: { saved: string | null; id?: string }) {
+  return (
+    <PromptForm
+      id={id}
+      saved={saved}
+      defaultPrompt={DEFAULT_PROFILE_PROMPT}
+      fixedRules={PROFILE_FIXED_RULES}
+      max={MAX_PROFILE_PROMPT}
+      onSave={saveProfilePrompt}
+      tools={(text, setText) => <ProfilePromptTools text={text} setText={setText} />}
+      fixedNote="They keep your CV's text from giving the AI instructions and let RolePort read the answer. The text of your CV is sent after them, inside <cv> tags, only to the AI provider you chose. What the AI returns fills in your profile form: nothing is saved until you press Save profile."
+    />
   );
 }
 

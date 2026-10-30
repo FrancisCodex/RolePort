@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { formatMonthYear } from "@/lib/profile/dates";
+import { MAX_SECTIONS, profileSectionSchema } from "@/lib/profile/schema";
 
 /*
  * A CV as RolePort renders it: plain, single-column content that both the editor and the
@@ -39,6 +40,8 @@ export const cvContentSchema = z.object({
     .array(z.object({ school: line(160), degree: line(160), field: line(120).nullable(), year: line(20).nullable() }))
     .max(10),
   languages: z.array(line(80)).max(10),
+  // Projects, certifications and the like. CVs saved before these existed have none stored.
+  sections: z.array(profileSectionSchema).max(MAX_SECTIONS).default([]),
   pageSize: z.enum(["LETTER", "A4"]),
 });
 

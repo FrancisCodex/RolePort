@@ -9,7 +9,7 @@ import { JobSourceForm, JobSpyToggle } from "./job-source-form";
 import { LocalJobSpy } from "./local-jobspy";
 import type { FollowUpRules } from "@/lib/outreach/rules";
 import { FollowUpRulesForm } from "./follow-up-rules-form";
-import { AnswerPromptForm, CvPromptForm, EmailPromptForm, InterviewerPromptForm, LetterPromptForm } from "./prompt-form";
+import { AnswerPromptForm, CvPromptForm, EmailPromptForm, InterviewerPromptForm, LetterPromptForm, ProfilePromptForm } from "./prompt-form";
 
 export type SettingsData = {
   ai: AiSettingsView;
@@ -23,6 +23,8 @@ export type SettingsData = {
   jobSpy: { enabled: boolean; reachable: boolean } | null;
   /** Lite: JobSpy on the user's computer, called from the browser. */
   localJobSpy?: { enabled: boolean };
+  /** The user's own instructions for reading a CV, or null for the default. */
+  profilePrompt: string | null;
   /** The user's own CV tailoring instructions, or null for the default. */
   cvPrompt: string | null;
   /** The user's own cover letter instructions, or null for the default. */
@@ -48,6 +50,7 @@ export function SettingsView({
   countries,
   jobSpy,
   localJobSpy,
+  profilePrompt,
   cvPrompt,
   coverLetterPrompt,
   answerPrompt,
@@ -68,6 +71,19 @@ export function SettingsView({
         </CardHeader>
         <CardContent>
           <AiSettingsForm initial={ai} aiInBrowser={aiInBrowser} />
+        </CardContent>
+      </Card>
+
+      <Card id="profile-prompt">
+        <CardHeader>
+          <CardTitle>CV reading prompt</CardTitle>
+          <CardDescription>
+            Exactly what RolePort asks the AI when it reads your CV into your profile. Change what it picks up, ask for a section or a summary
+            of its own, or go back to the default at any time.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ProfilePromptForm saved={profilePrompt} />
         </CardContent>
       </Card>
 

@@ -1,7 +1,8 @@
 "use client";
 
-import { Check, FileUp, Loader2, Plus, Sparkles, Trash2, X } from "lucide-react";
+import { Check, FileUp, Loader2, Plus, RefreshCw, Sparkles, Trash2, X } from "lucide-react";
 import { useRef, useState, useTransition, type ReactNode } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TagInput, Textarea, ToggleGroup } from "@/components/ui/fields";
@@ -11,10 +12,15 @@ import { Select } from "@/components/ui/select";
 import { COUNTRIES, countryName, findCountry } from "@/lib/geo/countries";
 import { currencySymbol } from "@/lib/jobs/format";
 import { PH_REGIONS } from "@/lib/ph-locations";
+import type { CvImport } from "@/lib/profile/cv-file";
 import { normalizeProfileDates } from "@/lib/profile/dates";
 import type { ProfileInput } from "@/lib/profile/schema";
+import { mergeSections, tidySections } from "@/lib/profile/sections";
+import type { Result } from "@/lib/result";
 import { cn } from "@/lib/utils";
-import { importCv, saveProfile } from "@/lib/client/mutations";
+import { importCv, rereadCv, saveProfile } from "@/lib/client/mutations";
+import { ProfilePromptForm } from "../settings/prompt-form";
+import { SectionEditor } from "./section-editor";
 
 type Level = ProfileInput["skills"][number]["level"];
 
@@ -68,6 +74,8 @@ export function mergeDraft(current: ProfileInput, draft: Partial<ProfileInput>):
     if (key === "skills") {
       const known = new Set(current.skills.map((s) => s.name.toLowerCase()));
       next.skills = [...current.skills, ...(value as ProfileInput["skills"]).filter((s) => !known.has(s.name.toLowerCase()))];
+    } else if (key === "sections") {
+      next.sections = mergeSections(current.sections, value as ProfileInput["sections"]);
     } else {
       (next as Record<string, unknown>)[key] = value;
     }
@@ -79,10 +87,13 @@ export function ProfileEditor({
   initial,
   initialCvFileName,
   aiEnabled,
+  prompt,
 }: {
   initial: ProfileInput;
   initialCvFileName: string | null;
   aiEnabled: boolean;
+  /** The user's own CV reading instructions, or null for the default. */
+  prompt: string | null;
 }) {
   // Profiles saved before the date pickers may hold free-text dates; read them into the picker format.
   const [profile, setProfile] = useState(() => normalizeProfileDates(initial));
@@ -115,36 +126,45 @@ export function ProfileEditor({
     setDirty(true);
   }
 
+  function applyImport(result: Result<CvImport>) {
+    if (!result.ok) {
+      setStatus({ tone: "error", text: result.error });
+      return;
+    }
+    setCvFileName(result.data.fileName);
+    setProfile((p) => mergeDraft(p, result.data.draft));
+    setDirty(true);
+    const { draft } = result.data;
+    const found = draft.skills?.length ?? 0;
+    const contact = [draft.email && "email", draft.phone && "phone", draft.links?.length && "links"].filter(Boolean).join(", ");
+    const sections = draft.sections?.map((s) => s.title).join(", ");
+    setStatus({
+      tone: "info",
+      text: result.data.usedAi
+        ? `Your profile was filled in from your CV${sections ? `, including ${sections}` : ""}. Review it, then save.`
+        : `${result.data.aiError ? `AI couldn't read your CV (${result.data.aiError}). ` : ""}Found ${found} skill${found === 1 ? "" : "s"}${contact ? ` and your ${contact}` : ""} in your CV. Fill in the rest below, then save.`,
+    });
+  }
+
   function onImport(file: File) {
     setStatus(null);
     const data = new FormData();
     data.set("cv", file);
-    startImport(async () => {
-      const result = await importCv(data);
-      if (!result.ok) {
-        setStatus({ tone: "error", text: result.error });
-        return;
-      }
-      setCvFileName(result.data.fileName);
-      setProfile((p) => mergeDraft(p, result.data.draft));
-      setDirty(true);
-      const { draft } = result.data;
-      const found = draft.skills?.length ?? 0;
-      const contact = [draft.email && "email", draft.phone && "phone", draft.links?.length && "links"].filter(Boolean).join(", ");
-      setStatus({
-        tone: "info",
-        text: result.data.usedAi
-          ? "Your profile was filled in from your CV. Review it, then save."
-          : `${result.data.aiError ? `AI couldn't read your CV (${result.data.aiError}). ` : ""}Found ${found} skill${found === 1 ? "" : "s"}${contact ? ` and your ${contact}` : ""} in your CV. Fill in the rest below, then save.`,
-      });
-    });
+    startImport(async () => applyImport(await importCv(data)));
+  }
+
+  function onReread() {
+    setStatus(null);
+    startImport(async () => applyImport(await rereadCv()));
   }
 
   function onSave() {
     setStatus(null);
+    const toSave = { ...profile, sections: tidySections(profile.sections) };
     startSaving(async () => {
-      const result = await saveProfile(profile);
+      const result = await saveProfile(toSave);
       if (result.ok) {
+        setProfile(toSave);
         setDirty(false);
         setStatus({ tone: "success", text: "Profile saved. Your job matches now use it." });
       } else {
@@ -213,10 +233,28 @@ export function ProfileEditor({
               e.target.value = "";
             }}
           />
-          <Button variant="secondary" onClick={() => fileInput.current?.click()} disabled={importing}>
-            Choose file
-          </Button>
+          <div className="flex shrink-0 flex-wrap gap-2">
+            {cvFileName && aiEnabled && (
+              <Button variant="ghost" onClick={onReread} disabled={importing}>
+                <RefreshCw /> Read it again
+              </Button>
+            )}
+            <Button variant="secondary" onClick={() => fileInput.current?.click()} disabled={importing}>
+              Choose file
+            </Button>
+          </div>
         </CardContent>
+        <details className="border-t border-border">
+          <summary className="flex cursor-pointer items-center gap-2 px-5 py-2.5 text-[13px] font-medium text-muted select-none hover:text-fg">
+            See or change what the AI is told
+            <Badge tone={prompt ? "brand" : "neutral"} className="ml-auto">
+              {prompt ? "Your prompt" : "Default prompt"}
+            </Badge>
+          </summary>
+          <div className="border-t border-border p-5">
+            <ProfilePromptForm saved={prompt} id="profile-page-prompt-text" />
+          </div>
+        </details>
       </Card>
 
       {status && (
@@ -483,6 +521,8 @@ export function ProfileEditor({
           );
         })}
       </Section>
+
+      <SectionEditor sections={profile.sections} onChange={(sections) => update("sections", sections)} />
 
       <Section
         title="Languages"

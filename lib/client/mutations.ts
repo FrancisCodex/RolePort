@@ -20,6 +20,10 @@ const lite = () => import("./lite-mutations");
 
 export const saveProfile: typeof profile.saveProfile = isLite ? async (...a) => (await lite()).saveProfile(...a) : profile.saveProfile;
 export const importCv: typeof profile.importCv = isLite ? async (...a) => (await lite()).importCv(...a) : profile.importCv;
+export const rereadCv: typeof profile.rereadCv = isLite ? async (...a) => (await lite()).rereadCv(...a) : profile.rereadCv;
+export const saveProfilePrompt: typeof profile.saveProfilePrompt = isLite
+  ? async (...a) => (await lite()).saveProfilePrompt(...a)
+  : profile.saveProfilePrompt;
 export const setOnboardingStep: typeof profile.setOnboardingStep = isLite
   ? async (...a) => (await lite()).setOnboardingStep(...a)
   : profile.setOnboardingStep;

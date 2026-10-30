@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { MAX_CV_SKILLS, type CvContent, type CvTailoring } from "@/lib/cv/types";
 import type { ProfileInput } from "@/lib/profile/schema";
+import { sectionBlock } from "@/lib/profile/sections";
 import { cvSystemPrompt } from "./cv-prompt";
 import { clip, jobBlock, type EvaluationJob } from "./evaluate-job";
 import type { AiConfig } from "./settings";
@@ -54,6 +55,7 @@ export function candidateBlock(profile: ProfileInput, cvText: string | null): st
       ? `Education:\n${profile.education.map((e) => `- ${e.degree}${e.field ? `, ${e.field}` : ""}, ${e.school}${e.year ? ` (${e.year})` : ""}`).join("\n")}`
       : null,
     profile.languages.length ? `Languages: ${profile.languages.map((l) => `${l.name}${l.level ? ` (${l.level})` : ""}`).join(", ")}` : null,
+    ...profile.sections.map((s) => sectionBlock(s)),
     cvText ? `CV text (for facts only):\n${clip(cvText.replace(/<\/?\s*(job_posting|candidate_profile)\s*>/gi, " "), MAX_CV_TEXT_CHARS)}` : null,
   ];
   return lines.filter(Boolean).join("\n");
@@ -100,6 +102,7 @@ export function sourceOf(profile: ProfileInput, cvText: string | null): string {
     profile.skills.map((s) => s.name).join(", "),
     profile.experience.map((e) => [e.role, e.company, e.location, e.start, e.end, ...e.highlights].join(" ")).join("\n"),
     profile.education.map((e) => [e.degree, e.field, e.school, e.year].join(" ")).join("\n"),
+    profile.sections.map((s) => sectionBlock(s)).join("\n"),
     profile.yearsExperience != null ? `${profile.yearsExperience} years` : "",
     cvText,
   ]
@@ -177,7 +180,13 @@ export function applyTailoring(
   };
 
   // Keywords are re-checked against the finished CV rather than taken on the model's word.
-  const finalText = [content.headline, content.summary, content.skills.join(", "), ...content.experience.flatMap((e) => [e.role, ...e.bullets])].join("\n");
+  const finalText = [
+    content.headline,
+    content.summary,
+    content.skills.join(", "),
+    ...content.experience.flatMap((e) => [e.role, ...e.bullets]),
+    ...content.sections.map((s) => sectionBlock(s)),
+  ].join("\n");
   const keywords = [...new Set(raw.keywords.map(tidy).filter(Boolean))];
   const covered = keywords.filter((k) => mentions(finalText, k));
   const missing = [...new Set([...raw.keywordsMissing.map(tidy), ...keywords.filter((k) => !mentions(finalText, k))].filter(Boolean))].filter(

@@ -3,6 +3,29 @@ import { z } from "zod";
 export const WORK_SETUPS = ["onsite", "hybrid", "remote"] as const;
 export const SKILL_LEVELS = ["primary", "secondary", "learning"] as const;
 
+export const MAX_SECTIONS = 12;
+export const MAX_SECTION_ITEMS = 30;
+export const MAX_ITEM_DETAILS = 8;
+
+/** A CV section beyond the built-in ones (lib/profile/sections.ts). Blank fields are empty strings. */
+export const profileSectionSchema = z.object({
+  title: z.string().trim().min(1, "Give each section a name").max(60),
+  items: z
+    .array(
+      z.object({
+        title: z.string().trim().min(1, "Give each section entry a name").max(300),
+        subtitle: z.string().trim().max(160),
+        date: z.string().trim().max(40),
+        link: z.string().trim().max(200),
+        details: z.array(z.string().trim().min(1).max(400)).max(MAX_ITEM_DETAILS),
+      }),
+    )
+    .max(MAX_SECTION_ITEMS),
+});
+
+export type ProfileSection = z.infer<typeof profileSectionSchema>;
+export type SectionItem = ProfileSection["items"][number];
+
 /** The editable profile, shared by the form, the server action and the AI extractor. */
 export const profileSchema = z.object({
   name: z.string().trim().min(1, "Add your name").max(120),
@@ -50,6 +73,7 @@ export const profileSchema = z.object({
     )
     .max(10),
   languages: z.array(z.object({ name: z.string().trim().min(1).max(40), level: z.string().trim().max(40) })).max(10),
+  sections: z.array(profileSectionSchema).max(MAX_SECTIONS, `Keep it to ${MAX_SECTIONS} extra sections`),
   careerGoals: z.array(z.string().trim().min(1).max(200)).max(8),
   dealBreakers: z.array(z.string().trim().min(1).max(200)).max(8),
   salaryMinMonthly: z.number().int().min(0).max(10_000_000).nullable(),
@@ -78,6 +102,7 @@ export const emptyProfile: ProfileInput = {
   experience: [],
   education: [],
   languages: [],
+  sections: [],
   careerGoals: [],
   dealBreakers: [],
   salaryMinMonthly: null,

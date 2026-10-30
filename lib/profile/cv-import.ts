@@ -9,13 +9,13 @@ import { detectSkills } from "./detect-skills";
  * A profile draft from CV text: AI-extracted when a provider is set up, else (or when AI
  * fails) just the detected skills. Shared by the server action and the lite edition.
  */
-export async function draftFromCv(fileName: string, text: string, config: AiConfig | null): Promise<CvImport> {
+export async function draftFromCv(fileName: string, text: string, config: AiConfig | null, customPrompt: string | null): Promise<CvImport> {
   // Contact lines are easy to find in code, so they're filled in even without AI, or when the model skips them.
   const contact = detectContact(text);
   let aiError: string | undefined;
   if (config) {
     try {
-      const draft = await extractProfileFromCv(text, config);
+      const draft = await extractProfileFromCv(text, config, customPrompt);
       return {
         fileName,
         draft: {

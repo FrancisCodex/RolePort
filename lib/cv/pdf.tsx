@@ -31,6 +31,7 @@ export async function checkCvPdf(blob: Blob, cv: CvContent): Promise<{ checks: A
   ] as const;
   const missingSkills = cv.skills.filter((s) => !has(s));
   const missingRoles = cv.experience.filter((e) => !has(e.role) || !has(e.company));
+  const missingExtras = cv.sections.filter((s) => !has(s.title) || s.items.some((i) => !has(i.title)));
 
   const checks: AtsCheck[] = [
     { label: "The PDF has selectable text (not an image)", ok: found.length > 100 },
@@ -48,6 +49,14 @@ export async function checkCvPdf(blob: Blob, cv: CvContent): Promise<{ checks: A
       label: missingSkills.length ? `Skills not found in the text: ${missingSkills.join(", ")}` : "Every skill is readable",
       ok: missingSkills.length === 0,
     },
+    ...(cv.sections.length
+      ? [
+          {
+            label: missingExtras.length ? `Couldn't read everything in: ${missingExtras.map((s) => s.title).join(", ")}` : `${cv.sections.map((s) => s.title).join(", ")}: readable`,
+            ok: missingExtras.length === 0,
+          },
+        ]
+      : []),
     { label: totalPages <= 2 ? `${totalPages} page${totalPages === 1 ? "" : "s"}` : `${totalPages} pages: most recruiters expect one or two`, ok: totalPages <= 2 },
   ];
   return { checks, text };

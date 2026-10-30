@@ -68,6 +68,7 @@ async function SettingsContent() {
       companies={companies}
       countries={[profile.country, ...profile.targetCountries]}
       jobSpy={showJobSpy ? { enabled: Boolean(row?.jobspyEnabled), reachable } : null}
+      profilePrompt={row?.profilePrompt ?? null}
       cvPrompt={row?.cvPrompt ?? null}
       coverLetterPrompt={row?.coverLetterPrompt ?? null}
       answerPrompt={row?.answerPrompt ?? null}
