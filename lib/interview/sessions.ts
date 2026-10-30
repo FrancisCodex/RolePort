@@ -3,6 +3,7 @@ import { clip, jobBlock } from "@/lib/ai/evaluate-job";
 import { checkClaims, decideTurn, gradeAnswer, planInterview, prepareBriefing, refineAnswer, summarizeInterview } from "@/lib/ai/interview";
 import { describeAiConfig, type AiConfig } from "@/lib/ai/settings";
 import { candidateBlock } from "@/lib/ai/tailor-cv";
+import { sectionBlock } from "@/lib/profile/sections";
 import { readCv } from "@/lib/cv/queries";
 import { cvDates, type CvContent } from "@/lib/cv/types";
 import * as schema from "@/lib/db/schema";
@@ -154,6 +155,7 @@ function cvText(cv: CvContent): string {
     cv.skills.length ? `Skills: ${cv.skills.join(", ")}` : "",
     ...cv.experience.map((e) => [`${e.role} at ${e.company} (${cvDates(e.start, e.end)})`, ...e.bullets.map((b) => `- ${b}`)].join("\n")),
     ...cv.education.map((e) => `${e.degree}${e.field ? `, ${e.field}` : ""}, ${e.school}${e.year ? ` (${e.year})` : ""}`),
+    ...(cv.sections ?? []).map((s) => sectionBlock(s)),
   ]
     .filter(Boolean)
     .join("\n");

@@ -42,6 +42,7 @@ export async function readProfile(db: AnyDb, user: { id: string; name: string })
     experience: row.experience.map((e) => ({ ...e, end: e.end ?? null, location: e.location ?? null })),
     education: row.education.map((e) => ({ ...e, field: e.field ?? null, year: e.year ?? null })),
     languages: row.languages,
+    sections: row.sections,
     careerGoals: row.careerGoals,
     dealBreakers: row.dealBreakers,
     salaryMinMonthly: row.salaryMinMonthly,
@@ -61,6 +62,21 @@ export async function readProfile(db: AnyDb, user: { id: string; name: string })
 export async function readCvText(db: AnyDb, userId: string): Promise<string | null> {
   const [row] = await db.select({ cvText: schema.profile.cvText }).from(schema.profile).where(eq(schema.profile.userId, userId));
   return row?.cvText ?? null;
+}
+
+/** The user's own instructions for reading a CV, or null when they use the default. */
+export async function readProfilePrompt(db: AnyDb, userId: string): Promise<string | null> {
+  const [row] = await db.select({ prompt: schema.userSettings.profilePrompt }).from(schema.userSettings).where(eq(schema.userSettings.userId, userId));
+  return row?.prompt ?? null;
+}
+
+/** Read the stored CV again, for a changed prompt or new profile fields. Null when no CV was imported. */
+export async function readStoredCv(db: AnyDb, userId: string): Promise<{ fileName: string; text: string } | null> {
+  const [row] = await db
+    .select({ text: schema.profile.cvText, fileName: schema.profile.cvFileName })
+    .from(schema.profile)
+    .where(eq(schema.profile.userId, userId));
+  return row?.text ? { fileName: row.fileName ?? "your CV", text: row.text } : null;
 }
 
 /** Save a validated profile (the name lives on the user row). */

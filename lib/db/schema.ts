@@ -138,6 +138,7 @@ export type Experience = {
 };
 export type Education = { school: string; degree: string; field?: string; year?: string };
 export type Language = { name: string; level: string };
+export type ProfileSection = { title: string; items: { title: string; subtitle: string; date: string; link: string; details: string[] }[] };
 export type CvContact = { email: string; phone: string; links: string[] };
 
 export const profile = pgTable("profile", {
@@ -163,6 +164,8 @@ export const profile = pgTable("profile", {
   experience: jsonb("experience").$type<Experience[]>().default([]).notNull(),
   education: jsonb("education").$type<Education[]>().default([]).notNull(),
   languages: jsonb("languages").$type<Language[]>().default([]).notNull(),
+  /** Projects, certifications and any other section the user or their CV adds (lib/profile/sections.ts). */
+  sections: jsonb("sections").$type<ProfileSection[]>().default([]).notNull(),
   careerGoals: text("career_goals").array().default(sql`'{}'::text[]`).notNull(),
   dealBreakers: text("deal_breakers").array().default(sql`'{}'::text[]`).notNull(),
   /** Monthly expectation in `salaryCurrency`. */
@@ -411,6 +414,8 @@ export const userSettings = pgTable("user_settings", {
   rapidApiKeyEnc: text("rapid_api_key_enc"),
   /** Opted in to the JobSpy boards (LinkedIn, Indeed, …) on a self-hosted install. */
   jobspyEnabled: boolean("jobspy_enabled").default(false).notNull(),
+  /** The user's own instructions for reading a CV into the profile, or null to use the default (lib/ai/profile-prompt.ts). */
+  profilePrompt: text("profile_prompt"),
   /** The user's own instructions for CV tailoring, or null to use the default (lib/ai/tailor-cv.ts). */
   cvPrompt: text("cv_prompt"),
   /** The user's own instructions for cover letters, or null to use the default (lib/ai/letter-prompt.ts). */

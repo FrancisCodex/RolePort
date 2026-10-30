@@ -3,6 +3,29 @@ import { z } from "zod";
 export const WORK_SETUPS = ["onsite", "hybrid", "remote"] as const;
 export const SKILL_LEVELS = ["primary", "secondary", "learning"] as const;
 
+export const MAX_SECTIONS = 12;
+export const MAX_SECTION_ITEMS = 30;
+export const MAX_ITEM_DETAILS = 8;
+
+/** A CV section beyond the built-in ones (lib/profile/sections.ts). Blank fields are empty strings. */
+export const profileSectionSchema = z.object({
+  title: z.string().trim().min(1, "Give each section a name").max(60),
+  items: z
+    .array(
+      z.object({
+        title: z.string().trim().min(1, "Give each section entry a name").max(300),
+        subtitle: z.string().trim().max(160),
+        date: z.string().trim().max(40),
+        link: z.string().trim().max(200),
+        details: z.array(z.string().trim().min(1).max(400)).max(MAX_ITEM_DETAILS),
+      }),
+    )
+    .max(MAX_SECTION_ITEMS),
+});
+
+export type ProfileSection = z.infer<typeof profileSectionSchema>;
+export type SectionItem = ProfileSection["items"][number];
+
 /** The editable profile, shared by the form, the server action and the AI extractor. */
 export const profileSchema = z.object({
   name: z.string().trim().min(1, "Add your name").max(120),
@@ -50,6 +73,7 @@ export const profileSchema = z.object({
     )
     .max(10),
   languages: z.array(z.object({ name: z.string().trim().min(1).max(40), level: z.string().trim().max(40) })).max(10),
+  sections: z.array(profileSectionSchema).max(MAX_SECTIONS, `Keep it to ${MAX_SECTIONS} extra sections`),
   careerGoals: z.array(z.string().trim().min(1).max(200)).max(8),
   dealBreakers: z.array(z.string().trim().min(1).max(200)).max(8),
   salaryMinMonthly: z.number().int().min(0).max(10_000_000).nullable(),
@@ -58,6 +82,33 @@ export const profileSchema = z.object({
 });
 
 export type ProfileInput = z.infer<typeof profileSchema>;
+
+const FIELD_NAMES: Record<string, string> = {
+  name: "Your name",
+  headline: "Your headline",
+  email: "Your email",
+  phone: "Your phone number",
+  links: "A link",
+  summary: "Your summary",
+  city: "Your city",
+  region: "Your region",
+  desiredRoles: "A desired role",
+  skills: "A skill",
+  experience: "An experience entry",
+  education: "An education entry",
+  languages: "A language",
+  sections: "A section entry",
+  careerGoals: "A career goal",
+  dealBreakers: "A deal-breaker",
+};
+
+/** The first problem with a profile, saying which field when one is too long. */
+export function profileError(error: z.ZodError): string {
+  const issue = error.issues[0];
+  if (!issue) return "Some fields are invalid.";
+  if (issue.code !== "too_big" || issue.origin !== "string") return issue.message;
+  return `${FIELD_NAMES[String(issue.path[0])] ?? "A field"} is too long. Keep it to ${issue.maximum} characters.`;
+}
 
 export const emptyProfile: ProfileInput = {
   name: "",
@@ -78,6 +129,7 @@ export const emptyProfile: ProfileInput = {
   experience: [],
   education: [],
   languages: [],
+  sections: [],
   careerGoals: [],
   dealBreakers: [],
   salaryMinMonthly: null,

@@ -25,6 +25,7 @@ import { MAX_ANSWER_PROMPT } from "@/lib/ai/answer-prompt";
 import { MAX_INTERVIEWER_PROMPT } from "@/lib/ai/interview-prompt";
 import { MAX_LETTER_PROMPT } from "@/lib/ai/letter-prompt";
 import { MAX_EMAIL_PROMPT } from "@/lib/ai/email-prompt";
+import { MAX_PROFILE_PROMPT } from "@/lib/ai/profile-prompt";
 import { draftOutreachEmail, markOutreachSent, saveOutreachEdit, setOutreachPaused, unmarkOutreachSent } from "@/lib/outreach/outreach";
 import { followUpRulesSchema, type FollowUpRules } from "@/lib/outreach/rules";
 import { EMAIL_KINDS, outreachEditSchema, type EmailKind, type OutreachEdit } from "@/lib/outreach/types";
@@ -71,8 +72,8 @@ import { canCheckJob, pastedJobSchema, type JobCheck, type LinkRead, type PasteR
 import { readJobRow } from "@/lib/jobs/queries";
 import { readCvFile, type CvImport } from "@/lib/profile/cv-file";
 import { draftFromCv } from "@/lib/profile/cv-import";
-import { ONBOARDING_DONE, writeCv, writeOnboardingStep, writeProfile } from "@/lib/profile/queries";
-import { profileSchema, type ProfileInput } from "@/lib/profile/schema";
+import { ONBOARDING_DONE, readProfilePrompt, readStoredCv, writeCv, writeOnboardingStep, writeProfile } from "@/lib/profile/queries";
+import { profileError, profileSchema, type ProfileInput } from "@/lib/profile/schema";
 import type { Result } from "@/lib/result";
 import { readSettings, writeSettings } from "@/lib/settings/queries";
 import { invalidate } from "./bus";
@@ -104,7 +105,7 @@ async function providerError(error: unknown, baseUrl: string | null, model: stri
 export async function saveProfile(input: ProfileInput): Promise<Result> {
   const parsed = profileSchema.safeParse(input);
   if (!parsed.success) {
-    return { ok: false, error: parsed.error.issues[0]?.message ?? "Some fields are invalid." };
+    return { ok: false, error: profileError(parsed.error) };
   }
   await writeProfile(await getBrowserDb(), LOCAL_USER.id, parsed.data);
   await invalidate("profile");
@@ -121,7 +122,23 @@ export async function importCv(formData: FormData): Promise<Result<CvImport>> {
   const db = await getBrowserDb();
   await writeCv(db, LOCAL_USER.id, fileName, text);
   await invalidate("profile");
-  return { ok: true, data: await draftFromCv(fileName, text, await savedAiConfig(db)) };
+  return { ok: true, data: await draftFromCv(fileName, text, await savedAiConfig(db), await readProfilePrompt(db, LOCAL_USER.id)) };
+}
+
+export async function rereadCv(): Promise<Result<CvImport>> {
+  const db = await getBrowserDb();
+  const stored = await readStoredCv(db, LOCAL_USER.id);
+  if (!stored) return { ok: false, error: "Import your CV first." };
+  return { ok: true, data: await draftFromCv(stored.fileName, stored.text, await savedAiConfig(db), await readProfilePrompt(db, LOCAL_USER.id)) };
+}
+
+export async function saveProfilePrompt(prompt: string | null): Promise<Result> {
+  if (prompt != null && (typeof prompt !== "string" || prompt.length > MAX_PROFILE_PROMPT)) {
+    return { ok: false, error: `Keep the prompt under ${MAX_PROFILE_PROMPT} characters.` };
+  }
+  await writeSettings(await getBrowserDb(), LOCAL_USER.id, { profilePrompt: prompt?.trim() || null });
+  await invalidate("user_settings");
+  return { ok: true, data: undefined };
 }
 
 export async function setOnboardingStep(step: number): Promise<Result> {

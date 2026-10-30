@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/app/page-header";
-import { isAiConfigured } from "@/lib/ai/config";
+import { getMySettingsRow, isAiConfigured } from "@/lib/ai/config";
 import { isLite } from "@/lib/mode";
 import { getMyProfile } from "@/lib/profile/data";
 import { LiteProfile } from "./lite-profile";
@@ -25,6 +25,6 @@ export default function ProfilePage() {
 }
 
 async function Editor() {
-  const [{ profile, cvFileName }, aiEnabled] = await Promise.all([getMyProfile(), isAiConfigured()]);
-  return <ProfileEditor initial={profile} initialCvFileName={cvFileName} aiEnabled={aiEnabled} />;
+  const [{ profile, cvFileName }, aiEnabled, settings] = await Promise.all([getMyProfile(), isAiConfigured(), getMySettingsRow()]);
+  return <ProfileEditor initial={profile} initialCvFileName={cvFileName} aiEnabled={aiEnabled} prompt={settings?.profilePrompt ?? null} />;
 }

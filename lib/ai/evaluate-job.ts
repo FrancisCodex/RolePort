@@ -3,6 +3,7 @@ import { commuteCheck } from "@/lib/jobs/commute";
 import { countryName } from "@/lib/geo/countries";
 import { formatMoney, formatSalary } from "@/lib/jobs/format";
 import type { ProfileInput } from "@/lib/profile/schema";
+import { sectionBlock } from "@/lib/profile/sections";
 import type { AiConfig } from "./settings";
 import { generateStructured } from "./structured";
 
@@ -173,6 +174,8 @@ function profileBlock(p: ProfileInput, cvText: string | null): string {
     `Learning: ${byLevel("learning")}`,
     experience.length ? `Experience:\n${experience.join("\n")}` : "Experience: none listed",
     education.length ? `Education:\n${education.join("\n")}` : null,
+    // Capped like experience: certifications and projects can matter, but evaluations stay lean on small models.
+    ...p.sections.map((s) => sectionBlock(s, 5)),
     p.summary && `Summary: ${p.summary}`,
     // The structured profile is usually enough; fall back to the CV when it's thin.
     cvText && (p.experience.length === 0 || p.skills.length < 5) ? `CV excerpt:\n${clip(cvText, MAX_CV_CHARS)}` : null,

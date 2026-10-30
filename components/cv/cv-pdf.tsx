@@ -110,6 +110,27 @@ export function CvDocument({ cv }: { cv: CvContent }) {
           </View>
         )}
 
+        {cv.sections.map((section, i) => (
+          <View key={i} style={styles.section}>
+            <Text style={styles.heading}>{s(section.title)}</Text>
+            {section.items.map((item, j) => (
+              <View key={j} style={styles.role} wrap={item.details.length > 4}>
+                <View style={styles.roleLine}>
+                  <Text style={styles.roleTitle}>{s(item.title)}</Text>
+                  {item.date ? <Text style={styles.dates}>{s(item.date)}</Text> : null}
+                </View>
+                {item.subtitle || item.link ? <Text style={styles.company}>{s([item.subtitle, item.link].filter(Boolean).join(", "))}</Text> : null}
+                {item.details.map((d, k) => (
+                  <View key={k} style={styles.bullet}>
+                    <Text style={styles.dot}>•</Text>
+                    <Text style={styles.bulletText}>{s(d)}</Text>
+                  </View>
+                ))}
+              </View>
+            ))}
+          </View>
+        ))}
+
         {cv.languages.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.heading}>Languages</Text>

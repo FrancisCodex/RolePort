@@ -28,7 +28,7 @@ import { readFitMatches, readJob, readJobsByIds, readTrackedJobs, sortJobs, toLi
 import type { JobSort } from "@/lib/jobs/search-params";
 import { sourceCredit } from "@/lib/jobs/sources/credits";
 import { followedCompanyView, readFollowedCompanies, type FollowedCompanyView } from "@/lib/companies/queries";
-import { readOnboarding, readProfile, type ProfileView } from "@/lib/profile/queries";
+import { readOnboarding, readProfile, readProfilePrompt, type ProfileView } from "@/lib/profile/queries";
 import { maskSecret } from "@/lib/secret-hint";
 import { readSettings } from "@/lib/settings/queries";
 import { readKey } from "./lite-keys";
@@ -48,10 +48,10 @@ export async function me(db: BrowserDb) {
   return user ?? LOCAL_USER;
 }
 
-export async function loadProfile(): Promise<ProfileView & { aiEnabled: boolean }> {
+export async function loadProfile(): Promise<ProfileView & { aiEnabled: boolean; profilePrompt: string | null }> {
   const db = await getBrowserDb();
-  const [view, ai] = await Promise.all([readProfile(db, await me(db)), aiEnabled(db)]);
-  return { ...view, aiEnabled: ai };
+  const [view, ai, profilePrompt] = await Promise.all([readProfile(db, await me(db)), aiEnabled(db), readProfilePrompt(db, LOCAL_USER.id)]);
+  return { ...view, aiEnabled: ai, profilePrompt };
 }
 
 /** Jobs: the profile (for the search defaults) and the companies the user follows. */
@@ -112,6 +112,7 @@ export async function loadSettings(): Promise<{
   companies: FollowedCompanyView[];
   countries: string[];
   jobspyEnabled: boolean;
+  profilePrompt: string | null;
   cvPrompt: string | null;
   coverLetterPrompt: string | null;
   answerPrompt: string | null;
@@ -131,6 +132,7 @@ export async function loadSettings(): Promise<{
     companies: companies.map(followedCompanyView),
     countries: [profile.country, ...profile.targetCountries],
     jobspyEnabled: Boolean(row?.jobspyEnabled),
+    profilePrompt: row?.profilePrompt ?? null,
     cvPrompt: row?.cvPrompt ?? null,
     coverLetterPrompt: row?.coverLetterPrompt ?? null,
     answerPrompt: row?.answerPrompt ?? null,
