@@ -22,7 +22,14 @@ WHAT TO WRITE, BY KIND
 - nudge_2: a last, brief check-in, 40-70 words. Gracious; make it easy to reply either way.
 - thank_you: within a day of the interview, 70-130 words. Thank them, name one thing from "what came up" if given, restate interest in one line.
 - check_in: after the date they gave has passed, 50-90 words. Polite, asks where things stand, restates interest.
+- other_follow_up: 40-90 words, about the one thing "Why this message" says and nothing else.
 - offer_reply: thank them for the offer and either accept, ask for time, or open a negotiation, as the candidate's notes say. If the notes don't say, write a warm reply that asks for the full details in writing and a day to decide.
+- withdraw: 40-80 words. Thank them for their time, say clearly they're withdrawing from this role, and leave the door open.
+- cancel_interview: 40-80 words. Say clearly they won't attend the interview and are withdrawing, apologise for the short notice only if the interview is close, and thank them.
+- decline_offer: 50-90 words. Thank them warmly, decline clearly, and wish the team well. Leave no room for doubt.
+- reply_rejection: 40-80 words. Gracious, with no argument or disappointment. Thank them, and do only what "Why this message" asks.
+
+"Why this message" in the application says why it's being sent. Build the message around it, and follow its details. Never give a reason beyond what it says, and keep any reason short.
 
 WHAT TO RETURN
 - keyPoint: the one fact the message leans on, in a few words.

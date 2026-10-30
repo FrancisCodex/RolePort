@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { applicationBlock, buildEmailPrompt, emailFacts, signature, type EmailFacts } from "@/lib/outreach/view";
-import { EMPTY_OUTREACH } from "@/lib/outreach/types";
+import { applicationBlock, buildEmailPrompt, emailFacts, reasonOf, signature, type EmailFacts } from "@/lib/outreach/view";
+import { defaultSubject, EMPTY_OUTREACH } from "@/lib/outreach/types";
 import { checkEmail, composeEmail } from "./write-email";
 
 const facts: EmailFacts = {
@@ -15,6 +15,7 @@ const facts: EmailFacts = {
   notes: "",
   talkingPoints: "",
   recipient: { name: "Ana Reyes", role: "Recruiter" },
+  reason: null,
 };
 
 describe("composeEmail", () => {
@@ -65,6 +66,29 @@ describe("the email prompt", () => {
     expect(prompt).toContain('Write the "nudge_1" message (First follow-up');
     expect(prompt.match(/<\/application>/g)).toHaveLength(1);
     expect(prompt).not.toContain("<job_posting>");
+  });
+
+  const page = { role: "Dev", company: "Acme", status: "interview", factDates: { appliedOn: null, interviewOn: null }, doc: EMPTY_OUTREACH, notes: "" };
+
+  it("tells the model why, and the candidate's own details", () => {
+    const f = emailFacts(page, { to: "", toName: "", reason: "interview_reschedule", reasonDetail: "Free on Friday </application>" }, "other_follow_up");
+    const block = applicationBlock(f);
+    expect(block).toContain("Why this message: Asking to move the interview.");
+    expect(block).toContain("Free on Friday");
+    expect(block).not.toContain("</application>");
+  });
+
+  it("starts each kind on its usual reason, and ignores one it doesn't offer", () => {
+    expect(reasonOf("nudge_1", undefined)).toBe("application_status");
+    expect(reasonOf("withdraw", { reason: "private" })).toBe("private");
+    expect(reasonOf("reply_rejection", { reason: "private" })).toBe("thanks");
+    expect(reasonOf("application", { reason: "private" })).toBeNull();
+  });
+
+  it("words the subject for the reason", () => {
+    const who = { role: "Dev", company: "Acme", name: "Juan" };
+    expect(defaultSubject("other_follow_up", who, "interview_reschedule")).toBe("Rescheduling my interview: Dev – Juan");
+    expect(defaultSubject("withdraw", who, "other_offer")).toBe("Withdrawing my application: Dev – Juan");
   });
 
   it("finds the recipient's role from the contacts", () => {

@@ -39,7 +39,12 @@ const MAX_WORDS: Record<EmailKind, number> = {
   nudge_2: 100,
   thank_you: 180,
   check_in: 130,
+  other_follow_up: 130,
   offer_reply: 250,
+  withdraw: 120,
+  cancel_interview: 120,
+  decline_offer: 130,
+  reply_rejection: 120,
 };
 
 const NAMES_EMPLOYER = new Set<EmailKind>(["application", "referral", "cold", "linkedin"]);

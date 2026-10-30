@@ -88,7 +88,9 @@ export function FollowUpCard({
             </Button>
           </div>
         ) : (
-          <p className="text-muted">{STAGE_NOTE[data.status] ?? "Nothing planned for this application."}</p>
+          <p className="text-muted">
+            {interviewing ? "The thank-you comes up after your interview. To confirm or move it, use Other reason." : (STAGE_NOTE[data.status] ?? "Nothing planned for this application.")}
+          </p>
         )}
 
         {interviewing && (

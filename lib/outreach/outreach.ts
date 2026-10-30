@@ -7,12 +7,12 @@ import { writeEmail } from "@/lib/ai/write-email";
 import * as schema from "@/lib/db/schema";
 import type { AnyDb } from "@/lib/db/types";
 import { readAppDocument, writeAppDocument } from "@/lib/documents/queries";
-import { readApplication, setStatus, type ApplicationDetail } from "@/lib/jobs/applications";
+import { readApplication, setStatus, writeInterviewDate, type ApplicationDetail, type ApplicationStatus } from "@/lib/jobs/applications";
 import { evaluationJobOf } from "@/lib/jobs/fit-evaluation";
 import { readCvText, readProfile } from "@/lib/profile/queries";
 import type { ProfileInput } from "@/lib/profile/schema";
 import { followUpLabel, nextFollowUp, rulesOf, type FollowUpRules } from "./rules";
-import { EMAIL_INFO, FOLLOW_UP_KINDS, outreachOf, type EmailDraft, type EmailKind, type OutreachDoc, type OutreachEdit } from "./types";
+import { CLOSING_STATUS, EMAIL_INFO, outreachOf, type EmailDraft, type EmailKind, type OutreachDoc, type OutreachEdit } from "./types";
 import { applicationBlock, blankDraft, emailFacts, onDay, signature, type OutreachPageData } from "./view";
 
 /*
@@ -146,7 +146,7 @@ export async function draftOutreachEmail(db: AnyDb, user: User, applicationId: s
   const page = pageOf(found, true);
 
   const draft = doc.drafts[kind] ?? blankDraft(kind, page);
-  const facts = emailFacts(page, draft);
+  const facts = emailFacts(page, draft, kind);
   const result = await writeEmail(
     {
       candidate: page.prompt.candidate,
@@ -179,7 +179,9 @@ export async function draftOutreachEmail(db: AnyDb, user: User, applicationId: s
 
 /**
  * "Mark as sent": log it, note it in the status history and count it as contact. Sending the
- * application email moves a saved job to applied.
+ * application email moves a saved job to applied. A closing message moves the application to
+ * withdrawn or offer declined, which ends its follow-ups, and cancelling an interview clears
+ * its date; the sent entry remembers both so "Not sent" can restore them.
  */
 export async function markOutreachSent(db: AnyDb, user: User, applicationId: string, kind: EmailKind): Promise<boolean> {
   const application = await readApplication(db, user.id, applicationId);
@@ -188,16 +190,22 @@ export async function markOutreachSent(db: AnyDb, user: User, applicationId: str
   const now = new Date();
   const to = doc.drafts[kind]?.to ?? "";
 
-  if (kind === "application" && application.status === "saved") await setStatus(db, user.id, applicationId, "applied");
-  const status = kind === "application" && application.status === "saved" ? "applied" : application.status;
+  const moved = kind === "application" && application.status === "saved" ? "applied" : CLOSING_STATUS[kind];
+  const status = moved ?? application.status;
+  const interviewAt = application.interviewAt?.toISOString() ?? null;
+  const clearsInterview = kind === "cancel_interview" && interviewAt !== null;
+  const undo = CLOSING_STATUS[kind] && (status !== application.status || clearsInterview) ? { status: application.status, interviewAt } : undefined;
 
-  await writeDoc(db, user.id, application, { ...doc, sent: [...doc.sent, { id: crypto.randomUUID(), kind, at: now.toISOString(), to }] });
+  if (moved) await setStatus(db, user.id, applicationId, moved);
+  if (clearsInterview) await writeInterviewDate(db, user.id, applicationId, null);
+
+  await writeDoc(db, user.id, application, { ...doc, sent: [...doc.sent, { id: crypto.randomUUID(), kind, at: now.toISOString(), to, ...(undo && { undo }) }] });
   await db.insert(schema.applicationEvent).values({ applicationId, status, note: `Sent: ${EMAIL_INFO[kind].label}`, occurredAt: now });
   await db
     .update(schema.application)
     .set({
       lastContactAt: now,
-      followUpCount: application.followUpCount + ((FOLLOW_UP_KINDS as readonly string[]).includes(kind) ? 1 : 0),
+      followUpCount: application.followUpCount + (EMAIL_INFO[kind].group === "follow_up" ? 1 : 0),
     })
     .where(eq(schema.application.id, applicationId));
   await syncNextFollowUp(db, user.id, applicationId);
@@ -212,7 +220,14 @@ export async function unmarkOutreachSent(db: AnyDb, user: User, applicationId: s
   const last = doc.sent.findLastIndex((s) => s.kind === kind);
   if (last < 0) return true;
   await writeDoc(db, user.id, application, { ...doc, sent: doc.sent.filter((_, i) => i !== last) });
-  await db.insert(schema.applicationEvent).values({ applicationId, status: application.status, note: `Not sent after all: ${EMAIL_INFO[kind].label}` });
+  const undo = doc.sent[last].undo;
+  if (undo) {
+    await setStatus(db, user.id, applicationId, undo.status as ApplicationStatus);
+    if (undo.interviewAt) await writeInterviewDate(db, user.id, applicationId, new Date(undo.interviewAt));
+  }
+  await db
+    .insert(schema.applicationEvent)
+    .values({ applicationId, status: (undo?.status as ApplicationStatus) ?? application.status, note: `Not sent after all: ${EMAIL_INFO[kind].label}` });
   await syncNextFollowUp(db, user.id, applicationId);
   return true;
 }

@@ -16,18 +16,24 @@ import { draftEmail, markEmailSent, saveOutreach } from "@/lib/client/mutations"
 import { wordCount } from "@/lib/letter/types";
 import { dueLabel, nextFollowUp } from "@/lib/outreach/rules";
 import {
+  CLOSING_STATUS,
+  defaultSubject,
   EMAIL_INFO,
   EMAIL_KINDS,
+  EMAIL_REASONS,
+  KIND_REASONS,
   LINKEDIN_LIMIT,
   MAILTO_LIMIT,
   mailtoHref,
   MAX_EMAIL_BODY,
+  MAX_REASON_DETAIL,
   MAX_TALKING_POINTS,
   type EmailDraft,
   type EmailKind,
+  type EmailReason,
   type OutreachEdit,
 } from "@/lib/outreach/types";
-import { blankDraft, emailPromptFor, onDay, type OutreachPageData } from "@/lib/outreach/view";
+import { blankDraft, emailPromptFor, onDay, reasonOf, type OutreachPageData } from "@/lib/outreach/view";
 import { cn } from "@/lib/utils";
 import { AttachmentsCard, ContactsCard, FollowUpCard, SentLog } from "./outreach-panels";
 
@@ -68,6 +74,7 @@ export function EmailsWorkspace({ data: initial }: { data: OutreachPageData }) {
   const [kind, setKind] = useState<EmailKind>(() => {
     const asked = params.get("draft");
     if (EMAIL_KINDS.includes(asked as EmailKind)) return asked as EmailKind;
+    if (initial.status === "rejected") return "reply_rejection";
     const next = nextOf(initial, initial.doc);
     return next && dueLabel(next.dueAt).due ? next.kind : "application";
   });
@@ -143,7 +150,23 @@ export function EmailsWorkspace({ data: initial }: { data: OutreachPageData }) {
     }
   }
 
+  /** Pick a reason. A subject the user hasn't changed follows it. */
+  function pickReason(next: EmailReason) {
+    const who = { role: data.role, company: data.company, name: data.candidate.name };
+    const untouched = draft.subject === defaultSubject(kind, who, reasonOf(kind, draft) ?? undefined);
+    updateDraft({ reason: next, ...(untouched && { subject: defaultSubject(kind, who, next) }) });
+  }
+
   async function markSent(sent: boolean) {
+    const closing = CLOSING_STATUS[kind];
+    if (sent && closing && data.status !== closing) {
+      const ok = await confirm({
+        title: closing === "withdrawn" ? "Mark this application as withdrawn?" : "Mark this offer as declined?",
+        body: `Send the message from your mail app first. This moves the application to ${closing === "withdrawn" ? "Withdrawn" : "Offer declined"} and stops its follow-ups${kind === "cancel_interview" ? ", and clears the interview date" : ""}. “Not sent” puts it back.`,
+        confirmLabel: "Mark as sent",
+      });
+      if (!ok) return;
+    }
     if (!(await save())) return;
     setMarking(true);
     const result = await markEmailSent(data.applicationId, kind, sent);
@@ -169,6 +192,8 @@ export function EmailsWorkspace({ data: initial }: { data: OutreachPageData }) {
 
   const info = EMAIL_INFO[kind];
   const isLinkedin = kind === "linkedin";
+  const reasons = KIND_REASONS[kind];
+  const reason = reasonOf(kind, draft);
   const chars = draft.body.trim().length;
   const words = wordCount(draft.body);
   const href = mailtoHref(draft);
@@ -222,6 +247,28 @@ export function EmailsWorkspace({ data: initial }: { data: OutreachPageData }) {
                 </Field>
               )}
             </div>
+
+            {reasons && reason && (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label={info.group === "close" && kind !== "reply_rejection" ? "Your reason" : "Why are you writing?"}>
+                  <Select
+                    aria-label="Why you're writing"
+                    value={reason}
+                    options={reasons.map((r) => ({ value: r, label: EMAIL_REASONS[r].label }))}
+                    onValueChange={(v) => pickReason(v as EmailReason)}
+                  />
+                </Field>
+                <Field label={reason === "other" || reason === "new_info" ? "What do you want to say?" : "Anything to add? (optional)"}>
+                  <Textarea
+                    value={draft.reasonDetail}
+                    maxLength={MAX_REASON_DETAIL}
+                    className="min-h-9"
+                    placeholder={reason === "private" ? "No reason will be given." : "Only what you write here is added, so nothing gets made up."}
+                    onChange={(e) => updateDraft({ reasonDetail: e.target.value })}
+                  />
+                </Field>
+              </div>
+            )}
 
             {ABOUT_THE_INTERVIEW.has(kind) && (
               <Field label="What came up in the interview (optional)">
@@ -333,7 +380,9 @@ export function EmailsWorkspace({ data: initial }: { data: OutreachPageData }) {
             )}
             <p className="text-xs text-subtle">
               RolePort never sends anything for you. {kind === "application" && data.status === "saved" ? "Marking it sent also moves this job to Applied. " : ""}
-              Marking it sent adds it to the history and plans the next follow-up.
+              {CLOSING_STATUS[kind]
+                ? `Marking it sent moves this application to ${CLOSING_STATUS[kind] === "withdrawn" ? "Withdrawn" : "Offer declined"} and stops its follow-ups.`
+                : "Marking it sent adds it to the history and plans the next follow-up."}
             </p>
           </CardContent>
         </Card>
@@ -356,7 +405,7 @@ export function EmailsWorkspace({ data: initial }: { data: OutreachPageData }) {
             ) : (
               <Button onClick={() => void write()} disabled={drafting !== null}>
                 {drafting ? <Loader2 className="animate-spin" /> : <Sparkles />}
-                {drafting ? "Writing…" : draft.body.trim() ? "Write a new draft" : `Write the ${info.short.toLowerCase()} ${isLinkedin ? "note" : "email"}`}
+                {drafting ? "Writing…" : draft.body.trim() ? "Write a new draft" : `Write this ${isLinkedin ? "note" : "email"}`}
               </Button>
             )}
             {drafting && <p className="text-xs text-muted">Local models can take a minute or two. Keep this page open.</p>}
@@ -415,14 +464,16 @@ export function EmailsWorkspace({ data: initial }: { data: OutreachPageData }) {
   );
 }
 
+const GROUP_LABEL = { apply: "Apply", follow_up: "Follow up", close: "Step away" };
+
 function KindPicker({ kind, onPick, sent, due }: { kind: EmailKind; onPick: (k: EmailKind) => void; sent: Set<EmailKind>; due: EmailKind | null }) {
-  const group = (g: "apply" | "follow_up") => EMAIL_KINDS.filter((k) => EMAIL_INFO[k].group === g);
+  const group = (g: keyof typeof GROUP_LABEL) => EMAIL_KINDS.filter((k) => EMAIL_INFO[k].group === g);
   return (
     <Card>
       <CardContent className="flex flex-col gap-3 p-3">
-        {(["apply", "follow_up"] as const).map((g) => (
+        {(["apply", "follow_up", "close"] as const).map((g) => (
           <div key={g} className="flex flex-wrap items-center gap-1.5">
-            <span className="w-full text-xs font-medium text-muted sm:w-20">{g === "apply" ? "Apply" : "Follow up"}</span>
+            <span className="w-full text-xs font-medium text-muted sm:w-20">{GROUP_LABEL[g]}</span>
             {group(g).map((k) => (
               <button
                 key={k}

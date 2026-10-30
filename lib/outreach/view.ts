@@ -1,5 +1,5 @@
 import type { FollowUpRules } from "./rules";
-import { defaultSubject, EMAIL_INFO, type EmailDraft, type EmailKind, type OutreachDoc } from "./types";
+import { defaultSubject, EMAIL_INFO, EMAIL_REASONS, KIND_REASONS, type EmailDraft, type EmailKind, type EmailReason, type OutreachDoc } from "./types";
 
 /*
  * The emails page's data and the prompt it shows, with no database or AI imports, so the
@@ -48,7 +48,16 @@ export type EmailFacts = {
   /** What came up in the interview, as the user wrote it. */
   talkingPoints: string;
   recipient: { name: string; role: string } | null;
+  /** Why this message is being sent, and what to do about it. */
+  reason: { label: string; ask: string; detail: string } | null;
 };
+
+/** The draft's reason, or the one its kind usually starts with. Null for kinds with one purpose. */
+export function reasonOf(kind: EmailKind, draft: { reason?: string } | undefined): EmailReason | null {
+  const options = KIND_REASONS[kind];
+  if (!options) return null;
+  return options.find((r) => r === draft?.reason) ?? options[0];
+}
 
 const STATUS_WORDS: Record<string, string> = {
   saved: "Saved, not applied yet",
@@ -67,10 +76,15 @@ const STATUS_WORDS: Record<string, string> = {
 export const onDay = (d: Date | string) => new Date(d).toLocaleDateString("en", { weekday: "short", month: "long", day: "numeric", year: "numeric" });
 const dayOf = (iso: string) => onDay(`${iso}T12:00:00`);
 
-/** The facts block for one message, from the page data and the draft's recipient. */
-export function emailFacts(data: Pick<OutreachPageData, "role" | "company" | "status" | "factDates" | "doc" | "notes">, draft: Pick<EmailDraft, "to" | "toName"> | undefined): EmailFacts {
+/** The facts block for one message, from the page data and the draft's recipient and reason. */
+export function emailFacts(
+  data: Pick<OutreachPageData, "role" | "company" | "status" | "factDates" | "doc" | "notes">,
+  draft: (Pick<EmailDraft, "to" | "toName"> & Partial<Pick<EmailDraft, "reason" | "reasonDetail">>) | undefined,
+  kind?: EmailKind,
+): EmailFacts {
   const contact = draft && data.doc.contacts.find((c) => (draft.to && c.email === draft.to) || (draft.toName && c.name === draft.toName));
   const name = draft?.toName || contact?.name || "";
+  const reason = kind ? reasonOf(kind, draft) : null;
   return {
     role: data.role,
     company: data.company,
@@ -83,6 +97,7 @@ export function emailFacts(data: Pick<OutreachPageData, "role" | "company" | "st
     notes: data.notes,
     talkingPoints: data.doc.talkingPoints,
     recipient: name || contact ? { name, role: contact?.role ?? "" } : null,
+    reason: reason && { ...EMAIL_REASONS[reason], detail: draft?.reasonDetail ?? "" },
   };
 }
 
@@ -100,6 +115,8 @@ export function applicationBlock(f: EmailFacts): string {
     f.offerDeadline && `Offer deadline: ${f.offerDeadline}`,
     f.sent.length ? `Already sent:\n${f.sent.map((s) => `- ${s.label}, ${s.on}`).join("\n")}` : "Already sent: nothing yet",
     f.recipient && `Writing to: ${f.recipient.name || "(name unknown)"}${f.recipient.role ? `, ${f.recipient.role}` : ""}`,
+    f.reason && `Why this message: ${f.reason.label}. ${f.reason.ask}`,
+    f.reason?.detail.trim() && `Details from the candidate:\n${scrub(f.reason.detail.trim())}`,
     f.talkingPoints.trim() && `What came up (from the candidate):\n${scrub(f.talkingPoints.trim())}`,
     f.notes.trim() && `Candidate's notes on this application:\n${scrub(f.notes.trim()).slice(0, 2000)}`,
   ];
@@ -133,7 +150,7 @@ export function buildEmailPrompt({ candidate, posting, facts, kind }: EmailPromp
 
 /** The user message a run of this kind would send now. */
 export function emailPromptFor(data: OutreachPageData, kind: EmailKind, draft: EmailDraft | undefined): string {
-  return buildEmailPrompt({ candidate: data.prompt.candidate, posting: data.prompt.posting, facts: emailFacts(data, draft), kind });
+  return buildEmailPrompt({ candidate: data.prompt.candidate, posting: data.prompt.posting, facts: emailFacts(data, draft, kind), kind });
 }
 
 /** The candidate's sign-off: name, then phone and one link if they have them. Never on a LinkedIn note. */
@@ -148,8 +165,10 @@ export function blankDraft(kind: EmailKind, data: Pick<OutreachPageData, "role" 
   return {
     to: recent?.to ?? first?.email ?? "",
     toName: recent?.toName ?? first?.name ?? "",
-    subject: defaultSubject(kind, { role: data.role, company: data.company, name: data.candidate.name }),
+    subject: defaultSubject(kind, { role: data.role, company: data.company, name: data.candidate.name }, reasonOf(kind, undefined) ?? undefined),
     body: "",
+    reason: "",
+    reasonDetail: "",
     review: null,
   };
 }
