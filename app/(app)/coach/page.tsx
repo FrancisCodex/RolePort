@@ -2,6 +2,7 @@ import { Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
+import { LearnMore } from "@/components/app/learn-more";
 import { PageHeader } from "@/components/app/page-header";
 import { buttonVariants } from "@/components/ui/button";
 import { getMyInterviewProgress, getMyInterviews } from "@/lib/interview/data";
@@ -17,7 +18,12 @@ export default function CoachPage() {
     <>
       <PageHeader
         title="Interview Coach"
-        description="Mock interviews for the jobs you applied to, or any role. One question at a time, then a graded report."
+        description={
+          <>
+            Mock interviews for the jobs you applied to, or any role. One question at a time, then a graded report.{" "}
+            <LearnMore doc="guides/interview-coach" />
+          </>
+        }
         action={
           <Link href="/coach/new" className={buttonVariants()}>
             <Plus /> New mock interview

@@ -1,4 +1,5 @@
 import { Database, Lock } from "lucide-react";
+import { LearnMore } from "@/components/app/learn-more";
 import { VoicePanel } from "@/components/speech/voice-settings";
 import { CompanyManager } from "@/components/companies/company-manager";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -66,7 +67,8 @@ export function SettingsView({
         <CardHeader>
           <CardTitle>AI provider</CardTitle>
           <CardDescription>
-            Used to read your CV, evaluate fit and tailor applications. Use your own API key, or run a model locally with Ollama for free.
+            Used to read your CV, evaluate fit and tailor applications. Use your own API key, or run a model locally with Ollama for free.{" "}
+            <LearnMore doc="ai/providers" />
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -79,7 +81,7 @@ export function SettingsView({
           <CardTitle>CV reading prompt</CardTitle>
           <CardDescription>
             Exactly what RolePort asks the AI when it reads your CV into your profile. Change what it picks up, ask for a section or a summary
-            of its own, or go back to the default at any time.
+            of its own, or go back to the default at any time. <LearnMore doc="ai/prompts" />
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -92,7 +94,7 @@ export function SettingsView({
           <CardTitle>CV tailoring prompt</CardTitle>
           <CardDescription>
             Exactly what RolePort asks the AI when it tailors your CV to a job. Read it, change it to suit how you like your CV written, or
-            go back to the default at any time.
+            go back to the default at any time. <LearnMore doc="guides/tailored-cv" />
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -105,7 +107,7 @@ export function SettingsView({
           <CardTitle>Cover letter prompt</CardTitle>
           <CardDescription>
             Exactly what RolePort asks the AI when it writes a cover letter. Change the tone, length or structure to suit you, or go back to
-            the default at any time.
+            the default at any time. <LearnMore doc="guides/cover-letters" />
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -118,7 +120,7 @@ export function SettingsView({
           <CardTitle>Application questions prompt</CardTitle>
           <CardDescription>
             Exactly what RolePort asks the AI when it answers a question from an application form. Change the tone, length or approach to
-            suit you, or go back to the default at any time.
+            suit you, or go back to the default at any time. <LearnMore doc="guides/application-questions" />
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -131,7 +133,7 @@ export function SettingsView({
           <CardTitle>Email prompt</CardTitle>
           <CardDescription>
             Exactly what RolePort asks the AI when it writes an application email, a referral request, a note to a hiring manager or a
-            follow-up. Change the tone or length of each kind, or go back to the default at any time.
+            follow-up. Change the tone or length of each kind, or go back to the default at any time. <LearnMore doc="guides/emails" />
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -144,7 +146,7 @@ export function SettingsView({
           <CardTitle>Follow-up reminders</CardTitle>
           <CardDescription>
             When a follow-up comes due on Home and on each application. Switch off any you don&apos;t want. RolePort only reminds you and
-            drafts the email; it never sends anything.
+            drafts the email; it never sends anything. <LearnMore doc="guides/emails" />
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -157,7 +159,7 @@ export function SettingsView({
           <CardTitle>Mock interviewer prompt</CardTitle>
           <CardDescription>
             What the Interview Coach&apos;s interviewer is told after each of your answers: when to press with a follow-up and when to move on.
-            Change how it probes, or go back to the default at any time.
+            Change how it probes, or go back to the default at any time. <LearnMore doc="guides/interview-coach" />
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -171,7 +173,7 @@ export function SettingsView({
           <CardDescription>
             freehire, the remote-job feeds (Jobicy, Remotive, Himalayas, Remote OK) and official boards like Platsbanken (Sweden) work
             without a key and are searched whenever they cover your search. Add JSearch to include Google for Jobs listings from
-            JobStreet, Indeed, LinkedIn and Kalibrr.
+            JobStreet, Indeed, LinkedIn and Kalibrr. <LearnMore doc="job-sources" />
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
@@ -186,7 +188,7 @@ export function SettingsView({
           <CardTitle>Companies you follow</CardTitle>
           <CardDescription>
             Know a company you&apos;d love to work for? Follow it, and every job search also checks that company&apos;s own list of openings,
-            in any country. You can also do this from the Jobs page.
+            in any country. You can also do this from the Jobs page. <LearnMore doc="guides/companies" />
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -199,7 +201,7 @@ export function SettingsView({
           <CardTitle>Voice</CardTitle>
           <CardDescription>
             For answering mock interviews out loud: your microphone, how speech becomes text (built-in or the optional Whisper download), and the
-            interviewer&apos;s voice. The same settings open from Voice settings in any interview.
+            interviewer&apos;s voice. The same settings open from Voice settings in any interview. <LearnMore doc="guides/voice" />
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -210,12 +212,11 @@ export function SettingsView({
       <Card id="data">
         <CardHeader>
           <CardTitle>Your data</CardTitle>
-          {aiInBrowser && (
-            <CardDescription>
-              Your data lives in this browser. To move to another browser or computer, download a backup here and import it there. API keys
-              aren&apos;t included, so enter them again; a downloaded Whisper model isn&apos;t either.
-            </CardDescription>
-          )}
+          <CardDescription>
+            {aiInBrowser &&
+              "Your data lives in this browser. To move to another browser or computer, download a backup here and import it there. API keys aren't included, so enter them again; a downloaded Whisper model isn't either. "}
+            <LearnMore doc="privacy-and-data" />
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-3 text-[13px] text-muted">
           <p className="flex gap-2.5">

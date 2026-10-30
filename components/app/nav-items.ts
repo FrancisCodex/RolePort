@@ -1,4 +1,4 @@
-import { Briefcase, ClipboardCheck, Home, KanbanSquare, MessagesSquare, Settings, UserRound } from "lucide-react";
+import { BookOpen, Briefcase, ClipboardCheck, Home, KanbanSquare, MessagesSquare, Settings, UserRound } from "lucide-react";
 
 /** `tab: false` keeps an item out of the mobile tab bar, which has room for five. */
 export const navItems = [
@@ -12,3 +12,5 @@ export const navItems = [
 
 /** Sidebar only; on mobile Settings lives in the header so the tab bar keeps five items. */
 export const settingsItem = { href: "/settings", label: "Settings", icon: Settings } as const;
+
+export const docsItem = { href: "/docs", label: "Docs", icon: BookOpen } as const;

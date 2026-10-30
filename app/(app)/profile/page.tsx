@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { LearnMore } from "@/components/app/learn-more";
 import { PageHeader } from "@/components/app/page-header";
 import { getMySettingsRow, isAiConfigured } from "@/lib/ai/config";
 import { isLite } from "@/lib/mode";
@@ -12,7 +13,14 @@ export const metadata: Metadata = { title: "Profile" };
 export default function ProfilePage() {
   return (
     <>
-      <PageHeader title="Profile" description="The better we know you, the better your matches." />
+      <PageHeader
+        title="Profile"
+        description={
+          <>
+            The better we know you, the better your matches. <LearnMore doc="guides/profile" />
+          </>
+        }
+      />
       {isLite ? (
         <LiteProfile />
       ) : (

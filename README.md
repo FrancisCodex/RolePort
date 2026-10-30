@@ -4,7 +4,13 @@ A free, open-source job search app you run yourself. Find jobs in the Philippine
 
 Bring your own AI: Claude, OpenAI, OpenRouter, Groq, or a free local model through [Ollama](https://ollama.com).
 Don't want to install anything? [RolePort Lite](#roleport-lite-in-your-browser) runs the same app in your browser.
-Inspired by [ai-job-search](https://github.com/MadsLorentzen/ai-job-search). See [docs/PLAN.md](docs/PLAN.md) for the roadmap.
+See [docs/PLAN.md](docs/PLAN.md) for the roadmap.
+
+The guide to every feature is in the app at `/docs`, and its pages are in [content/docs](content/docs).
+
+## Inspiration
+
+RolePort was inspired by [ai-job-search](https://github.com/MadsLorentzen/ai-job-search), [career-ops](https://github.com/career-ops-hq/career-ops) and [JobSpy](https://github.com/speedyapply/JobSpy). They showed how much AI and open job data can do for a job search, but they're built for people comfortable with a terminal. RolePort sets out to do the same kind of work in an app with a full user interface, so people who aren't technical can use it too.
 
 ## Quick start
 
@@ -250,6 +256,7 @@ Job sources for other countries, provider improvements and UI polish are all wel
 RolePort builds on the work of others:
 
 - [ai-job-search](https://github.com/MadsLorentzen/ai-job-search) by Mads Lorentzen (MIT): the workflow, job keys and the fit evaluation framework.
+- [career-ops](https://github.com/career-ops-hq/career-ops) (MIT): an inspiration for RolePort, and a benchmark for its job sources.
 - [JobSpy](https://github.com/speedyapply/JobSpy) by Cullen Watson and contributors (MIT): the LinkedIn, Indeed, Glassdoor, Bayt, Naukri, BDJobs, ZipRecruiter and HelloWork scrapers behind the JobSpy service.
 - [Transformers.js](https://github.com/huggingface/transformers.js) by Hugging Face (Apache-2.0), [ONNX Runtime](https://github.com/microsoft/onnxruntime) by Microsoft (MIT) and OpenAI's [Whisper](https://github.com/openai/whisper) (MIT): the optional on-device speech-to-text.
 - Job data from [freehire](https://freehire.me), [JSearch](https://rapidapi.com/letscrunch/api/jsearch), [Jobicy](https://jobicy.com), [Remotive](https://remotive.com), [Remote OK](https://remoteok.com), [Himalayas](https://himalayas.app), [Arbeitnow](https://www.arbeitnow.com), and [Platsbanken](https://arbetsformedlingen.se/platsbanken) through [JobTech](https://jobtechdev.se)'s open data, plus the companies' own careers pages. Every job links back to its original posting.

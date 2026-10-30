@@ -4,7 +4,7 @@ import { BackupReminder } from "@/components/app/backup-reminder";
 import { SidebarCollapseButton, SidebarExpandButton } from "@/components/app/sidebar-toggle";
 import { OpenBrowserDb } from "@/components/app/open-browser-db";
 import { LiteUserChip, UserChip, UserChipSkeleton } from "@/components/app/user-chip";
-import { SettingsLink } from "@/components/app/settings-link";
+import { DocsLink, SettingsLink } from "@/components/app/settings-link";
 import { Logo } from "@/components/brand/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { isLite } from "@/lib/mode";
@@ -42,6 +42,7 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
         <header className="sticky top-0 z-30 flex h-12 items-center justify-between border-b border-border bg-bg/85 pr-2 pl-4 backdrop-blur-xl lg:hidden">
           <Logo href="/home" />
           <div className="flex items-center">
+            <DocsLink />
             <SettingsLink />
             <ThemeToggle />
           </div>

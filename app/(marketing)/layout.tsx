@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Logo } from "@/components/brand/logo";
 import { SiteHeader } from "@/components/marketing/site-header";
-import { REPO_URL } from "@/components/marketing/setup-guide";
+import { REPO_URL } from "@/lib/repo";
 
 export default function MarketingLayout({ children }: LayoutProps<"/">) {
   return (
@@ -25,6 +25,10 @@ export default function MarketingLayout({ children }: LayoutProps<"/">) {
             >
               Francis
             </a>{" "}
+            ·{" "}
+            <Link href="/docs" className="underline-offset-4 hover:text-fg hover:underline">
+              Docs
+            </Link>{" "}
             ·{" "}
             <Link href="/privacy" className="underline-offset-4 hover:text-fg hover:underline">
               Privacy

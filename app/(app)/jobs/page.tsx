@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { LearnMore } from "@/components/app/learn-more";
 import { PageHeader } from "@/components/app/page-header";
 import { isAiConfigured } from "@/lib/ai/config";
 import { getMyFollowedCompanies } from "@/lib/companies/data";
@@ -18,7 +19,14 @@ export const metadata: Metadata = { title: "Jobs" };
 export default function JobsPage(props: PageProps<"/jobs">) {
   return (
     <>
-      <PageHeader title="Jobs" description="Roles at home or abroad, ranked by how well they fit you." />
+      <PageHeader
+        title="Jobs"
+        description={
+          <>
+            Roles at home or abroad, ranked by how well they fit you. <LearnMore doc="guides/jobs" />
+          </>
+        }
+      />
       <Suspense fallback={<ResultsSkeleton withForm />}>
         {/* Lite reads the URL in the browser (useSearchParams), so the page shell still prerenders. */}
         {isLite ? <LiteJobs /> : <JobSearch searchParams={props.searchParams} />}

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { navItems, settingsItem } from "./nav-items";
+import { docsItem, navItems, settingsItem } from "./nav-items";
 
 type IsActive = (href: string) => boolean;
 const none: IsActive = () => false;
@@ -33,6 +33,7 @@ function SidebarLinks({ isActive }: { isActive: IsActive }) {
         ))}
       </div>
       <div className="mt-auto flex flex-col gap-px pt-4">
+        <SidebarLink {...docsItem} active={false} />
         <SidebarLink {...settingsItem} active={isActive(settingsItem.href)} />
       </div>
     </nav>
