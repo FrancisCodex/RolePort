@@ -6,6 +6,7 @@ import { getAiConfig, getMySettingsRow } from "@/lib/ai/config";
 import { getMyFollowedCompanies } from "@/lib/companies/data";
 import { jobSpyUrl } from "@/lib/env";
 import { isLite } from "@/lib/mode";
+import { rulesOf } from "@/lib/outreach/rules";
 import { getMyProfile } from "@/lib/profile/data";
 import { maskSecret } from "@/lib/secret-hint";
 import { decryptSecret } from "@/lib/secrets";
@@ -71,6 +72,8 @@ async function SettingsContent() {
       coverLetterPrompt={row?.coverLetterPrompt ?? null}
       answerPrompt={row?.answerPrompt ?? null}
       interviewPrompt={row?.interviewPrompt ?? null}
+      emailPrompt={row?.emailPrompt ?? null}
+      followUpRules={rulesOf(row?.followUpRules)}
       dataNote={
         process.env.DATABASE_URL
           ? "Your profile, jobs and applications are stored in the Postgres database set in DATABASE_URL."

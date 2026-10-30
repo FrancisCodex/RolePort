@@ -15,6 +15,9 @@ import { readLetterPage, type LetterPageData } from "@/lib/letter/letter";
 import { readInterview, readInterviewList, readInterviewProgress, readInterviewSetup } from "@/lib/interview/sessions";
 import type { InterviewListItem, InterviewPageData, InterviewProgress, InterviewSetupData } from "@/lib/interview/types";
 import { readQuestionsPage } from "@/lib/questions/questions";
+import { readOutreachPage, readOutreachSummary } from "@/lib/outreach/outreach";
+import type { OutreachPageData } from "@/lib/outreach/view";
+import { rulesOf, type FollowUpRules } from "@/lib/outreach/rules";
 import type { QuestionsData } from "@/lib/questions/types";
 import { getBrowserDb, type BrowserDb } from "@/lib/db/browser";
 import { LOCAL_USER } from "@/lib/db/local-user";
@@ -113,6 +116,8 @@ export async function loadSettings(): Promise<{
   coverLetterPrompt: string | null;
   answerPrompt: string | null;
   interviewPrompt: string | null;
+  emailPrompt: string | null;
+  followUpRules: FollowUpRules;
 }> {
   const db = await getBrowserDb();
   const [row, companies, { profile }] = await Promise.all([
@@ -130,6 +135,8 @@ export async function loadSettings(): Promise<{
     coverLetterPrompt: row?.coverLetterPrompt ?? null,
     answerPrompt: row?.answerPrompt ?? null,
     interviewPrompt: row?.interviewPrompt ?? null,
+    emailPrompt: row?.emailPrompt ?? null,
+    followUpRules: rulesOf(row?.followUpRules),
   };
 }
 
@@ -162,8 +169,13 @@ export async function loadApplication(id: string): Promise<ApplicationData | nul
   const [{ profile }, ai] = await Promise.all([readProfile(db, await me(db)), aiEnabled(db)]);
   const job = application.jobId ? await readJob(db, LOCAL_USER.id, application.jobId, profile) : null;
   const user = await me(db);
-  const [cv, letter, questions] = await Promise.all([readCvPage(db, user, id, ai), readLetterPage(db, user, id, ai), readQuestionsPage(db, user, id, ai)]);
-  return toApplicationData(application, job, ai, job && sourceCredit(job.source), { cv, letter, questions });
+  const [cv, letter, questions, outreach] = await Promise.all([
+    readCvPage(db, user, id, ai),
+    readLetterPage(db, user, id, ai),
+    readQuestionsPage(db, user, id, ai),
+    readOutreachSummary(db, user.id, id),
+  ]);
+  return toApplicationData(application, job, ai, job && sourceCredit(job.source), { cv, letter, questions, outreach });
 }
 
 export async function loadCvPage(applicationId: string): Promise<CvPageData | null> {
@@ -191,6 +203,11 @@ export async function loadInterview(id: string): Promise<InterviewPageData | nul
 export async function loadInterviewSetup(applicationId: string | null): Promise<InterviewSetupData> {
   const db = await getBrowserDb();
   return readInterviewSetup(db, await me(db), applicationId, await aiEnabled(db));
+}
+
+export async function loadOutreachPage(applicationId: string): Promise<OutreachPageData | null> {
+  const db = await getBrowserDb();
+  return readOutreachPage(db, await me(db), applicationId, await aiEnabled(db));
 }
 
 export async function loadQuestionsPage(applicationId: string): Promise<QuestionsData | null> {

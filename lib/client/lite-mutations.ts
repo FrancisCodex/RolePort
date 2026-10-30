@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { MAX_NOTES } from "@/app/(app)/applied/view-data";
 import type { DraftLetterResult } from "@/app/(app)/applied/[id]/cover-letter/actions";
+import type { DraftEmailResult } from "@/app/(app)/applied/[id]/emails/actions";
 import type { AnswerResult } from "@/app/(app)/applied/[id]/questions/actions";
 import type { TailorResult } from "@/app/(app)/applied/[id]/cv/actions";
 import type { InterviewResult } from "@/app/(app)/coach/actions";
@@ -23,6 +24,11 @@ import { MAX_CV_PROMPT } from "@/lib/ai/cv-prompt";
 import { MAX_ANSWER_PROMPT } from "@/lib/ai/answer-prompt";
 import { MAX_INTERVIEWER_PROMPT } from "@/lib/ai/interview-prompt";
 import { MAX_LETTER_PROMPT } from "@/lib/ai/letter-prompt";
+import { MAX_EMAIL_PROMPT } from "@/lib/ai/email-prompt";
+import { draftOutreachEmail, markOutreachSent, saveOutreachEdit, setOutreachPaused, unmarkOutreachSent } from "@/lib/outreach/outreach";
+import { followUpRulesSchema, type FollowUpRules } from "@/lib/outreach/rules";
+import { EMAIL_KINDS, outreachEditSchema, type EmailKind, type OutreachEdit } from "@/lib/outreach/types";
+import type { OutreachPageData } from "@/lib/outreach/view";
 import { exportBackup } from "@/lib/backup/export";
 import { importErrorMessage, readBackupForm } from "@/lib/backup/form";
 import { importBackup, type ImportSummary } from "@/lib/backup/import";
@@ -71,7 +77,7 @@ import type { Result } from "@/lib/result";
 import { readSettings, writeSettings } from "@/lib/settings/queries";
 import { invalidate } from "./bus";
 import { readKey, storeKey } from "./lite-keys";
-import { me } from "./lite-queries";
+import { loadOutreachPage, me } from "./lite-queries";
 import { requestPersistence } from "./storage";
 
 /*
@@ -316,6 +322,78 @@ export async function saveLetterPrompt(prompt: string | null): Promise<Result> {
     return { ok: false, error: `Keep the prompt under ${MAX_LETTER_PROMPT} characters.` };
   }
   await writeSettings(await getBrowserDb(), LOCAL_USER.id, { coverLetterPrompt: prompt?.trim() || null });
+  await invalidate("user_settings");
+  return { ok: true, data: undefined };
+}
+
+/* Emails and follow-ups ----------------------------------------------------- */
+
+export async function saveOutreach(applicationId: string, edit: OutreachEdit): Promise<Result> {
+  const parsed = outreachEditSchema.safeParse(edit);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Some fields are too long." };
+  const db = await getBrowserDb();
+  if (!(await saveOutreachEdit(db, await me(db), applicationId, parsed.data))) return { ok: false, error: "Application not found." };
+  void invalidate("document");
+  return { ok: true, data: undefined };
+}
+
+export async function draftEmail(applicationId: string, kind: EmailKind): Promise<DraftEmailResult> {
+  if (!EMAIL_KINDS.includes(kind)) return { ok: false, error: "Unknown kind of email." };
+  const db = await getBrowserDb();
+  const config = await savedAiConfig(db);
+  if (!config) return { ok: false, error: new AiUnavailableError().message, needsSetup: true };
+  try {
+    const data = await draftOutreachEmail(db, await me(db), applicationId, kind, config);
+    void invalidate("document");
+    return { ok: true, data };
+  } catch (error) {
+    console.error("[email] drafting failed", error);
+    const baseUrl = config.provider === "openai_compatible" ? config.baseUrl : null;
+    if (isUnreachable(error) && baseUrl && isLocalUrl(baseUrl)) return { ok: false, error: await explainLocalFailure(baseUrl) };
+    return { ok: false, error: aiErrorMessage(error, "Writing the email failed. Please try again.") };
+  }
+}
+
+/** After "Mark as sent" or "Got a reply": the page as it is now. */
+async function outreachPageNow(applicationId: string): Promise<Result<OutreachPageData>> {
+  const page = await loadOutreachPage(applicationId);
+  if (!page) return { ok: false, error: "Application not found." };
+  void invalidate("document", "application");
+  return { ok: true, data: page };
+}
+
+export async function markEmailSent(applicationId: string, kind: EmailKind): Promise<Result<OutreachPageData>> {
+  if (!EMAIL_KINDS.includes(kind)) return { ok: false, error: "Unknown kind of email." };
+  const db = await getBrowserDb();
+  if (!(await markOutreachSent(db, await me(db), applicationId, kind))) return { ok: false, error: "Application not found." };
+  return outreachPageNow(applicationId);
+}
+
+export async function unmarkEmailSent(applicationId: string, sentId: string): Promise<Result<OutreachPageData>> {
+  const db = await getBrowserDb();
+  if (!(await unmarkOutreachSent(db, await me(db), applicationId, sentId))) return { ok: false, error: "Application not found." };
+  return outreachPageNow(applicationId);
+}
+
+export async function setFollowUpsPaused(applicationId: string, paused: boolean): Promise<Result<OutreachPageData>> {
+  const db = await getBrowserDb();
+  if (!(await setOutreachPaused(db, await me(db), applicationId, paused === true))) return { ok: false, error: "Application not found." };
+  return outreachPageNow(applicationId);
+}
+
+export async function saveEmailPrompt(prompt: string | null): Promise<Result> {
+  if (prompt != null && (typeof prompt !== "string" || prompt.length > MAX_EMAIL_PROMPT)) {
+    return { ok: false, error: `Keep the prompt under ${MAX_EMAIL_PROMPT} characters.` };
+  }
+  await writeSettings(await getBrowserDb(), LOCAL_USER.id, { emailPrompt: prompt?.trim() || null });
+  await invalidate("user_settings");
+  return { ok: true, data: undefined };
+}
+
+export async function saveFollowUpRules(rules: FollowUpRules | null): Promise<Result> {
+  const parsed = rules === null ? null : followUpRulesSchema.safeParse(rules);
+  if (parsed && !parsed.success) return { ok: false, error: "Use whole numbers in the ranges shown." };
+  await writeSettings(await getBrowserDb(), LOCAL_USER.id, { followUpRules: parsed ? parsed.data : null });
   await invalidate("user_settings");
   return { ok: true, data: undefined };
 }

@@ -7,7 +7,9 @@ import type { FollowedCompanyView } from "@/lib/companies/queries";
 import { BackupControls } from "./backup-controls";
 import { JobSourceForm, JobSpyToggle } from "./job-source-form";
 import { LocalJobSpy } from "./local-jobspy";
-import { AnswerPromptForm, CvPromptForm, InterviewerPromptForm, LetterPromptForm } from "./prompt-form";
+import type { FollowUpRules } from "@/lib/outreach/rules";
+import { FollowUpRulesForm } from "./follow-up-rules-form";
+import { AnswerPromptForm, CvPromptForm, EmailPromptForm, InterviewerPromptForm, LetterPromptForm } from "./prompt-form";
 
 export type SettingsData = {
   ai: AiSettingsView;
@@ -28,6 +30,10 @@ export type SettingsData = {
   answerPrompt: string | null;
   /** The user's own mock interviewer instructions, or null for the default. */
   interviewPrompt: string | null;
+  /** The user's own email instructions, or null for the default. */
+  emailPrompt: string | null;
+  /** When follow-ups come due. */
+  followUpRules: FollowUpRules;
   /** Where the user's data and keys are kept, for the "Your data" card. */
   dataNote: string;
   keyNote: string;
@@ -46,6 +52,8 @@ export function SettingsView({
   coverLetterPrompt,
   answerPrompt,
   interviewPrompt,
+  emailPrompt,
+  followUpRules,
   dataNote,
   keyNote,
 }: SettingsData) {
@@ -99,6 +107,32 @@ export function SettingsView({
         </CardHeader>
         <CardContent>
           <AnswerPromptForm saved={answerPrompt} />
+        </CardContent>
+      </Card>
+
+      <Card id="email-prompt">
+        <CardHeader>
+          <CardTitle>Email prompt</CardTitle>
+          <CardDescription>
+            Exactly what RolePort asks the AI when it writes an application email, a referral request, a note to a hiring manager or a
+            follow-up. Change the tone or length of each kind, or go back to the default at any time.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <EmailPromptForm saved={emailPrompt} />
+        </CardContent>
+      </Card>
+
+      <Card id="follow-ups">
+        <CardHeader>
+          <CardTitle>Follow-up reminders</CardTitle>
+          <CardDescription>
+            When a follow-up comes due on Home and on each application. Switch off any you don&apos;t want. RolePort only reminds you and
+            drafts the email; it never sends anything.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <FollowUpRulesForm saved={followUpRules} />
         </CardContent>
       </Card>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChevronRight, Copy, Download, FileText, Loader2, Mail, MessageSquareText, Sparkles, TriangleAlert, Wand2 } from "lucide-react";
+import { BellRing, Check, ChevronRight, Copy, Download, FileText, Loader2, Mail, MessageSquareText, Send, Sparkles, TriangleAlert, Wand2 } from "lucide-react";
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { cvFileName, renderCvPdf } from "@/lib/cv/pdf";
 import type { CvContent, CvTailoring } from "@/lib/cv/types";
 import { letterFileName, renderLetterPdf } from "@/lib/letter/pdf";
 import { letterText, wordCount, type LetterContent, type LetterReview } from "@/lib/letter/types";
+import type { OutreachSummary } from "@/lib/outreach/outreach";
 import type { QuestionItem, QuestionsData } from "@/lib/questions/types";
 import { cn } from "@/lib/utils";
 import type { ApplicationKit as Kit } from "../view-data";
@@ -206,6 +207,7 @@ export function ApplicationKit({ applicationId, company, kit }: { applicationId:
           </KitRow>
 
           {kit.questions && <QuestionsRow applicationId={applicationId} data={kit.questions} />}
+          {kit.outreach && <OutreachRow applicationId={applicationId} data={kit.outreach} />}
         </ul>
       )}
 
@@ -362,6 +364,46 @@ function QuestionsRow({ applicationId, data }: { applicationId: string; data: Qu
             </Link>
           </div>
         )}
+      </div>
+    </li>
+  );
+}
+
+/** The application email, its variants and the follow-ups: what was sent and what's next. */
+function OutreachRow({ applicationId, data }: { applicationId: string; data: OutreachSummary }) {
+  const href = `/applied/${applicationId}/emails`;
+  return (
+    <li className="flex gap-3 px-5 py-3.5">
+      <RowIcon icon={Send} done={data.sent > 0} />
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+          <p className="text-[13px] font-medium">Emails and follow-ups</p>
+          <Link href={href} className="inline-flex items-center gap-0.5 text-xs font-medium text-muted hover:text-fg">
+            Open <ChevronRight className="size-3.5" />
+          </Link>
+        </div>
+        <p className="-mt-1.5 text-xs text-muted">
+          {data.lastSent
+            ? `${data.sent} sent · last: ${data.lastSent.label}, ${data.lastSent.on}`
+            : "Apply by email, ask for a referral or write to the hiring manager. RolePort drafts it; you send it."}
+        </p>
+        {data.paused ? (
+          <p className="text-xs text-muted">Follow-ups paused: they replied.</p>
+        ) : (
+          data.next && (
+            <Link
+              href={`${href}?draft=${data.next.kind}`}
+              className={cn("flex items-center gap-1.5 text-xs font-medium hover:underline", data.next.due ? "text-warning" : "text-muted")}
+            >
+              <BellRing className="size-3.5" /> {data.next.label}: {data.next.when.toLowerCase()}
+            </Link>
+          )
+        )}
+        <div className="flex flex-wrap gap-1.5">
+          <Link href={data.next?.due ? `${href}?draft=${data.next.kind}` : href} className={buttonVariants({ size: "sm", variant: data.next?.due || !data.sent ? "primary" : "secondary" })}>
+            {data.next?.due ? "Write the follow-up" : data.sent ? "Open emails" : "Write an email"}
+          </Link>
+        </div>
       </div>
     </li>
   );

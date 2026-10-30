@@ -3,6 +3,7 @@ import type { CvPageData } from "@/lib/cv/tailor";
 import type { ApplicationDetail, ApplicationStatus, PipelineItem } from "@/lib/jobs/applications";
 import type { LetterPageData } from "@/lib/letter/letter";
 import type { QuestionsData } from "@/lib/questions/types";
+import type { OutreachSummary } from "@/lib/outreach/outreach";
 import { extrasOf, type JobListItem } from "@/lib/jobs/queries";
 import { timeAgo } from "@/lib/jobs/format";
 
@@ -40,7 +41,8 @@ export type ApplicationData = {
   appliedOn: string | null;
   /** When the interview is scheduled (ISO), or null. */
   interviewAt: string | null;
-  events: { id: string; status: ApplicationStatus; on: string }[];
+  /** Status changes, and emails marked sent or replies (`note`). */
+  events: { id: string; status: ApplicationStatus; note: string | null; on: string }[];
   /** Null when the stored posting is gone; the application keeps its role and company. */
   job: JobListItem | null;
   aiEnabled: boolean;
@@ -49,7 +51,7 @@ export type ApplicationData = {
   kit: ApplicationKit;
 };
 
-export type ApplicationKit = { cv: CvPageData | null; letter: LetterPageData | null; questions: QuestionsData | null };
+export type ApplicationKit = { cv: CvPageData | null; letter: LetterPageData | null; questions: QuestionsData | null; outreach: OutreachSummary | null };
 
 export function formatDay(date: Date): string {
   return date.toLocaleDateString("en", { month: "short", day: "numeric", year: "numeric" });
@@ -88,7 +90,7 @@ export function toApplicationData(
     appliedOn: application.appliedAt ? formatDay(application.appliedAt) : null,
     interviewAt: application.interviewAt?.toISOString() ?? null,
     // Newest first, like an activity feed.
-    events: application.events.map((e) => ({ id: e.id, status: e.status, on: formatDay(e.occurredAt) })).reverse(),
+    events: application.events.map((e) => ({ id: e.id, status: e.status, note: e.note, on: formatDay(e.occurredAt) })).reverse(),
     job,
     aiEnabled,
     source,

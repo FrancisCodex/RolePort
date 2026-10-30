@@ -419,6 +419,10 @@ export const userSettings = pgTable("user_settings", {
   answerPrompt: text("answer_prompt"),
   /** The user's own instructions for the mock interviewer, or null to use the default (lib/ai/interview-prompt.ts). */
   interviewPrompt: text("interview_prompt"),
+  /** The user's own instructions for application emails and follow-ups, or null to use the default (lib/ai/email-prompt.ts). */
+  emailPrompt: text("email_prompt"),
+  /** When follow-ups come due, or null for the defaults (lib/outreach/rules.ts). */
+  followUpRules: jsonb("follow_up_rules").$type<Partial<Record<string, number | null>>>(),
   ...timestamps,
 });
 
