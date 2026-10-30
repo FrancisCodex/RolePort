@@ -12,7 +12,7 @@ import { evaluationJobOf } from "@/lib/jobs/fit-evaluation";
 import { readCvText, readProfile } from "@/lib/profile/queries";
 import type { ProfileInput } from "@/lib/profile/schema";
 import { followUpLabel, nextFollowUp, rulesOf, type FollowUpRules } from "./rules";
-import { CLOSING_STATUS, EMAIL_INFO, outreachOf, type EmailDraft, type EmailKind, type OutreachDoc, type OutreachEdit } from "./types";
+import { CLOSING_STATUS, EMAIL_INFO, outreachOf, type EmailDraft, type EmailKind, type OutreachDoc, type OutreachEdit, type SentEntry } from "./types";
 import { applicationBlock, blankDraft, emailFacts, onDay, signature, type OutreachPageData } from "./view";
 
 /*
@@ -188,7 +188,7 @@ export async function markOutreachSent(db: AnyDb, user: User, applicationId: str
   if (!application) return false;
   const doc = await readDoc(db, user.id, applicationId);
   const now = new Date();
-  const to = doc.drafts[kind]?.to ?? "";
+  const draft = doc.drafts[kind];
 
   const moved = kind === "application" && application.status === "saved" ? "applied" : CLOSING_STATUS[kind];
   const status = moved ?? application.status;
@@ -199,7 +199,20 @@ export async function markOutreachSent(db: AnyDb, user: User, applicationId: str
   if (moved) await setStatus(db, user.id, applicationId, moved);
   if (clearsInterview) await writeInterviewDate(db, user.id, applicationId, null);
 
-  await writeDoc(db, user.id, application, { ...doc, sent: [...doc.sent, { id: crypto.randomUUID(), kind, at: now.toISOString(), to, ...(undo && { undo }) }] });
+  // The message moves from drafts to sent, so the same kind can be written again.
+  const entry: SentEntry = {
+    id: crypto.randomUUID(),
+    kind,
+    at: now.toISOString(),
+    to: draft?.to ?? "",
+    toName: draft?.toName ?? "",
+    subject: draft?.subject ?? "",
+    body: draft?.body ?? "",
+    reason: draft?.reason ?? "",
+    ...(undo && { undo }),
+  };
+  const drafts = Object.fromEntries(Object.entries(doc.drafts).filter(([k]) => k !== kind));
+  await writeDoc(db, user.id, application, { ...doc, drafts, sent: [...doc.sent, entry] });
   await db.insert(schema.applicationEvent).values({ applicationId, status, note: `Sent: ${EMAIL_INFO[kind].label}`, occurredAt: now });
   await db
     .update(schema.application)
@@ -212,15 +225,17 @@ export async function markOutreachSent(db: AnyDb, user: User, applicationId: str
   return true;
 }
 
-/** Undo the last "Mark as sent" of a kind (a misclick). Its history entry stays, marked as undone. */
-export async function unmarkOutreachSent(db: AnyDb, user: User, applicationId: string, kind: EmailKind): Promise<boolean> {
+/** Undo a "Mark as sent" (a misclick): the message goes back to drafts. Its history entry stays, marked as undone. */
+export async function unmarkOutreachSent(db: AnyDb, user: User, applicationId: string, sentId: string): Promise<boolean> {
   const application = await readApplication(db, user.id, applicationId);
   if (!application) return false;
   const doc = await readDoc(db, user.id, applicationId);
-  const last = doc.sent.findLastIndex((s) => s.kind === kind);
-  if (last < 0) return true;
-  await writeDoc(db, user.id, application, { ...doc, sent: doc.sent.filter((_, i) => i !== last) });
-  const undo = doc.sent[last].undo;
+  const entry = doc.sent.find((s) => s.id === sentId);
+  if (!entry) return true;
+  const { kind, to, toName, subject, body, reason, undo } = entry;
+  // A newer draft of this kind is the user's work: keep it rather than overwrite it.
+  const drafts = doc.drafts[kind]?.body.trim() ? doc.drafts : { ...doc.drafts, [kind]: { to, toName, subject, body, reason, reasonDetail: "", review: null } };
+  await writeDoc(db, user.id, application, { ...doc, drafts, sent: doc.sent.filter((s) => s.id !== sentId) });
   if (undo) {
     await setStatus(db, user.id, applicationId, undo.status as ApplicationStatus);
     if (undo.interviewAt) await writeInterviewDate(db, user.id, applicationId, new Date(undo.interviewAt));

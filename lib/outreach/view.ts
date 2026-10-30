@@ -160,7 +160,7 @@ export function signature({ name, phone, link }: { name: string; phone: string; 
 
 /** A draft to start from: the subject for its kind and the recipient the user picked last. */
 export function blankDraft(kind: EmailKind, data: Pick<OutreachPageData, "role" | "company" | "candidate" | "doc">): EmailDraft {
-  const recent = Object.values(data.doc.drafts).find((d) => d?.to || d?.toName);
+  const recent = Object.values(data.doc.drafts).find((d) => d?.to || d?.toName) ?? data.doc.sent.findLast((s) => s.to || s.toName);
   const first = data.doc.contacts[0];
   return {
     to: recent?.to ?? first?.email ?? "",

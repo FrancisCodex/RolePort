@@ -41,12 +41,23 @@ export async function draftEmail(applicationId: string, kind: EmailKind): Promis
   }
 }
 
-/** "Mark as sent" (or undo it); returns the page as it is now, with the next follow-up. */
-export async function markEmailSent(applicationId: string, kind: EmailKind, sent: boolean): Promise<Result<OutreachPageData>> {
+/** "Mark as sent"; returns the page as it is now, with the message in Sent and the next follow-up. */
+export async function markEmailSent(applicationId: string, kind: EmailKind): Promise<Result<OutreachPageData>> {
   if (!isKind(kind)) return { ok: false, error: "Unknown kind of email." };
   const user = await getCurrentUser();
   const db = await getDb();
-  const done = sent ? await markOutreachSent(db, user, applicationId, kind) : await unmarkOutreachSent(db, user, applicationId, kind);
+  const done = await markOutreachSent(db, user, applicationId, kind);
+  const page = done && (await readOutreachPage(db, user, applicationId, await isAiConfigured()));
+  if (!page) return { ok: false, error: "Application not found." };
+  refresh();
+  return { ok: true, data: page };
+}
+
+/** Undo "Mark as sent" for one message; it goes back to drafts. */
+export async function unmarkEmailSent(applicationId: string, sentId: string): Promise<Result<OutreachPageData>> {
+  const user = await getCurrentUser();
+  const db = await getDb();
+  const done = await unmarkOutreachSent(db, user, applicationId, sentId);
   const page = done && (await readOutreachPage(db, user, applicationId, await isAiConfigured()));
   if (!page) return { ok: false, error: "Application not found." };
   refresh();

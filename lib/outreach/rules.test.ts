@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import { addWorkingDays, DEFAULT_RULES, dueLabel, followUpLabel, nextFollowUp, rulesOf, type FollowUpInput } from "./rules";
-import { mailtoHref, outreachOf } from "./types";
+import { gmailHref, mailtoHref, outlookHref, outreachOf } from "./types";
 
 const day = (s: string) => new Date(`${s}T09:00:00`);
 const doc = (over: Partial<FollowUpInput["doc"]> = {}): FollowUpInput["doc"] => ({ sent: [], pause: null, replyBy: null, offerDeadline: null, ...over });
 const input = (over: Partial<FollowUpInput>): FollowUpInput => ({ status: "applied", appliedAt: day("2026-10-01"), interviewAt: null, offerAt: null, doc: doc(), ...over });
-const sent = (kind: string, at: string) => ({ id: `${kind}-${at}`, kind: kind as "nudge_1", at: day(at).toISOString(), to: "" });
+const sent = (kind: string, at: string) => ({ id: `${kind}-${at}`, kind: kind as "nudge_1", at: day(at).toISOString(), to: "", toName: "", subject: "", body: "", reason: "" });
 
 describe("nextFollowUp", () => {
   it("nudges 7 days after applying, then 14", () => {
@@ -102,6 +102,17 @@ describe("helpers", () => {
     expect(mailtoHref({ to: "ana@acme.com", subject: "Application: Dev – Juan", body: "Hi Ana,\n\nThanks" })).toBe(
       "mailto:ana@acme.com?subject=Application%3A%20Dev%20%E2%80%93%20Juan&body=Hi%20Ana%2C%0A%0AThanks",
     );
+  });
+
+  it("builds Gmail and Outlook compose links", () => {
+    const draft = { to: "ana@acme.com", subject: "Hi & hello", body: "Line one\n\nA+B" };
+    expect(gmailHref(draft)).toBe("https://mail.google.com/mail/?view=cm&fs=1&to=ana%40acme.com&su=Hi%20%26%20hello&body=Line%20one%0A%0AA%2BB");
+    expect(outlookHref(draft)).toBe("https://outlook.live.com/mail/0/deeplink/compose?to=ana%40acme.com&subject=Hi%20%26%20hello&body=Line%20one%0A%0AA%2BB");
+  });
+
+  it("reads sent entries from before copies were kept", () => {
+    const old = { id: "1", kind: "nudge_1", at: "2026-10-08T01:00:00.000Z", to: "ana@acme.com" };
+    expect(outreachOf({ sent: [old] }).sent[0]).toMatchObject({ to: "ana@acme.com", body: "", subject: "" });
   });
 
   it("reads an old or broken document as empty", () => {

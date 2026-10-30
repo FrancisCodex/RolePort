@@ -362,12 +362,16 @@ async function outreachPageNow(applicationId: string): Promise<Result<OutreachPa
   return { ok: true, data: page };
 }
 
-export async function markEmailSent(applicationId: string, kind: EmailKind, sent: boolean): Promise<Result<OutreachPageData>> {
+export async function markEmailSent(applicationId: string, kind: EmailKind): Promise<Result<OutreachPageData>> {
   if (!EMAIL_KINDS.includes(kind)) return { ok: false, error: "Unknown kind of email." };
   const db = await getBrowserDb();
-  const user = await me(db);
-  const done = sent ? await markOutreachSent(db, user, applicationId, kind) : await unmarkOutreachSent(db, user, applicationId, kind);
-  if (!done) return { ok: false, error: "Application not found." };
+  if (!(await markOutreachSent(db, await me(db), applicationId, kind))) return { ok: false, error: "Application not found." };
+  return outreachPageNow(applicationId);
+}
+
+export async function unmarkEmailSent(applicationId: string, sentId: string): Promise<Result<OutreachPageData>> {
+  const db = await getBrowserDb();
+  if (!(await unmarkOutreachSent(db, await me(db), applicationId, sentId))) return { ok: false, error: "Application not found." };
   return outreachPageNow(applicationId);
 }
 

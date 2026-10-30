@@ -175,6 +175,11 @@ export const sentEntrySchema = z.object({
   kind: z.enum(EMAIL_KINDS),
   at: z.string(),
   to: z.string(),
+  /** A copy of the message as it was sent; empty on entries from before copies were kept. */
+  toName: z.string().default(""),
+  subject: z.string().default(""),
+  body: z.string().default(""),
+  reason: z.string().default(""),
   /** What a closing message changed, so "Not sent" can put it back. */
   undo: z.object({ status: z.string(), interviewAt: z.string().nullable() }).optional(),
 });
@@ -223,6 +228,18 @@ export function outreachOf(data: unknown): OutreachDoc {
 export function mailtoHref(draft: Pick<EmailDraft, "to" | "subject" | "body">): string {
   const params = [`subject=${encodeURIComponent(draft.subject)}`, `body=${encodeURIComponent(draft.body)}`].join("&");
   return `mailto:${encodeURIComponent(draft.to).replace(/%40/g, "@")}?${params}`;
+}
+
+const query = (params: Record<string, string>) => new URLSearchParams(params).toString().replace(/\+/g, "%20");
+
+/** Gmail's compose screen in the browser, filled in. */
+export function gmailHref(draft: Pick<EmailDraft, "to" | "subject" | "body">): string {
+  return `https://mail.google.com/mail/?${query({ view: "cm", fs: "1", to: draft.to, su: draft.subject, body: draft.body })}`;
+}
+
+/** Outlook's compose screen in the browser, filled in. */
+export function outlookHref(draft: Pick<EmailDraft, "to" | "subject" | "body">): string {
+  return `https://outlook.live.com/mail/0/deeplink/compose?${query({ to: draft.to, subject: draft.subject, body: draft.body })}`;
 }
 
 /** Some mail apps cut a mailto: link around 2,000 characters. */

@@ -78,6 +78,7 @@ export const saveLetterPrompt: typeof letter.saveLetterPrompt = isLite
 export const saveOutreach: typeof emails.saveOutreach = isLite ? async (...a) => (await lite()).saveOutreach(...a) : emails.saveOutreach;
 export const draftEmail: typeof emails.draftEmail = isLite ? async (...a) => (await lite()).draftEmail(...a) : emails.draftEmail;
 export const markEmailSent: typeof emails.markEmailSent = isLite ? async (...a) => (await lite()).markEmailSent(...a) : emails.markEmailSent;
+export const unmarkEmailSent: typeof emails.unmarkEmailSent = isLite ? async (...a) => (await lite()).unmarkEmailSent(...a) : emails.unmarkEmailSent;
 export const setFollowUpsPaused: typeof emails.setFollowUpsPaused = isLite
   ? async (...a) => (await lite()).setFollowUpsPaused(...a)
   : emails.setFollowUpsPaused;

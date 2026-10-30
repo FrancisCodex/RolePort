@@ -1,55 +1,30 @@
 "use client";
 
-import { Check, CheckCheck, Copy, ExternalLink, Loader2, Mail, Sparkles, TriangleAlert, Undo2, UserRound } from "lucide-react";
+import { UserRound } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EmptyState } from "@/components/app/empty-state";
-import { PromptDetails } from "@/components/app/prompt-details";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
 import { useConfirm } from "@/components/ui/dialog";
-import { Textarea } from "@/components/ui/fields";
-import { Input, Label } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
-import { draftEmail, markEmailSent, saveOutreach } from "@/lib/client/mutations";
-import { wordCount } from "@/lib/letter/types";
-import { dueLabel, nextFollowUp } from "@/lib/outreach/rules";
-import {
-  CLOSING_STATUS,
-  defaultSubject,
-  EMAIL_INFO,
-  EMAIL_KINDS,
-  EMAIL_REASONS,
-  KIND_REASONS,
-  LINKEDIN_LIMIT,
-  MAILTO_LIMIT,
-  mailtoHref,
-  MAX_EMAIL_BODY,
-  MAX_REASON_DETAIL,
-  MAX_TALKING_POINTS,
-  type EmailDraft,
-  type EmailKind,
-  type EmailReason,
-  type OutreachEdit,
-} from "@/lib/outreach/types";
-import { blankDraft, emailPromptFor, onDay, reasonOf, type OutreachPageData } from "@/lib/outreach/view";
-import { cn } from "@/lib/utils";
-import { AttachmentsCard, ContactsCard, FollowUpCard, SentLog } from "./outreach-panels";
+import { draftEmail, markEmailSent, saveOutreach, unmarkEmailSent } from "@/lib/client/mutations";
+import { dueLabel, followUpLabel, nextFollowUp } from "@/lib/outreach/rules";
+import { CLOSING_STATUS, defaultSubject, EMAIL_KINDS, type EmailDraft, type EmailKind, type EmailReason, type OutreachEdit, type SentEntry } from "@/lib/outreach/types";
+import { blankDraft, reasonOf, type OutreachPageData } from "@/lib/outreach/view";
+import { Composer } from "./composer";
+import { ComposeMenu, MailboxList, SentMessage, type Selection } from "./mailbox";
+import { AttachmentsCard, ContactsCard, FollowUpCard } from "./outreach-panels";
 
 const editOf = (data: OutreachPageData): OutreachEdit => {
   const { contacts, drafts, replyBy, offerDeadline, talkingPoints, checklist } = data.doc;
   return { contacts, drafts, replyBy, offerDeadline, talkingPoints, checklist };
 };
 
-const when = (iso: string) => new Date(iso).toLocaleString("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
-
 /** Messages the user writes to the company directly: an attachments checklist goes with them. */
 const WITH_ATTACHMENTS = new Set<EmailKind>(["application", "cold", "referral"]);
-const ABOUT_THE_INTERVIEW = new Set<EmailKind>(["thank_you", "check_in"]);
 
 /** When the next follow-up comes due, from the page's data. */
-export function nextOf(data: OutreachPageData, doc: Pick<OutreachPageData["doc"], "sent" | "pause"> & Pick<OutreachEdit, "replyBy" | "offerDeadline">) {
+function nextOf(data: OutreachPageData, doc: Pick<OutreachPageData["doc"], "sent" | "pause"> & Pick<OutreachEdit, "replyBy" | "offerDeadline">) {
   return nextFollowUp(
     {
       status: data.status,
@@ -62,22 +37,28 @@ export function nextOf(data: OutreachPageData, doc: Pick<OutreachPageData["doc"]
   );
 }
 
+/** Where the page opens: the message asked for, else what's due, else the latest sent, else a new message. */
+function firstSelection(data: OutreachPageData, asked: string | null): Selection {
+  if (EMAIL_KINDS.includes(asked as EmailKind)) return { type: "compose", kind: asked as EmailKind };
+  const next = nextOf(data, data.doc);
+  if (next && dueLabel(next.dueAt).due) return { type: "compose", kind: next.kind };
+  const latest = data.doc.sent.at(-1);
+  if (latest) return { type: "sent", id: latest.id };
+  return { type: "compose", kind: data.status === "rejected" ? "reply_rejection" : "application" };
+}
+
 /**
- * One application's emails: the application email and its variants, the follow-ups and when
- * they're due, the people to write to and what was sent. RolePort never sends anything: copy
- * a draft, or open it in your own mail app, then mark it as sent.
+ * One application's messages as a mailbox: what's due, drafts and everything sent on one side,
+ * the open message or a new one on the other. A kind can be sent as often as needed: marking a
+ * draft as sent moves it to Sent and clears the way for the next. RolePort never sends anything:
+ * copy a draft, or open it in your own mail app, then mark it as sent.
  */
 export function EmailsWorkspace({ data: initial }: { data: OutreachPageData }) {
   const params = useSearchParams();
   const [data, setData] = useState(initial);
   const [edit, setEdit] = useState<OutreachEdit>(() => editOf(initial));
-  const [kind, setKind] = useState<EmailKind>(() => {
-    const asked = params.get("draft");
-    if (EMAIL_KINDS.includes(asked as EmailKind)) return asked as EmailKind;
-    if (initial.status === "rejected") return "reply_rejection";
-    const next = nextOf(initial, initial.doc);
-    return next && dueLabel(next.dueAt).due ? next.kind : "application";
-  });
+  const [selection, setSelection] = useState<Selection>(() => firstSelection(initial, params.get("draft")));
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved" | { error: string }>("idle");
   const [savedJson, setSavedJson] = useState(() => JSON.stringify(editOf(initial)));
@@ -85,13 +66,19 @@ export function EmailsWorkspace({ data: initial }: { data: OutreachPageData }) {
   const [drafting, setDrafting] = useState<EmailKind | null>(null);
   const [aiError, setAiError] = useState<{ text: string; needsSetup?: boolean } | null>(null);
   const [marking, setMarking] = useState(false);
-  const [copied, setCopied] = useState<"body" | "subject" | null>(null);
   const [confirm, confirmDialog] = useConfirm();
+  const pane = useRef<HTMLDivElement>(null);
 
-  const draft: EmailDraft = edit.drafts[kind] ?? blankDraft(kind, { ...data, doc: { ...data.doc, ...edit } });
+  const doc = { ...data.doc, ...edit };
   const next = nextOf(data, { ...data.doc, replyBy: edit.replyBy, offerDeadline: edit.offerDeadline });
-  const sentOfKind = data.doc.sent.filter((s) => s.kind === kind);
-  const lastSent = sentOfKind.at(-1);
+  const dueNow = next && dueLabel(next.dueAt).due ? next : null;
+  const kind = selection.type === "compose" ? selection.kind : null;
+  const draft: EmailDraft | null = kind && (edit.drafts[kind] ?? blankDraft(kind, { ...data, doc }));
+  const opened = selection.type === "sent" ? data.doc.sent.find((s) => s.id === selection.id) : undefined;
+  const drafts = EMAIL_KINDS.flatMap((k): [EmailKind, EmailDraft][] => {
+    const d = edit.drafts[k];
+    return d?.body.trim() ? [[k, d]] : [];
+  });
 
   async function save(value = edit): Promise<boolean> {
     const json = JSON.stringify(value);
@@ -115,17 +102,43 @@ export function EmailsWorkspace({ data: initial }: { data: OutreachPageData }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [edit]);
 
+  /** Open a message, and bring it into view when the list and the message are stacked. */
+  function open(next: Selection) {
+    setSelection(next);
+    setAiError(null);
+    setMenuOpen(false);
+    if (window.matchMedia("(max-width: 1023px)").matches) requestAnimationFrame(() => pane.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+  }
+
   const update = (patch: Partial<OutreachEdit>) => {
     setEdit((e) => ({ ...e, ...patch }));
     setSaveState("idle");
   };
-  const updateDraft = (patch: Partial<EmailDraft>) => {
+
+  function updateDraft(patch: Partial<EmailDraft>) {
+    if (!kind || !draft) return;
     setEdit((e) => ({ ...e, drafts: { ...e.drafts, [kind]: { ...(e.drafts[kind] ?? draft), ...patch } } }));
     setSaveState("idle");
-    setCopied(null);
-  };
+  }
+
+  /** Pick a reason. A subject the user hasn't changed follows it. */
+  function pickReason(reason: EmailReason) {
+    if (!kind || !draft) return;
+    const who = { role: data.role, company: data.company, name: data.candidate.name };
+    const untouched = draft.subject === defaultSubject(kind, who, reasonOf(kind, draft) ?? undefined);
+    updateDraft({ reason, ...(untouched && { subject: defaultSubject(kind, who, reason) }) });
+  }
+
+  /** The page's data after a send or undo: the server's copy of everything, unsaved edits already saved. */
+  function adopt(page: OutreachPageData) {
+    const value = editOf(page);
+    setData(page);
+    setEdit(value);
+    setSavedJson(JSON.stringify(value));
+  }
 
   async function write() {
+    if (!kind || !draft) return;
     if (draft.body.trim() && !(await confirm({ title: "Write a new draft?", body: "It replaces this message, including your edits.", confirmLabel: "Write a new draft" }))) return;
     // The model reads the saved recipient, dates and "what came up", so save those first.
     const value = { ...edit, drafts: { ...edit.drafts, [kind]: draft } };
@@ -141,38 +154,52 @@ export function EmailsWorkspace({ data: initial }: { data: OutreachPageData }) {
     setSaveState("saved");
   }
 
-  async function copy(what: "body" | "subject") {
-    try {
-      await navigator.clipboard.writeText(what === "body" ? draft.body : draft.subject);
-      setCopied(what);
-    } catch {
-      setSaveState({ error: "Couldn't copy. Select the text and copy it yourself." });
-    }
-  }
-
-  /** Pick a reason. A subject the user hasn't changed follows it. */
-  function pickReason(next: EmailReason) {
-    const who = { role: data.role, company: data.company, name: data.candidate.name };
-    const untouched = draft.subject === defaultSubject(kind, who, reasonOf(kind, draft) ?? undefined);
-    updateDraft({ reason: next, ...(untouched && { subject: defaultSubject(kind, who, next) }) });
-  }
-
-  async function markSent(sent: boolean) {
+  async function markSent() {
+    if (!kind || !draft) return;
     const closing = CLOSING_STATUS[kind];
-    if (sent && closing && data.status !== closing) {
+    if (closing && data.status !== closing) {
       const ok = await confirm({
         title: closing === "withdrawn" ? "Mark this application as withdrawn?" : "Mark this offer as declined?",
-        body: `Send the message from your mail app first. This moves the application to ${closing === "withdrawn" ? "Withdrawn" : "Offer declined"} and stops its follow-ups${kind === "cancel_interview" ? ", and clears the interview date" : ""}. “Not sent” puts it back.`,
+        body: `Send the message from your mail app first. This moves the application to ${closing === "withdrawn" ? "Withdrawn" : "Offer declined"} and stops its follow-ups${kind === "cancel_interview" ? ", and clears the interview date" : ""}. “I didn't send this” puts it back.`,
         confirmLabel: "Mark as sent",
       });
       if (!ok) return;
     }
-    if (!(await save())) return;
+    // A blank draft that was never typed in still has its recipient and subject to keep.
+    if (!(await save({ ...edit, drafts: { ...edit.drafts, [kind]: draft } }))) return;
     setMarking(true);
-    const result = await markEmailSent(data.applicationId, kind, sent);
+    const result = await markEmailSent(data.applicationId, kind);
     setMarking(false);
     if (!result.ok) return setSaveState({ error: result.error });
-    setData(result.data);
+    adopt(result.data);
+    setSaveState("idle");
+    const latest = result.data.doc.sent.at(-1);
+    if (latest) open({ type: "sent", id: latest.id });
+  }
+
+  async function unsend(entry: SentEntry) {
+    setMarking(true);
+    const result = await unmarkEmailSent(data.applicationId, entry.id);
+    setMarking(false);
+    if (!result.ok) return setSaveState({ error: result.error });
+    adopt(result.data);
+    setSaveState("idle");
+    open({ type: "compose", kind: entry.kind });
+  }
+
+  /** "Send again": a new draft with the same words, to change and send. */
+  async function reuse(entry: SentEntry) {
+    const existing = edit.drafts[entry.kind];
+    if (existing?.body.trim() && !(await confirm({ title: "Replace your draft?", body: "You already have a draft of this kind. This replaces it with the sent message.", confirmLabel: "Replace it" }))) return;
+    const copy: EmailDraft = { to: entry.to, toName: entry.toName, subject: entry.subject, body: entry.body, reason: entry.reason, reasonDetail: "", review: null };
+    update({ drafts: { ...edit.drafts, [entry.kind]: copy } });
+    open({ type: "compose", kind: entry.kind });
+  }
+
+  async function discard() {
+    if (!kind) return;
+    if (!(await confirm({ title: "Discard this draft?", body: "Its text is deleted. Anything already marked as sent stays.", confirmLabel: "Discard", tone: "danger" }))) return;
+    update({ drafts: Object.fromEntries(Object.entries(edit.drafts).filter(([k]) => k !== kind)) });
   }
 
   if (data.profileEmpty) {
@@ -190,318 +217,74 @@ export function EmailsWorkspace({ data: initial }: { data: OutreachPageData }) {
     );
   }
 
-  const info = EMAIL_INFO[kind];
-  const isLinkedin = kind === "linkedin";
-  const reasons = KIND_REASONS[kind];
-  const reason = reasonOf(kind, draft);
-  const chars = draft.body.trim().length;
-  const words = wordCount(draft.body);
-  const href = mailtoHref(draft);
-  const recipient = edit.contacts.find((c) => (draft.to && c.email === draft.to) || (draft.toName && c.name === draft.toName));
-  const contactOptions = [
-    ...edit.contacts.map((c) => ({ value: c.id, label: [c.name || "No name", c.email || c.role].filter(Boolean).join(" · ") })),
-    { value: "", label: "Someone else" },
-  ];
+  const saveNote = typeof saveState === "object" ? saveState.error : saveState === "saving" ? "Saving…" : dirty ? "Unsaved changes" : saveState === "saved" ? "Saved" : null;
 
   return (
-    <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_22rem]">
+    <div data-wide className="grid grid-cols-[minmax(0,1fr)] items-start gap-3 lg:grid-cols-[19rem_minmax(0,1fr)] xl:grid-cols-[19rem_minmax(0,1fr)_19rem]">
       {confirmDialog}
-      <div className="flex min-w-0 flex-col gap-3">
-        <KindPicker kind={kind} onPick={setKind} sent={new Set(data.doc.sent.map((s) => s.kind))} due={next && dueLabel(next.dueAt).due ? next.kind : null} />
+      <ComposeMenu open={menuOpen} onClose={() => setMenuOpen(false)} onPick={(k) => open({ type: "compose", kind: k })} sent={data.doc.sent} due={next?.kind ?? null} />
 
-        <Card>
-          <CardHeader>
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div>
-                <CardTitle>{info.label}</CardTitle>
-                <CardDescription>{info.description}</CardDescription>
-              </div>
-              <span aria-live="polite" className={cn("text-xs", typeof saveState === "object" ? "text-danger" : "text-subtle")}>
-                {typeof saveState === "object" ? saveState.error : saveState === "saving" ? "Saving…" : dirty ? "Unsaved changes" : saveState === "saved" ? "Saved" : null}
-              </span>
-            </div>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            <div className="grid gap-3 sm:grid-cols-2">
-              {edit.contacts.length > 0 && (
-                <div className="sm:col-span-2">
-                  <Field label="To">
-                    <Select
-                      aria-label="Who it's for"
-                      value={recipient?.id ?? ""}
-                      options={contactOptions}
-                      onValueChange={(id) => {
-                        const c = edit.contacts.find((x) => x.id === id);
-                        updateDraft(c ? { to: c.email, toName: c.name } : { to: "", toName: "" });
-                      }}
-                    />
-                  </Field>
-                </div>
-              )}
-              <Field label="Their name (for the greeting)">
-                <Input value={draft.toName} maxLength={120} placeholder="Leave empty for “Hiring Manager”" onChange={(e) => updateDraft({ toName: e.target.value })} />
-              </Field>
-              {!isLinkedin && (
-                <Field label="Email address">
-                  <Input type="email" value={draft.to} maxLength={160} placeholder="Optional" onChange={(e) => updateDraft({ to: e.target.value })} />
-                </Field>
-              )}
-            </div>
-
-            {reasons && reason && (
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Field label={info.group === "close" && kind !== "reply_rejection" ? "Your reason" : "Why are you writing?"}>
-                  <Select
-                    aria-label="Why you're writing"
-                    value={reason}
-                    options={reasons.map((r) => ({ value: r, label: EMAIL_REASONS[r].label }))}
-                    onValueChange={(v) => pickReason(v as EmailReason)}
-                  />
-                </Field>
-                <Field label={reason === "other" || reason === "new_info" ? "What do you want to say?" : "Anything to add? (optional)"}>
-                  <Textarea
-                    value={draft.reasonDetail}
-                    maxLength={MAX_REASON_DETAIL}
-                    className="min-h-9"
-                    placeholder={reason === "private" ? "No reason will be given." : "Only what you write here is added, so nothing gets made up."}
-                    onChange={(e) => updateDraft({ reasonDetail: e.target.value })}
-                  />
-                </Field>
-              </div>
-            )}
-
-            {ABOUT_THE_INTERVIEW.has(kind) && (
-              <Field label="What came up in the interview (optional)">
-                <Textarea
-                  value={edit.talkingPoints}
-                  maxLength={MAX_TALKING_POINTS}
-                  className="min-h-20"
-                  placeholder="Who you met, what you talked about, what they said about next steps. Only this is used, so the email doesn't invent a conversation."
-                  onChange={(e) => update({ talkingPoints: e.target.value })}
-                />
-                {data.coachNotes && (
-                  <details className="rounded-md border border-border bg-surface-2 text-xs">
-                    <summary className="cursor-pointer px-3 py-1.5 font-medium text-muted select-none hover:text-fg">From your Interview Coach prep</summary>
-                    <div className="flex flex-col gap-2 border-t border-border p-3">
-                      <p className="whitespace-pre-line text-muted">{data.coachNotes}</p>
-                      <p className="text-subtle">This is from practice, not the real interview. Add only what actually came up.</p>
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        className="self-start"
-                        onClick={() => update({ talkingPoints: [edit.talkingPoints.trim(), data.coachNotes].filter(Boolean).join("\n").slice(0, MAX_TALKING_POINTS) })}
-                      >
-                        Add to what came up
-                      </Button>
-                    </div>
-                  </details>
-                )}
-              </Field>
-            )}
-
-            {!isLinkedin && (
-              <Field label="Subject">
-                <div className="flex gap-1.5">
-                  <Input value={draft.subject} maxLength={300} className="min-w-0 flex-1" onChange={(e) => updateDraft({ subject: e.target.value })} />
-                  <Button variant="secondary" onClick={() => void copy("subject")} disabled={!draft.subject.trim()} aria-label="Copy the subject">
-                    {copied === "subject" ? <Check /> : <Copy />}
-                  </Button>
-                </div>
-              </Field>
-            )}
-
-            <Field label="Message">
-              <Textarea
-                aria-label="Message"
-                value={draft.body}
-                maxLength={isLinkedin ? 1000 : MAX_EMAIL_BODY}
-                placeholder={data.aiEnabled ? "Write it here, or let AI draft it from your profile and this application." : "Write your message here."}
-                className={cn("text-[13px] leading-relaxed", isLinkedin ? "min-h-32" : "min-h-72")}
-                onChange={(e) => updateDraft({ body: e.target.value })}
-              />
-              <p className={cn("text-xs tabular-nums", isLinkedin && chars > LINKEDIN_LIMIT ? "text-warning" : "text-subtle")}>
-                {isLinkedin ? `${chars} / ${LINKEDIN_LIMIT} characters` : `${words} words · short emails get read`}
-              </p>
-            </Field>
-
-            {draft.review && draft.review.warnings.length > 0 && (
-              <div className="flex flex-col gap-1.5 rounded-lg border border-warning/20 bg-warning-soft p-3">
-                <p className="flex items-center gap-1.5 text-xs font-medium text-warning">
-                  <TriangleAlert className="size-3.5" /> Check before you send
-                </p>
-                <ul className="flex flex-col gap-1 text-xs">
-                  {draft.review.warnings.map((w) => (
-                    <li key={w}>{w}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            <div className="flex flex-wrap items-center gap-1.5 border-t border-border pt-3">
-              <Button onClick={() => void copy("body")} disabled={!draft.body.trim()}>
-                {copied === "body" ? <Check /> : <Copy />} {copied === "body" ? "Copied" : "Copy message"}
-              </Button>
-              {isLinkedin ? (
-                recipient?.linkedin && (
-                  <a href={recipient.linkedin} target="_blank" rel="noopener" className={buttonVariants({ variant: "secondary" })}>
-                    Open their LinkedIn <ExternalLink />
-                  </a>
-                )
-              ) : (
-                <a
-                  href={href}
-                  onClick={() => void save()}
-                  aria-disabled={!draft.body.trim()}
-                  className={cn(buttonVariants({ variant: "secondary" }), !draft.body.trim() && "pointer-events-none opacity-50")}
-                >
-                  <Mail /> Open in my mail app
-                </a>
-              )}
-              {lastSent ? (
-                <>
-                  <span className="ml-auto flex items-center gap-1.5 text-xs text-success">
-                    <CheckCheck className="size-3.5" /> Sent {onDay(lastSent.at)}
-                  </span>
-                  <Button variant="ghost" size="sm" onClick={() => void markSent(false)} disabled={marking}>
-                    <Undo2 /> Not sent
-                  </Button>
-                  <Button variant="secondary" size="sm" onClick={() => void markSent(true)} disabled={marking}>
-                    Sent again
-                  </Button>
-                </>
-              ) : (
-                <Button variant="secondary" className="ml-auto" onClick={() => void markSent(true)} disabled={marking}>
-                  {marking ? <Loader2 className="animate-spin" /> : <CheckCheck />} Mark as sent
-                </Button>
-              )}
-            </div>
-            {!isLinkedin && href.length > MAILTO_LIMIT && (
-              <p className="text-xs text-muted">This one is long, so some mail apps may cut it off. If that happens, copy the message instead.</p>
-            )}
-            <p className="text-xs text-subtle">
-              RolePort never sends anything for you. {kind === "application" && data.status === "saved" ? "Marking it sent also moves this job to Applied. " : ""}
-              {CLOSING_STATUS[kind]
-                ? `Marking it sent moves this application to ${CLOSING_STATUS[kind] === "withdrawn" ? "Withdrawn" : "Offer declined"} and stops its follow-ups.`
-                : "Marking it sent adds it to the history and plans the next follow-up."}
-            </p>
-          </CardContent>
-        </Card>
+      <div className="flex min-w-0 flex-col gap-3 lg:sticky lg:top-4 lg:row-span-2 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
+        <MailboxList
+          company={data.company}
+          due={dueNow && { kind: dueNow.kind, when: followUpLabel(dueNow).text, reason: dueNow.reason }}
+          drafts={drafts}
+          sent={[...data.doc.sent].reverse()}
+          selection={selection}
+          onSelect={open}
+          onCompose={() => setMenuOpen(true)}
+        />
       </div>
 
-      <aside className="flex flex-col gap-3 max-lg:order-first lg:sticky lg:top-4 lg:self-start">
-        <Card>
-          <CardHeader>
-            <CardTitle>Write with AI</CardTitle>
-            <CardDescription>Drafts this message from your profile{data.hasPosting ? ", the posting" : ""} and this application&apos;s history, using only facts you&apos;ve given.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            {!data.aiEnabled ? (
-              <p className="text-[13px] text-muted">
-                <Link href="/settings" className="font-medium text-brand-ink hover:underline">
-                  Choose an AI provider
-                </Link>{" "}
-                to draft it. You can still write it here, copy it and open it in your mail app.
-              </p>
-            ) : (
-              <Button onClick={() => void write()} disabled={drafting !== null}>
-                {drafting ? <Loader2 className="animate-spin" /> : <Sparkles />}
-                {drafting ? "Writing…" : draft.body.trim() ? "Write a new draft" : `Write this ${isLinkedin ? "note" : "email"}`}
-              </Button>
-            )}
-            {drafting && <p className="text-xs text-muted">Local models can take a minute or two. Keep this page open.</p>}
-            {aiError && (
-              <p className="rounded-md border border-danger/20 bg-danger-soft px-3 py-2 text-xs text-danger">
-                {aiError.text}{" "}
-                {aiError.needsSetup && (
-                  <Link href="/settings" className="font-medium underline">
-                    Open Settings
-                  </Link>
-                )}
-              </p>
-            )}
-            {draft.review && (
-              <div className="flex flex-col gap-1.5 text-xs">
-                <p className="text-subtle">
-                  Drafted {when(draft.review.at)} with {draft.review.model}
-                  {draft.review.customPrompt ? " using your own prompt" : ""}.
-                </p>
-                {draft.review.keyPoint && (
-                  <p className="flex gap-2">
-                    <Check className="mt-0.5 size-3.5 shrink-0 text-success" /> Leans on: {draft.review.keyPoint}
-                  </p>
-                )}
-                {draft.review.notes && <p className="text-muted">{draft.review.notes}</p>}
-              </div>
-            )}
-            {data.aiEnabled && (
-              <PromptDetails
-                prompt={{ system: data.prompt.system, user: emailPromptFor({ ...data, doc: { ...data.doc, ...edit } }, kind, draft), custom: data.prompt.custom }}
-                settingsAnchor="email-prompt"
-              />
-            )}
-          </CardContent>
-        </Card>
+      <div ref={pane} className="min-w-0 scroll-mt-4">
+        {kind && draft ? (
+          <Composer
+            data={data}
+            kind={kind}
+            draft={draft}
+            edit={edit}
+            saveNote={saveNote}
+            saveFailed={typeof saveState === "object"}
+            onChange={updateDraft}
+            onEdit={update}
+            onReason={pickReason}
+            onChangeKind={() => setMenuOpen(true)}
+            onDiscard={() => void discard()}
+            onSave={() => void save()}
+            onMarkSent={() => void markSent()}
+            marking={marking}
+            ai={{ drafting: drafting === kind, error: aiError, onWrite: () => void write() }}
+          />
+        ) : opened ? (
+          <SentMessage
+            key={opened.id}
+            entry={opened}
+            from={data.candidate}
+            company={data.company}
+            busy={marking}
+            onReuse={() => void reuse(opened)}
+            onCompose={() => setMenuOpen(true)}
+            onUnsend={() => void unsend(opened)}
+          />
+        ) : null}
+      </div>
 
+      <aside className="flex min-w-0 flex-col gap-3 lg:col-start-2 xl:col-start-3 xl:row-start-1">
         <FollowUpCard
           data={data}
           next={next}
           replyBy={edit.replyBy}
           offerDeadline={edit.offerDeadline}
-          onDates={(patch) => update(patch)}
-          onOpen={setKind}
-          onChanged={(page) => {
-            setData(page);
-          }}
+          onDates={update}
+          onOpen={(k) => open({ type: "compose", kind: k })}
+          onChanged={setData}
           beforeChange={() => save()}
         />
         <ContactsCard contacts={edit.contacts} postingEmails={data.postingEmails} onChange={(contacts) => update({ contacts })} />
-        {WITH_ATTACHMENTS.has(kind) && (
+        {kind && WITH_ATTACHMENTS.has(kind) && (
           <AttachmentsCard applicationId={data.applicationId} attachments={data.attachments} checklist={edit.checklist} onChange={(checklist) => update({ checklist })} />
         )}
-        <SentLog sent={data.doc.sent} />
       </aside>
-    </div>
-  );
-}
-
-const GROUP_LABEL = { apply: "Apply", follow_up: "Follow up", close: "Step away" };
-
-function KindPicker({ kind, onPick, sent, due }: { kind: EmailKind; onPick: (k: EmailKind) => void; sent: Set<EmailKind>; due: EmailKind | null }) {
-  const group = (g: keyof typeof GROUP_LABEL) => EMAIL_KINDS.filter((k) => EMAIL_INFO[k].group === g);
-  return (
-    <Card>
-      <CardContent className="flex flex-col gap-3 p-3">
-        {(["apply", "follow_up", "close"] as const).map((g) => (
-          <div key={g} className="flex flex-wrap items-center gap-1.5">
-            <span className="w-full text-xs font-medium text-muted sm:w-20">{GROUP_LABEL[g]}</span>
-            {group(g).map((k) => (
-              <button
-                key={k}
-                type="button"
-                onClick={() => onPick(k)}
-                aria-pressed={k === kind}
-                className={cn(
-                  "inline-flex h-7 items-center gap-1 rounded-md border px-2.5 text-xs font-medium transition-colors",
-                  k === kind ? "border-brand bg-brand-soft text-brand-ink" : "border-border bg-surface text-muted hover:border-border-strong hover:text-fg",
-                )}
-              >
-                {sent.has(k) && <Check className="size-3 text-success" aria-label="sent" />}
-                {EMAIL_INFO[k].short}
-                {due === k && <span className="size-1.5 rounded-full bg-warning" aria-label="due" />}
-              </button>
-            ))}
-          </div>
-        ))}
-      </CardContent>
-    </Card>
-  );
-}
-
-function Field({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      <Label>{label}</Label>
-      {children}
     </div>
   );
 }

@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/fields";
 import { Input, Label } from "@/components/ui/input";
 import { setFollowUpsPaused } from "@/lib/client/mutations";
 import { followUpLabel, type NextFollowUp } from "@/lib/outreach/rules";
-import { EMAIL_INFO, MAX_CONTACTS, type Contact, type EmailKind, type OutreachEdit, type SentEntry } from "@/lib/outreach/types";
+import { EMAIL_INFO, MAX_CONTACTS, type Contact, type EmailKind, type OutreachEdit } from "@/lib/outreach/types";
 import { onDay, type OutreachPageData } from "@/lib/outreach/view";
 import { cn } from "@/lib/utils";
 
@@ -278,30 +278,6 @@ export function AttachmentsCard({
             {r.status}
           </label>
         ))}
-      </CardContent>
-    </Card>
-  );
-}
-
-export function SentLog({ sent }: { sent: SentEntry[] }) {
-  if (!sent.length) return null;
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Sent</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ol className="flex flex-col gap-1.5 text-[13px]">
-          {[...sent].reverse().map((s) => (
-            <li key={s.id} className="flex items-baseline justify-between gap-2">
-              <span className="min-w-0 truncate">
-                {EMAIL_INFO[s.kind].label}
-                {s.to && <span className="text-xs text-muted"> · {s.to}</span>}
-              </span>
-              <span className="shrink-0 text-xs text-subtle tabular-nums">{new Date(s.at).toLocaleDateString("en", { month: "short", day: "numeric" })}</span>
-            </li>
-          ))}
-        </ol>
       </CardContent>
     </Card>
   );
