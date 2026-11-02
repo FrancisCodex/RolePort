@@ -26,7 +26,7 @@ export const DOCS_NAV = [
       "guides/settings",
     ],
   },
-  { title: "AI", slugs: ["ai/providers", "ai/local-models", "ai/prompts", "ai/usage"] },
+  { title: "AI", slugs: ["ai/providers", "ai/local-models", "ai/prompts", "ai/usage", "ai/agents"] },
   {
     title: "Job sources",
     slugs: [

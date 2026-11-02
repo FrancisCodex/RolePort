@@ -8,6 +8,7 @@ import type { FollowedCompanyView } from "@/lib/companies/queries";
 import { BackupControls } from "./backup-controls";
 import { JobSourceForm, JobSpyToggle } from "./job-source-form";
 import { LocalJobSpy } from "./local-jobspy";
+import { McpForm, type McpSettingsView } from "./mcp-form";
 import type { FollowUpRules } from "@/lib/outreach/rules";
 import { FollowUpRulesForm } from "./follow-up-rules-form";
 import { AnswerPromptForm, CvPromptForm, EmailPromptForm, InterviewerPromptForm, LetterPromptForm, ProfilePromptForm } from "./prompt-form";
@@ -37,6 +38,8 @@ export type SettingsData = {
   emailPrompt: string | null;
   /** When follow-ups come due. */
   followUpRules: FollowUpRules;
+  /** The MCP server switch, on self-hosted installs (the lite edition has no server to reach). */
+  mcp?: McpSettingsView;
   /** Where the user's data and keys are kept, for the "Your data" card. */
   dataNote: string;
   keyNote: string;
@@ -58,6 +61,7 @@ export function SettingsView({
   interviewPrompt,
   emailPrompt,
   followUpRules,
+  mcp,
   dataNote,
   keyNote,
 }: SettingsData) {
@@ -195,6 +199,22 @@ export function SettingsView({
           <CompanyManager companies={companies} countries={countries} />
         </CardContent>
       </Card>
+
+      {mcp && (
+        <Card id="agents">
+          <CardHeader>
+            <CardTitle>Connect an AI agent</CardTitle>
+            <CardDescription>
+              Use RolePort from Claude, Codex, Cursor or another AI agent you already use: &ldquo;find data analyst jobs in Cebu from this
+              week and evaluate the best five.&rdquo; Off until you turn it on, and only agents with the token can connect.{" "}
+              <LearnMore doc="ai/agents" />
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <McpForm initial={mcp} />
+          </CardContent>
+        </Card>
+      )}
 
       <Card id="speech">
         <CardHeader>

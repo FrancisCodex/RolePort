@@ -54,8 +54,8 @@ export async function toggleSaved(db: AnyDb, userId: string, jobId: string): Pro
   return { saved: true, changed: true };
 }
 
-/** Move an application to another status. Returns whether anything changed. */
-export async function setStatus(db: AnyDb, userId: string, applicationId: string, status: ApplicationStatus): Promise<boolean> {
+/** Move an application to another status, with an optional note on the history entry. Returns whether anything changed. */
+export async function setStatus(db: AnyDb, userId: string, applicationId: string, status: ApplicationStatus, note: string | null = null): Promise<boolean> {
   if (!schema.applicationStatus.enumValues.includes(status)) return false;
 
   const [app] = await db
@@ -68,7 +68,7 @@ export async function setStatus(db: AnyDb, userId: string, applicationId: string
     .update(schema.application)
     .set({ status, appliedAt: status === "applied" && !app.appliedAt ? new Date() : app.appliedAt })
     .where(eq(schema.application.id, app.id));
-  await db.insert(schema.applicationEvent).values({ applicationId: app.id, status });
+  await db.insert(schema.applicationEvent).values({ applicationId: app.id, status, note });
   return true;
 }
 
@@ -96,14 +96,19 @@ export async function readApplication(db: AnyDb, userId: string, applicationId: 
  * and return its application, where the user prepares and tracks it. An application that's
  * further along is left as it is. Null if the job isn't stored.
  */
-export async function markApplied(db: AnyDb, userId: string, jobId: string): Promise<{ applicationId: string; changed: boolean } | null> {
+export async function markApplied(
+  db: AnyDb,
+  userId: string,
+  jobId: string,
+  note: string | null = null,
+): Promise<{ applicationId: string; changed: boolean } | null> {
   const [existing] = await db
     .select()
     .from(schema.application)
     .where(and(eq(schema.application.userId, userId), eq(schema.application.jobId, jobId)));
   if (existing) {
     if (existing.status !== "saved") return { applicationId: existing.id, changed: false };
-    await setStatus(db, userId, existing.id, "applied");
+    await setStatus(db, userId, existing.id, "applied", note);
     return { applicationId: existing.id, changed: true };
   }
 
@@ -116,8 +121,8 @@ export async function markApplied(db: AnyDb, userId: string, jobId: string): Pro
     // A second click that raced the first: use the application it created.
     .onConflictDoNothing()
     .returning();
-  if (!app) return markApplied(db, userId, jobId);
-  await db.insert(schema.applicationEvent).values({ applicationId: app.id, status: "applied" });
+  if (!app) return markApplied(db, userId, jobId, note);
+  await db.insert(schema.applicationEvent).values({ applicationId: app.id, status: "applied", note });
   return { applicationId: app.id, changed: true };
 }
 

@@ -16,6 +16,7 @@ updated: 2026-10-31
 | Mock interviewer prompt | When the interviewer presses and moves on | [Customizing the prompts](/docs/ai/prompts) |
 | Job sources | Your JSearch key and JobSpy | [Job sources](/docs/job-sources) |
 | Companies you follow | Add and remove companies | [Companies you follow](/docs/guides/companies) |
+| Connect an AI agent | Let Claude, Codex, Cursor or another agent use RolePort (self-hosted only) | [Connect an AI agent](/docs/ai/agents) |
 | Voice | Microphone, speech-to-text and the interviewer's voice | [Answering out loud](/docs/guides/voice) |
 | Your data | Backups, restoring, and how your data is stored | [Privacy and your data](/docs/privacy-and-data) |
 

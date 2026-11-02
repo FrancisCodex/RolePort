@@ -17,10 +17,10 @@ Each step ships on its own branch and works in self-hosted and Lite, unless it s
 | 2. Paste a job (and "still open" checks) | ✅ Done | `feat/paste-a-job` |
 | 3. Email applications and follow-ups | ✅ Done (pasting an employer's reply is still for later, see 3B) | `feat/email-and-follow-ups` |
 | 4. Documentation page (`/docs`) with search | ✅ Done (screenshots still to add) | `feat/docs-page` |
-| MCP server | ⏭️ Next | — |
-| 5. Desktop app: job scout, apply assistant | Not started (after the MCP server) | — |
+| MCP server | ✅ Built (still to try: Claude Desktop itself, and the AI tools with a real model) | `feat/mcp-server` |
+| 5. Desktop app: job scout, apply assistant | ⏭️ Next | — |
 
-**Next up: the MCP server, then Phase 5, the desktop app.** The MCP server is smaller, depends on nothing, and gives the desktop app's job scout the same layer over RolePort's actions to build on. Everything marked ✅ Done is finished.
+**Next up: Phase 5, the desktop app.** It builds on the MCP server's tools. Everything marked ✅ Done is finished.
 
 ---
 
@@ -184,7 +184,7 @@ One place where anyone can learn RolePort end to end, before the desktop app add
 - **In the app:** a **Docs** link in the sidebar and the mobile header, and **Learn more** links on Jobs, Applied, Pipeline, Coach, Profile and each Settings card. They take a page's slug, so a wrong link fails type checking.
 - **Tests:** `lib/docs/docs.test.ts` fails if a page and the sidebar disagree, a page has no title or description, a job source has no page, or a link inside the docs points at a missing page or heading.
 
-## MCP server ⏭️ Next
+## MCP server ✅ Built
 
 Lets people who already use an AI agent (Claude Desktop, Claude Code, Codex, Cursor and others) drive RolePort from there: "find me data analyst jobs in Cebu posted this week, evaluate the top five and save the good ones". It's a thin layer over what RolePort already does, so it ships before the desktop app, and the desktop app's job scout reuses it. Branch: `feat/mcp-server`.
 
@@ -247,7 +247,18 @@ Each tool is one file in `lib/mcp/tools/`, listed in one registry (like the job 
 - A docs page, **Connect an AI agent** (`content/docs`), with setup per agent and example requests. **Learn more** from the Settings card.
 - Tests run the server through the SDK's in-memory transport against an in-memory database: the token is required, a wrong `Origin` is refused, Read only hides the changing tools, every tool in the registry has a description and a schema, and a search, evaluate, apply, draft flow ends in the tracker.
 
-**Done when:** from Claude Desktop or Claude Code, with the token from Settings, you can search for jobs, evaluate one, apply to it, draft its follow-up and see all of it in the app, and turning the switch off makes every call fail.
+**Done when:** from Claude Desktop or Claude Code, with the token from Settings, you can search for jobs, evaluate one, apply to it, draft its follow-up and see all of it in the app, and turning the switch off makes every call fail. *(Checked with the MCP SDK's own client over HTTP and through the stdio bridge, against a running install: search, read, save, apply, status, wrong token, other origin, switch off. Still to try: Claude Desktop itself, and evaluate, tailor and draft with a real AI model; without one they answer "set up AI first" as planned.)*
+
+### How it was built
+
+- **The route** (`app/api/mcp/route.ts` → `lib/mcp/handler.ts`): checks the rate limit, reads the user's settings, checks the switch, token and `Origin` (`lib/mcp/access.ts`), then answers with a fresh stateless server (`WebStandardStreamableHTTPServerTransport`, JSON responses). Lite answers 404. SDK pinned at `@modelcontextprotocol/sdk@1.32.1`.
+- **The token** is stored as a SHA-256 hash (`user_settings.mcp_token_hash`, with `mcp_access` = `read` / `write` / null), not encrypted: RolePort only needs to compare it. Turning off forgets it. Backups leave both columns out, like API keys.
+- **Tools** are grouped by area in `lib/mcp/tools/` (profile, jobs, applications, documents) and listed in `lib/mcp/registry.ts`. They call the existing `lib` functions with a `McpContext` (database, user, AI config, search and link readers), so tests swap in an in-memory database and no network. The server actions didn't need moving: their logic already lived in `lib`.
+- **Marked changes:** `setStatus` and `markApplied` take an optional history note; status changes from agents carry "(via AI agent)". Other edits (notes, interview date) don't add history entries, same as in the app.
+- **Settings → Connect an AI agent** (`app/(app)/settings/mcp-form.tsx`): Read and change / Read only, **Turn on**, **New token**, **Turn off**, and the setup for Claude Code, Claude Desktop, Codex and Cursor (`lib/mcp/setup.ts`) with this install's address and the token filled in while it's shown.
+- **Claude Desktop bridge:** `scripts/mcp-stdio.mjs`, no dependencies, forwards stdin JSON-RPC lines to `/api/mcp`.
+- **Docs:** `content/docs/ai/agents.md`, linked from the Settings card and the Settings docs table.
+- **Tests:** `lib/mcp/mcp.test.ts` (access checks, the registry, Read only, a search → save → apply → status flow with the agent note, no-AI and unknown-id messages).
 
 **Later:** a `draft_*` option that returns the prompt and facts so the agent's own model writes the text (for people without an AI set up in RolePort), and MCP prompts for common requests ("weekly job hunt").
 
@@ -282,7 +293,7 @@ Desktop-only isn't required for any of this except the two features above. Keep 
 | 3B. Follow-ups ✅ | M | 3A |
 | 1B. Government and remote feeds ✅ (more to come) | M (per source: S) | 0 |
 | 1C. Contributor kit ✅ | S | 1A |
-| MCP server | S–M | — |
+| MCP server ✅ | S–M | — |
 | 4. Documentation page with search ✅ | M | 1C (sources table), ideally 2 and 3 so their pages are written once |
 | 5. Desktop app: job scout, apply assistant | L | 1A, 2, 4 |
 

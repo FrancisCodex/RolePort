@@ -428,6 +428,10 @@ export const userSettings = pgTable("user_settings", {
   emailPrompt: text("email_prompt"),
   /** When follow-ups come due, or null for the defaults (lib/outreach/rules.ts). */
   followUpRules: jsonb("follow_up_rules").$type<Partial<Record<string, number | null>>>(),
+  /** What AI agents may do through the MCP server (lib/mcp): "read", "write", or null when it's off. */
+  mcpAccess: text("mcp_access").$type<"read" | "write">(),
+  /** SHA-256 of the MCP token; the token itself is only shown once. */
+  mcpTokenHash: text("mcp_token_hash"),
   ...timestamps,
 });
 
