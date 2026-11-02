@@ -197,13 +197,25 @@ export function McpForm({ initial }: { initial: McpSettingsView }) {
             ))}
           </div>
           <div role="tabpanel" className="flex flex-col gap-2">
-            <p className="text-[13px] text-muted">{setup.where}</p>
+            <Steps items={setup.before} />
             <CodeBlock code={setup.code} />
+            <Steps items={setup.after} start={setup.before.length + 1} />
             {access === "write" && writer !== "roleport" && <p className="text-[13px] text-muted">Keep usage down: {setup.usage}</p>}
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+/** One agent's setup steps, numbered on across the code block between them. */
+function Steps({ items, start = 1 }: { items: string[]; start?: number }) {
+  return (
+    <ol start={start} className="flex list-decimal flex-col gap-1.5 pl-5 text-[13px] text-muted marker:text-subtle">
+      {items.map((item) => (
+        <li key={item}>{item}</li>
+      ))}
+    </ol>
   );
 }
 

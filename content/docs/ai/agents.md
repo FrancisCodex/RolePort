@@ -19,16 +19,78 @@ Keep the token private: anyone with it can use RolePort as you. If you lose it, 
 
 ## Set up your agent
 
-Settings shows each of these with your address and token filled in.
+Never added an MCP server before? It's a one-time step: you tell your agent app where RolePort is and give it the token. Settings shows the code for each agent with your address and token already filled in, so you only copy and paste it. The steps below say where.
 
-- **Claude Code:** one command, `claude mcp add --transport http roleport …`.
-- **Claude Desktop:** add RolePort to `claude_desktop_config.json` (Settings → Developer → Edit Config) and restart Claude. Claude Desktop runs a small bridge, `scripts/mcp-stdio.mjs` in your RolePort folder, so Node.js needs to be installed on the same computer. If RolePort runs in Docker, point the setup at the script in your copy of the repository, not inside the container.
-- **Codex:** a few lines in `~/.codex/config.toml`.
-- **Cursor:** a few lines in `~/.cursor/mcp.json`.
+RolePort needs to be running whenever you use it from an agent.
 
-Other agents that support MCP over HTTP work too: give them the address (`http://localhost:3000/api/mcp` on a default install) and the header `Authorization: Bearer <token>`.
+### Claude Code
 
-RolePort needs to be running while you use the agent.
+1. Copy the **Claude Code** command from Settings and run it in a terminal, from any folder. `--scope user` in it adds RolePort for all your projects.
+2. Start a new Claude Code session. Sessions that were already open don't see new servers.
+3. Type `/mcp`. **roleport** should be listed as connected.
+
+To remove it later: `claude mcp remove roleport --scope user`.
+
+### Claude Desktop
+
+Claude Desktop starts MCP servers as programs on your computer, so it uses a small bridge in your RolePort folder (`scripts/mcp-stdio.mjs`) that needs Node.js.
+
+1. **Check Node.js is installed:** run `node -v` in a terminal. If it isn't found, install the LTS version from [nodejs.org](https://nodejs.org).
+2. **Open the config file:** in Claude Desktop, open **Settings** (Windows: the ☰ menu → File → Settings; Mac: Claude → Settings), go to **Developer** and press **Edit Config**. This opens the folder with `claude_desktop_config.json`. Open that file in a text editor such as Notepad or TextEdit.
+   - Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+   - Mac: `~/Library/Application Support/Claude/claude_desktop_config.json`
+3. **Paste the code from Settings:**
+   - If the file is empty or only has `{}`, replace everything with it.
+   - If it already has an `"mcpServers"` section, add only the `"roleport": { … }` part inside it (see the example below).
+   - If it has other settings but no `"mcpServers"`, keep them and add `"mcpServers": { … }` next to them, separated by a comma.
+4. **Save the file, then quit Claude Desktop completely and open it again.** On Windows, closing the window isn't enough: right-click Claude in the system tray (by the clock) and choose **Quit**.
+5. **Check it:** in a new chat, open the tools menu (the **+** or sliders button under the message box). RolePort should be listed. If Claude shows an error, **Settings → Developer** shows what went wrong.
+
+Adding RolePort next to a server you already have looks like this. Note the comma after the first server:
+
+```json
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "C:/Users/you/Documents"]
+    },
+    "roleport": {
+      "command": "node",
+      "args": ["C:/path/to/RolePort/scripts/mcp-stdio.mjs"],
+      "env": {
+        "ROLEPORT_MCP_URL": "http://localhost:3000/api/mcp",
+        "ROLEPORT_MCP_TOKEN": "<your RolePort token>"
+      }
+    }
+  }
+}
+```
+
+Use the code from Settings rather than this example: it has your real folder, address and token.
+
+Custom connectors (**Settings → Connectors → Add custom connector**) connect from Anthropic's servers, so they can't reach a RolePort running on your own computer. Use the config file instead. If RolePort runs in Docker, point the bridge at `scripts/mcp-stdio.mjs` in your copy of the repository, not inside the container.
+
+### Codex
+
+1. **Open Codex's config file** in a text editor:
+   - Mac and Linux: `~/.codex/config.toml`
+   - Windows: `%USERPROFILE%\.codex\config.toml`
+
+   If the `.codex` folder or the file isn't there, create them. The Codex app, CLI and IDE extension all read this one file.
+2. **Paste the code from Settings at the end of the file**, on a new line. Don't put it inside another `[section]`.
+3. **Save the file and start Codex again.**
+4. **Check it:** type `/mcp` in Codex. **roleport** should be listed. If Codex says it can't use HTTP servers, update Codex.
+
+### Cursor
+
+1. Open **Settings → Cursor Settings → MCP** (called **Tools & MCP** in newer versions) and press **Add new MCP server** or **New MCP Server**. This opens `~/.cursor/mcp.json`.
+2. Paste the code from Settings. Merge it the same way as for Claude Desktop if the file already lists servers.
+3. Save. Back in Cursor's MCP settings, **roleport** should show a green dot. If it's off, switch it on.
+
+### Other agents
+
+Any agent that supports MCP over HTTP works: give it the address (`http://localhost:3000/api/mcp` on a default install) and the header `Authorization: Bearer <token>`.
 
 ## What an agent can do
 
@@ -111,3 +173,7 @@ In Settings, **When the agent writes** tells the agent how much to spend: **Keep
 - **"Missing token" or "Wrong token":** copy the setup again, or make a new token and update your agent.
 - **The agent can't reach the address:** check RolePort is running, and that the address in the setup is one the agent's computer can reach. In Docker, the default `localhost:3000` works from the same computer.
 - **A tool that writes isn't listed:** Settings is on **Read only**.
+- **Claude Desktop doesn't list RolePort, or says the config is invalid:** the file usually has a JSON mistake, such as a missing comma between servers or an extra one after the last. Paste it into any JSON checker to find the line. Make sure you quit Claude fully before reopening it.
+- **Claude Desktop says `node` isn't found:** install Node.js, then quit and reopen Claude. If it's installed but still not found, put the full path in `"command"`, such as `"C:/Program Files/nodejs/node.exe"`.
+- **Claude Desktop says "Couldn't reach RolePort":** RolePort isn't running, or the address in `ROLEPORT_MCP_URL` is wrong.
+- **Codex doesn't list it:** check the lines are at the end of `config.toml` and not under another `[section]`, then restart Codex.
