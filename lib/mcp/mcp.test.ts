@@ -192,6 +192,19 @@ describe("the MCP server", () => {
     expect(saved.data).toMatchObject({ scores: { skills: 80 }, model: "Your AI agent" });
   });
 
+  it("lists evaluated jobs to look back on, by fit and words", async () => {
+    const { call } = await connect("read");
+    // The evaluation saved above scores 73: a good fit, not a strong one.
+    const all = await call("list_evaluated_jobs");
+    expect(all.data).toMatchObject({ evaluated: 1, matching: 1 });
+    expect(all.data.jobs[0]).toMatchObject({ title: "Data Analyst", fit: { score: 73, veto: null } });
+    expect((await call("list_evaluated_jobs", { fit: "worth" })).data.matching).toBe(1);
+    expect((await call("list_evaluated_jobs", { fit: "strong" })).data.matching).toBe(0);
+    expect((await call("list_evaluated_jobs", { fit: "ruled_out" })).data.matching).toBe(0);
+    expect((await call("list_evaluated_jobs", { query: "acme analyst" })).data.matching).toBe(1);
+    expect((await call("list_evaluated_jobs", { query: "nurse" })).data.matching).toBe(0);
+  });
+
   it("only takes RolePort's own AI when Settings says so", async () => {
     const own = { ...ctx, writer: "roleport" as const };
     const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();

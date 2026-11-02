@@ -4,12 +4,22 @@ import { LearnMore } from "@/components/app/learn-more";
 import { PageHeader } from "@/components/app/page-header";
 import { isAiConfigured } from "@/lib/ai/config";
 import { getMyFollowedCompanies } from "@/lib/companies/data";
-import { browseMyCompanyJobs, searchJobs } from "@/lib/jobs/data";
-import { isCompanyBrowse, parseCompanyBrowse, parseJobSearch, type JobSort, type ParsedCompanyBrowse } from "@/lib/jobs/search-params";
+import { browseMyCompanyJobs, countMyEvaluatedJobs, getMyEvaluatedJobs, searchJobs } from "@/lib/jobs/data";
+import {
+  isCompanyBrowse,
+  isEvaluatedView,
+  parseCompanyBrowse,
+  parseEvaluated,
+  parseJobSearch,
+  type JobSort,
+  type ParsedCompanyBrowse,
+  type ParsedEvaluated,
+} from "@/lib/jobs/search-params";
 import type { JobSearchParams } from "@/lib/jobs/types";
 import { isLite } from "@/lib/mode";
 import { getMyProfile } from "@/lib/profile/data";
 import { CompanyJobsView } from "./company-jobs-view";
+import { EvaluatedJobsView, EvaluatedResults } from "./evaluated-view";
 import { LiteJobs } from "./lite-jobs";
 import { ResultsSkeleton, ResultsView } from "./results-view";
 import { JobSearchView } from "./search-view";
@@ -40,6 +50,20 @@ async function JobSearch({ searchParams }: { searchParams: PageProps<"/jobs">["s
   // Following or unfollowing a company changes the results, so it's part of the keys below.
   const companyIds = companies.map((c) => c.id);
 
+  if (isEvaluatedView(sp)) {
+    const filter = parseEvaluated(sp);
+    return (
+      <EvaluatedJobsView
+        filter={filter}
+        results={
+          <Suspense key={JSON.stringify(filter)} fallback={<ResultsSkeleton />}>
+            <EvaluatedJobs filter={filter} />
+          </Suspense>
+        }
+      />
+    );
+  }
+
   if (isCompanyBrowse(sp)) {
     const browse = parseCompanyBrowse(sp);
     return (
@@ -62,6 +86,7 @@ async function JobSearch({ searchParams }: { searchParams: PageProps<"/jobs">["s
       profile={profile}
       search={search}
       companies={companies}
+      evaluatedCount={await countMyEvaluatedJobs()}
       results={
         <Suspense key={JSON.stringify({ params: search.params, sort: search.sort, companies: companyIds })} fallback={<ResultsSkeleton />}>
           <Results params={search.params} sort={search.sort} />
@@ -74,6 +99,11 @@ async function JobSearch({ searchParams }: { searchParams: PageProps<"/jobs">["s
 async function Results({ params, sort }: { params: JobSearchParams; sort: JobSort }) {
   const [results, aiEnabled] = await Promise.all([searchJobs(params, sort), isAiConfigured()]);
   return <ResultsView {...results} aiEnabled={aiEnabled} />;
+}
+
+async function EvaluatedJobs({ filter }: { filter: ParsedEvaluated }) {
+  const [{ jobs, total }, aiEnabled] = await Promise.all([getMyEvaluatedJobs(filter), isAiConfigured()]);
+  return <EvaluatedResults jobs={jobs} total={total} aiEnabled={aiEnabled} filtered={Boolean(filter.query) || filter.fit !== "all"} />;
 }
 
 async function CompanyResults({ browse }: { browse: ParsedCompanyBrowse }) {

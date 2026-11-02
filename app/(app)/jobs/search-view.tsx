@@ -1,4 +1,4 @@
-import { Search } from "lucide-react";
+import { ArrowRight, Search, Sparkles } from "lucide-react";
 import Form from "next/form";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -34,11 +34,14 @@ export function JobSearchView({
   profile,
   search: { params, sort, query, city },
   companies,
+  evaluatedCount,
   results,
 }: {
   profile: Pick<ProfileInput, "country" | "targetCountries" | "desiredRoles">;
   search: ParsedJobSearch;
   companies: FollowedCompanyView[];
+  /** How many jobs have an AI evaluation, for the link to them. */
+  evaluatedCount: number;
   results: ReactNode;
 }) {
   const country = params.country;
@@ -133,6 +136,22 @@ export function JobSearchView({
         <CompaniesBar companies={companies} countries={[profile.country, ...profile.targetCountries]} />
         <PasteJob />
       </div>
+
+      {evaluatedCount > 0 && (
+        <Link
+          href="/jobs?view=evaluated"
+          className="-mt-2 flex items-center gap-2.5 rounded-lg border border-border bg-surface px-3 py-2 text-[13px] text-muted transition-colors hover:border-border-strong hover:text-fg"
+        >
+          <Sparkles className="size-3.5 shrink-0 text-brand-ink" />
+          <span>
+            <span className="font-medium text-fg">
+              {evaluatedCount} job{evaluatedCount === 1 ? "" : "s"} you&apos;ve evaluated
+            </span>
+            , kept to come back to
+          </span>
+          <ArrowRight className="ml-auto size-3.5 shrink-0" />
+        </Link>
+      )}
 
       {query ? (
         results

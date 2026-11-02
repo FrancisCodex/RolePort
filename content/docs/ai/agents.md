@@ -101,6 +101,7 @@ Any agent that supports MCP over HTTP works: give it the address (`http://localh
 | `get_profile` | Reads your profile. Contact details only when asked for |
 | `search_jobs` | The same search as the Jobs page, with quick match scores |
 | `get_job` | One job, its fit evaluation and whether it's still open |
+| `list_evaluated_jobs` | Every job you've had evaluated, by fit, to look back on without searching again |
 | `list_applications`, `get_application` | Your tracker, and one application's history, contacts, emails and documents |
 | `follow_ups_due` | What Home shows under Follow up |
 | `list_followed_companies` | The companies you follow |

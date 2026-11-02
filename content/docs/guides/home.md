@@ -12,7 +12,7 @@ updated: 2026-10-31
 - **Your next milestone**, to keep you moving.
 - **How far your applications get:** every job you saved, and how many reached each stage.
 - **Applications sent per week** over the last 8 weeks.
-- **Fit evaluations:** your strongest evaluated jobs. It's empty until AI is on and you've evaluated a job.
+- **Fit evaluations:** how many jobs you've evaluated, the average score and how many are strong fits, with a link to [look back at them](/docs/guides/jobs#jobs-youve-evaluated). It's empty until you've evaluated a job.
 - **Recent activity** across your applications.
 
 ## Follow up

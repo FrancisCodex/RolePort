@@ -7,8 +7,8 @@ import { evaluateStoredJob } from "@/lib/jobs/fit-evaluation";
 import { readPaste } from "@/lib/jobs/paste/review";
 import { storePastedJob, writeJobCheck } from "@/lib/jobs/paste/store";
 import { canCheckJob, pastedJobSchema } from "@/lib/jobs/paste/types";
-import { readFitMatches, readJob, readJobRow, readTrackedJobs, sortJobs, storeJobs, toListItem } from "@/lib/jobs/queries";
-import { parseJobSearch, POSTED_WITHIN_DAYS } from "@/lib/jobs/search-params";
+import { readEvaluatedJobs, readFitMatches, readJob, readJobRow, readTrackedJobs, sortJobs, storeJobs, toListItem } from "@/lib/jobs/queries";
+import { FIT_FILTERS, parseJobSearch, POSTED_WITHIN_DAYS } from "@/lib/jobs/search-params";
 import { readProfile } from "@/lib/profile/queries";
 import { AI_NOT_SET_UP, notFound } from "../errors";
 import { answerInput, POSTING_NOTE, tool, ToolError, writerFor, type McpContext } from "../tool";
@@ -216,5 +216,33 @@ export const evaluateJob = tool({
     const config = await writerFor(ctx, answer, AI_NOT_SET_UP);
     await evaluateStoredJob(ctx.db, ctx.user, job_id, config);
     return jobDetail(await jobOrThrow(ctx, job_id), false).fit;
+  },
+});
+
+export const listEvaluatedJobs = tool({
+  name: "list_evaluated_jobs",
+  title: "List evaluated jobs",
+  description:
+    "Every job the user has had evaluated (in the app or through an agent), with its fit score and recommendation, best fit first or most recent first. Use it to look back at earlier evaluations instead of searching again. The same list is in RolePort under Jobs → Jobs you've evaluated.",
+  input: {
+    query: z.string().max(120).optional().describe("Words that must appear in the job title or company."),
+    fit: z
+      .enum(FIT_FILTERS)
+      .optional()
+      .describe('"worth": good fit or better (60+, not ruled out); "strong": 75+ and not ruled out; "ruled_out": failed a gate, closed or past its deadline. Default all.'),
+    sort: z.enum(["score", "recent"]).optional().describe("Best fit first (default) or most recently evaluated first."),
+    limit: z.number().int().min(1).max(50).optional().describe("Default 20."),
+    offset: z.number().int().min(0).optional(),
+  },
+  writes: false,
+  async run({ query = "", fit = "all", sort = "score", limit = 20, offset = 0 }, ctx) {
+    const { profile } = await readProfile(ctx.db, ctx.user);
+    const { jobs, total } = await readEvaluatedJobs(ctx.db, ctx.user.id, profile, { query, fit, sort });
+    return {
+      evaluated: total,
+      matching: jobs.length,
+      jobs: jobs.slice(offset, offset + limit).map((j) => ({ ...jobSummary(j), evaluatedAt: j.fit!.scoredAt.toISOString() })),
+      ...(offset + limit < jobs.length && { next: { offset: offset + limit } }),
+    };
   },
 });

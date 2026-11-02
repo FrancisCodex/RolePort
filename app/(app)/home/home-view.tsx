@@ -196,7 +196,13 @@ export function HomeView({ firstName, stats, setup }: HomeData) {
                     {stats.evaluations.average != null && <span className="font-normal text-muted"> · {stats.evaluations.average} on average</span>}
                   </p>
                   <p className="mt-0.5 text-muted">
-                    {stats.evaluations.strong ? `${plural(stats.evaluations.strong, "strong fit")} worth applying to.` : "No strong fits yet."}
+                    {stats.evaluations.strong ? `${plural(stats.evaluations.strong, "strong fit")} worth applying to.` : "No strong fits yet."}{" "}
+                    <Link
+                      href={stats.evaluations.strong ? "/jobs?view=evaluated&fit=strong" : "/jobs?view=evaluated"}
+                      className="font-medium whitespace-nowrap text-brand-ink hover:underline"
+                    >
+                      {stats.evaluations.strong ? "See them" : "See all"}
+                    </Link>
                   </p>
                 </div>
               </div>

@@ -5,6 +5,7 @@ import { readEmailPrompt, readOutreachDocs } from "@/lib/outreach/outreach";
 import { followUpLabel, nextFollowUp } from "@/lib/outreach/rules";
 import { EMAIL_INFO, EMPTY_OUTREACH, type FollowUpKind } from "@/lib/outreach/types";
 import type { ApplicationStatus } from "./applications";
+import { fitBand, vetoReason } from "./fit";
 import { timeAgo } from "./format";
 
 /*
@@ -54,7 +55,7 @@ const isoDay = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padSt
 export async function readDashboard(db: AnyDb, userId: string, now = new Date()): Promise<DashboardStats> {
   const [apps, matches, outreach, { rules }] = await Promise.all([
     db.select().from(schema.application).where(eq(schema.application.userId, userId)),
-    db.select({ score: schema.jobMatch.overallScore }).from(schema.jobMatch).where(eq(schema.jobMatch.userId, userId)),
+    db.select().from(schema.jobMatch).where(eq(schema.jobMatch.userId, userId)),
     readOutreachDocs(db, userId),
     readEmailPrompt(db, userId),
   ]);
@@ -100,7 +101,7 @@ export async function readDashboard(db: AnyDb, userId: string, now = new Date())
     if (bucket && at.getTime() < thisWeek.getTime() + 7 * DAY) bucket.count++;
   }
 
-  const scores = matches.map((m) => m.score).filter((s): s is number => s != null);
+  const scores = matches.map((m) => m.overallScore).filter((s): s is number => s != null);
 
   return {
     total: apps.length,
@@ -117,7 +118,8 @@ export async function readDashboard(db: AnyDb, userId: string, now = new Date())
     evaluations: {
       count: matches.length,
       average: scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null,
-      strong: scores.filter((s) => s >= 75).length,
+      // Same as the Strong fits filter on Jobs: a ruled-out job (closed, not eligible…) isn't worth applying to, whatever its score.
+      strong: matches.filter((m) => m.overallScore != null && fitBand(m.overallScore) === "strong" && !vetoReason(m)).length,
     },
     recent: events.slice(0, 6).flatMap((e) => {
       const app = appById.get(e.applicationId);
