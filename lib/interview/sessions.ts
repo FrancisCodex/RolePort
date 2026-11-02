@@ -412,6 +412,18 @@ export async function gradeInterviewStep(db: AnyDb, userId: string, id: string, 
   return save(db, row, { status: "done" });
 }
 
+/**
+ * Finish the report once the grades and summary are in, without checking each answer or writing
+ * stronger ones: for an AI agent grading with the user's plan (lib/mcp), where those steps cost
+ * the most. The report then shows and counts like any other. Returns the session as it is.
+ */
+export async function finishWithoutCoaching(db: AnyDb, userId: string, id: string): Promise<InterviewView> {
+  const row = await mustRead(db, userId, id);
+  const view = toView(row);
+  if (view.status !== "ended" || !view.report.summary) return view;
+  return save(db, row, { status: "done" });
+}
+
 export async function readInterviewPrompt(db: AnyDb, userId: string): Promise<string | null> {
   const [row] = await db
     .select({ prompt: schema.userSettings.interviewPrompt })

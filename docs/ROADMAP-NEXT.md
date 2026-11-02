@@ -2,7 +2,7 @@
 
 Goal: RolePort works for job seekers in any country. The Philippines stays the default and the first market.
 
-Order: **1. More job sources → 2. Paste a job → 3. Email applications and follow-ups → 4. Documentation page → MCP server → 5. Desktop app (and the agent question)**.
+Order: **1. More job sources → 2. Paste a job → 3. Email applications and follow-ups → 4. Documentation page → MCP server → MCP: Interview Coach and prompts → Sign in with ChatGPT → 5. Desktop app (and the agent question)**.
 Each step ships on its own branch and works in self-hosted and Lite, unless it says otherwise.
 
 ## Status
@@ -17,10 +17,12 @@ Each step ships on its own branch and works in self-hosted and Lite, unless it s
 | 2. Paste a job (and "still open" checks) | ✅ Done | `feat/paste-a-job` |
 | 3. Email applications and follow-ups | ✅ Done (pasting an employer's reply is still for later, see 3B) | `feat/email-and-follow-ups` |
 | 4. Documentation page (`/docs`) with search | ✅ Done (screenshots still to add) | `feat/docs-page` |
-| MCP server | ✅ Built, and the agent can do the AI writing (still to try: Claude Desktop itself, a real agent model) | `feat/mcp-server` |
-| 5. Desktop app: job scout, apply assistant | ⏭️ Next | — |
+| MCP server | ✅ Done, and the agent can do the AI writing (merged in #24; still to try: Claude Desktop itself, a real agent model) | `feat/mcp-server` |
+| MCP: Interview Coach tools and ready-made prompts | ✅ Built | `feat/mcp-coach-and-prompts` |
+| Sign in with ChatGPT: a ChatGPT plan as RolePort's AI | ⏭️ Next | `feat/chatgpt-sign-in` |
+| 5. Desktop app: job scout, apply assistant | After Sign in with ChatGPT | — |
 
-**Next up: Phase 5, the desktop app.** It builds on the MCP server's tools. Everything marked ✅ Done is finished.
+**Next up: Sign in with ChatGPT**, so people with a ChatGPT plan but no API key or capable computer can use RolePort's AI. Then Phase 5, the desktop app, which builds on the MCP server's tools. Everything marked ✅ Done is finished.
 
 ---
 
@@ -272,6 +274,55 @@ Added because the main audience may have a Claude or ChatGPT plan but no API key
 
 **Later:** MCP prompts for common requests ("weekly job hunt"), and the same agent-writes flow for application questions and the Interview Coach if people ask.
 
+## MCP: Interview Coach and ready-made prompts ✅ Built
+
+Two gaps after the MCP server: an agent couldn't run a mock interview (it could only improvise one, unsaved and ungraded), and users had to work out what to ask. Branch: `feat/mcp-coach-and-prompts`.
+
+### How it was built
+
+- **Interview Coach tools** (`lib/mcp/tools/interview.ts`): `list_mock_interviews`, `get_mock_interview` (transcript, the question waiting, the report), `start_mock_interview`, `answer_interview`, `skip_interview_question`, `end_interview`, `get_interview_report`. They call the Coach's own steps in `lib/interview/sessions.ts`, so RolePort stays the interviewer: it plans the questions, decides follow-ups and grades. The agent only relays questions and the user's replies word for word (the tool results and the server instructions say so). Sessions are saved like the app's and show on the Coach page.
+- **The agent can be the AI here too.** Planning, each follow-up decision and each grading step go through `generateStructured()`, so without RolePort's AI each one is a brief for the agent.
+- **Grading in steps.** `get_interview_report` runs as many grading steps as fit in about 45 seconds and reports progress; call again to continue. When the agent grades, coaching (checking each answer against the CV and letter, writing a stronger one: 2 more steps per answer) is off by default to save usage, and the report is marked done once the summary is in (`finishWithoutCoaching`), so the Coach page shows it, scores it and counts it in progress. Coaching can't be added afterwards; ask for it up front.
+- **Ready-made prompts** (`lib/mcp/prompts.ts`): Find and evaluate jobs, Mock interview, Prepare an application, Follow-ups due, Import my CV, Look back at evaluated jobs, My job search this week. Slash commands in Claude Code (`/mcp__roleport__…`), the + menu in Claude Desktop. Read only offers only the two that don't change anything.
+- **Docs:** "Ready-made prompts" and "Mock interviews in the chat" on `/docs/ai/agents`.
+- **Tests:** a full interview in agent-writes mode (plan, a turn, a skip, end, grade, summary, listed with its score), and the prompts: Read only filtering, arguments filled in, and every tool a prompt names exists (read-only prompts name only reading tools).
+
+**Still to try:** a real interview in Claude Code and Claude Desktop, with RolePort's AI and with the agent writing; whether Codex and Cursor show the prompts.
+
+## Sign in with ChatGPT ⏭️ Next
+
+Many job seekers pay for ChatGPT Plus or Pro but have no API key and no computer that runs a good local model. OpenAI's **Sign in with ChatGPT** lets an app's AI requests count against the user's ChatGPT plan instead of an API key, and it's open to **open-source, locally hosted apps** with no approval or client secret. That describes self-hosted RolePort. Branch: `feat/chatgpt-sign-in`.
+
+This is better for them than the MCP agent-writes mode: every AI button in RolePort works directly, with no agent in between. The agent mode stays for Claude users, since Claude has nothing like this.
+
+### What it is
+
+- **A new choice in Settings → AI provider: "ChatGPT (your plan)".** A **Sign in with ChatGPT** button opens the system browser to OpenAI's sign-in; the user approves using their plan; RolePort lists the models their account offers. After that, evaluations, tailored CVs, cover letters, emails, CV import, pasted jobs and the Interview Coach all use it.
+- **Usage control is on OpenAI's side:** users see each app's usage and set a weekly cap for it in ChatGPT under Settings → Usage. RolePort links there and says so.
+- **Self-hosted only.** Lite is a hosted website, which OpenAI puts on the separate commercial path (an interest form). Lite keeps API keys and the MCP agent route.
+
+### How it works (from OpenAI's open-source docs)
+
+- **Sign-in:** OAuth with PKCE in the system browser. `https://auth.openai.com/api/accounts/authorize` with `client_id=dynamic_agent_client` on the first sign-in (the callback returns the issued `client_id`, saved for later sign-ins), `agent_name_hint=RolePort`, a stable `ext_agent_host_id` per install (`urn:uuid:…` generated once), `scope=openid profile email offline_access resource.invoke chatgpt.tokens.use.direct`, `resource=https://api.openai.com/v1`, fresh `state`, `nonce` and S256 `code_challenge`.
+- **Callback:** `http://127.0.0.1:<port>/…` (not `localhost`; the path must stay the same). RolePort's own server can take it at e.g. `/api/chatgpt/callback` on its port. Exchange the code at `https://auth.openai.com/api/accounts/oauth/token` (form-encoded, no secret). Verify the ID token against OpenAI's JWKS (issuer, audience, expiry, nonce) and check `chatgpt.tokens.use.direct` was granted.
+- **Tokens:** access tokens last an hour; refresh tokens last 30 days and are replaced on each refresh. Store them encrypted with `lib/secrets.ts`, like API keys, refresh before expiry, and never log them.
+- **Calls:** `POST https://api.openai.com/v1/responses` with the access token as the bearer. Rules: `store: false`, `stream: true`, the full context in `input`, system text in `instructions`. Not allowed: `temperature`, `max_output_tokens`, `previous_response_id`, `metadata`, `user` and others on the preview limitations page. Models from `GET /v1/models` (those with `visibility == "list"`).
+- **Errors:** `subscription_sharing_usage_limit_exceeded` and `subscription_sharing_usage_unavailable` can arrive as `response.failed` mid-stream; show "Your ChatGPT plan's limit for RolePort is used up" with the reset hint and a link to ChatGPT's usage settings. Don't retry in a loop.
+- **Code:** a third provider in `generateStructured()` (`lib/ai/structured.ts`), next to Anthropic and OpenAI-compatible, reading the streamed Responses API. Everything after the model call (checks, saving) stays the same.
+
+### Check first (day one)
+
+1. **Structured output.** The docs don't say whether `text.format` with a JSON schema is allowed on this route. Every RolePort AI feature expects JSON matching a schema. Test with a real Plus account: if it works, use it; if not, ask for JSON in the instructions and use the existing "that didn't match the schema, reply again" retry the local-model path already has.
+2. **Which plans work.** The developer quickstart says Plus and Pro; the help article says supported open-source tools are available to all ChatGPT users. Say "Plus or Pro" until a Free and a Go account have been tried.
+3. **Reasoning effort.** Not documented for this route; check whether `reasoning.effort` is accepted before passing RolePort's per-task effort.
+4. **The refresh request.** The token reference describes refreshing but the exact request is on another page ("Refreshing tokens"); read it before writing the refresh.
+5. **Remote self-hosted servers.** The callback has to reach `127.0.0.1` on the computer whose browser signs in. Fine for RolePort on your own PC (Docker included, with the port published as now). For a VPS, read OpenAI's "Self-hosted VMs" page, or show a clear "sign in on the computer RolePort runs on" message.
+6. **Branding.** Follow OpenAI's Sign in with ChatGPT UI guidelines for the button and the plan-usage wording.
+
+**Done when:** on a self-hosted install with no API key, a user with a ChatGPT plan signs in from Settings, picks a model, evaluates a job, tailors a CV and drafts an email, and sees RolePort's usage in ChatGPT's usage settings; signing out (and disconnecting in ChatGPT) stops it; an exhausted weekly cap shows a clear message instead of an error.
+
+Sources: [Using your ChatGPT plan in other apps](https://help.openai.com/en/articles/20001542-using-your-chatgpt-plan-in-other-apps-and-sites), [Quickstart](https://developers.openai.com/siwc/quickstart), [Open-source plan usage](https://developers.openai.com/siwc/token-sharing-open-source), [Sign in](https://developers.openai.com/siwc/token-sharing-open-source/sign-in), [Preview limitations](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations), [Models and inference](https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference), [Token reference](https://developers.openai.com/siwc/token-sharing-open-source/token-reference). It's a preview, so check them again when starting.
+
 ## 5. Desktop app and the in-app AI agent
 
 ### Recommendation: not a general chat agent. Build two narrow desktop-only features instead.
@@ -304,6 +355,8 @@ Desktop-only isn't required for any of this except the two features above. Keep 
 | 1B. Government and remote feeds ✅ (more to come) | M (per source: S) | 0 |
 | 1C. Contributor kit ✅ | S | 1A |
 | MCP server ✅ | S–M | — |
+| MCP: Interview Coach and prompts ✅ | S | MCP server |
+| Sign in with ChatGPT | M | — (self-hosted only) |
 | 4. Documentation page with search ✅ | M | 1C (sources table), ideally 2 and 3 so their pages are written once |
 | 5. Desktop app: job scout, apply assistant | L | 1A, 2, 4 |
 

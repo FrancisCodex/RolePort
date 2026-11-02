@@ -6,6 +6,7 @@ import { APP_VERSION } from "@/lib/backup/format";
 import type { McpAccess } from "./access";
 import { agentBrief } from "./brief";
 import { AI_NOT_SET_UP } from "./errors";
+import { MCP_PROMPTS, promptArgs, type McpPrompt } from "./prompts";
 import { MCP_TOOLS } from "./registry";
 import { POSTING_NOTE, ToolError, type McpContext, type McpTool } from "./tool";
 
@@ -14,6 +15,7 @@ const INSTRUCTIONS = [
   "It never applies to jobs or sends email: apply_to_job and mark_email_sent only record what the user did.",
   "Evaluations, tailored CVs, letters, emails and CV imports are written by the AI set up in RolePort when it has one. Otherwise the tool returns a brief (status your_turn): you write the answer yourself and call the same tool again with it, and RolePort checks and saves it.",
   "These are routine writing tasks: they don't need the largest model or long reasoning, and each brief says how much effort is enough.",
+  "In a mock interview (start_mock_interview), RolePort is the interviewer: ask its questions exactly as written and pass the user's replies back word for word, without coaching until the report.",
   POSTING_NOTE,
 ].join(" ");
 
@@ -52,5 +54,15 @@ export function createMcpServer(ctx: McpContext, access: McpAccess): McpServer {
       },
     );
   }
+  for (const p of promptsFor(access)) {
+    server.registerPrompt(p.name, { title: p.title, description: p.description, argsSchema: promptArgs(p) }, (args: Record<string, string | undefined>) => ({
+      messages: [{ role: "user", content: { type: "text", text: p.text(args) } }],
+    }));
+  }
   return server;
+}
+
+/** The ready-made prompts this access level allows. */
+export function promptsFor(access: McpAccess): McpPrompt[] {
+  return access === "write" ? MCP_PROMPTS : MCP_PROMPTS.filter((p) => !p.writes);
 }
