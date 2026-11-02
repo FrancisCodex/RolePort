@@ -125,7 +125,7 @@ export function JobDetailView({
 
         {lead && <div className={cn("flex flex-col gap-3", aside && "max-lg:-order-1")}>{lead}</div>}
 
-        <FitEvaluation jobId={job.id} fit={job.fit} aiEnabled={aiEnabled} postedAt={job.postedAt} />
+        <FitEvaluation jobId={job.id} job={{ title: job.title, company: job.company }} fit={job.fit} aiEnabled={aiEnabled} postedAt={job.postedAt} />
 
         {panel && quickMatch}
 

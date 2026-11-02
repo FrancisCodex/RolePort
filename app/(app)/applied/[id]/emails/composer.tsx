@@ -2,6 +2,8 @@
 
 import { Check, CheckCheck, Copy, ExternalLink, Loader2, Mail, Sparkles, Trash2, TriangleAlert } from "lucide-react";
 import Link from "next/link";
+import { AgentPrompt } from "@/components/app/agent-prompt";
+import { draftEmailPrompt } from "@/lib/mcp/agent-prompts";
 import { useState, type ReactNode } from "react";
 import { PromptDetails } from "@/components/app/prompt-details";
 import { Badge } from "@/components/ui/badge";
@@ -249,6 +251,14 @@ export function Composer({
             </Link>
           )}
         </p>
+      )}
+
+      {!data.aiEnabled && (
+        <AgentPrompt
+          className="mx-4 mb-3 sm:mx-5"
+          prompt={draftEmailPrompt({ id: data.applicationId, role: data.role, company: data.company }, { id: kind, label: EMAIL_INFO[kind].label })}
+          what="writes this message with your plan and saves it here as a draft. Reload this page to see it"
+        />
       )}
 
       <footer className="sticky bottom-0 flex flex-wrap items-center gap-1.5 rounded-b-xl border-t border-border bg-surface p-3">

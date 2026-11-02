@@ -3,7 +3,7 @@
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { generateStructured, listModels } from "@/lib/ai/client";
-import { getMySettingsRow } from "@/lib/ai/config";
+import { aiConfigFor, getMySettingsRow } from "@/lib/ai/config";
 import { AI_PRESETS } from "@/lib/ai/presets";
 import { aiInput, aiSettingsValues, checkBaseUrl, CONNECTION_TEST, resolveAiInput, type AiSettingsInput } from "@/lib/ai/settings";
 import { exportBackup } from "@/lib/backup/export";
@@ -14,7 +14,7 @@ import { resolveCompany } from "@/lib/companies/resolve";
 import { starterKeysSchema } from "@/lib/companies/starters";
 import { getDb } from "@/lib/db";
 import { jobSpyUrl } from "@/lib/env";
-import { hashMcpToken, newMcpToken, type McpAccess } from "@/lib/mcp/access";
+import { agentPromptsOn, hashMcpToken, newMcpToken, type McpAccess } from "@/lib/mcp/access";
 import type { Result } from "@/lib/result";
 import { decryptSecret, encryptSecret } from "@/lib/secrets";
 import { getCurrentUser } from "@/lib/session";
@@ -217,4 +217,14 @@ export async function saveMcpPreferences(raw: { writer: "auto" | "roleport" | "a
   await writeSettings(await getDb(), user.id, { mcpWriter: writer === "auto" ? null : writer, mcpUsage: usage === "balanced" ? null : usage });
   refresh();
   return { ok: true, data: undefined };
+}
+
+/**
+ * Whether to offer copy-paste requests for an AI agent where a feature needs AI
+ * (components/app/agent-prompt.tsx): the MCP server is on and may change things, and the agent
+ * is the one writing (RolePort has no AI of its own, or Settings says the agent always writes).
+ */
+export async function getAgentPromptsMode(): Promise<boolean> {
+  const row = await getMySettingsRow();
+  return agentPromptsOn(row, aiConfigFor(row) !== null);
 }

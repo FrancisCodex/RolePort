@@ -4,7 +4,9 @@ import { Check, ChevronRight, Clock, ListChecks, Loader2, Sparkles, Square, X } 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createContext, use, useRef, useState, type MouseEvent, type ReactNode } from "react";
+import { AgentPrompt } from "@/components/app/agent-prompt";
 import { evaluateJob } from "@/lib/client/mutations";
+import { evaluateJobsPrompt } from "@/lib/mcp/agent-prompts";
 import { AiScore } from "@/components/jobs/ai-score";
 import { useJobBrowser } from "@/components/jobs/job-browser";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +38,10 @@ type AnalyzeState = {
 
 const AnalyzeContext = createContext<AnalyzeState>({ phase: "idle", selected: [], live: {}, toggle: () => {} });
 
-type JobRef = { id: string; title: string };
+type JobRef = { id: string; title: string; company: string };
+
+/** How many jobs the request to an AI agent offers to evaluate: it uses the user's plan, so the best few. */
+const AGENT_BATCH = 5;
 
 type Controls = {
   start: (ids: string[]) => void;
@@ -111,15 +116,25 @@ export function AnalyzePanel({ jobs, topIds, aiEnabled }: { jobs: JobRef[]; topI
   if (!controls) return null;
 
   if (!aiEnabled) {
+    // An agent evaluates with the user's plan, so offer the best few rather than all of them.
+    const top = topIds.slice(0, AGENT_BATCH).flatMap((id) => jobs.filter((j) => j.id === id));
     return (
-      <Link
-        href="/settings"
-        className="flex items-center gap-2.5 rounded-lg border border-brand/20 bg-brand-soft px-3 py-2 text-[13px] font-medium text-brand-ink hover:border-brand/40"
-      >
-        <Sparkles className="size-3.5 shrink-0" />
-        <span className="flex-1">Choose an AI provider to analyze how well each job fits you.</span>
-        <ChevronRight className="size-4" />
-      </Link>
+      <div className="flex flex-col gap-2">
+        <Link
+          href="/settings"
+          className="flex items-center gap-2.5 rounded-lg border border-brand/20 bg-brand-soft px-3 py-2 text-[13px] font-medium text-brand-ink hover:border-brand/40"
+        >
+          <Sparkles className="size-3.5 shrink-0" />
+          <span className="flex-1">Choose an AI provider to analyze how well each job fits you.</span>
+          <ChevronRight className="size-4" />
+        </Link>
+        {top.length > 0 && (
+          <AgentPrompt
+            prompt={evaluateJobsPrompt(top)}
+            what={`evaluates the ${top.length === 1 ? "best match" : `${top.length} best matches`} here with your plan. The scores show up on these jobs`}
+          />
+        )}
+      </div>
     );
   }
 

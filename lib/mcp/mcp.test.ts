@@ -10,6 +10,7 @@ import type { AnyDb } from "@/lib/db/types";
 import type { KeyedJob } from "@/lib/jobs/queries";
 import { authorizeMcp, hashMcpToken, newMcpToken, type McpAccess } from "./access";
 import { AI_NOT_SET_UP } from "./errors";
+import { MCP_PROMPTS } from "./prompts";
 import { MCP_TOOLS } from "./registry";
 import { createMcpServer, toolsFor } from "./server";
 import type { McpContext } from "./tool";
@@ -232,5 +233,69 @@ describe("the MCP server", () => {
     const result = await call("get_application", { application_id: "nope" });
     expect(result.isError).toBe(true);
     expect(result.text).toMatch(/list_applications/);
+  });
+
+  it("runs a mock interview through the agent, saved like one in the app", async () => {
+    const { call } = await connect("write");
+    const q = (question: string) => ({ question, competency: "Analysis", intent: "Checks the basics.", strongSignals: ["Specific"], redFlags: ["Vague"], panelist: 0 });
+
+    const planBrief = await call("start_mock_interview", { role: "Data Analyst", focus: "behavioral" });
+    expect(planBrief.data.status).toBe("your_turn");
+    const plan = { questions: [q("Tell me about a report you built."), q("How do you check your numbers?"), q("Why this role?")] };
+    const started = await call("start_mock_interview", { role: "Data Analyst", focus: "behavioral", answer: plan });
+    const id = started.data.interview_id as string;
+    expect(started.data.interviewer).toMatchObject({ say: "Tell me about a report you built.", question: "1 of 3" });
+
+    const turnBrief = await call("answer_interview", { interview_id: id, user_answer: "I built a weekly Power BI dashboard for 4 clients." });
+    expect(turnBrief.data.status).toBe("your_turn");
+    const moved = await call("answer_interview", {
+      interview_id: id,
+      user_answer: "I built a weekly Power BI dashboard for 4 clients.",
+      answer: { assessment: "Specific enough.", action: "move_on", followUp: "", acknowledgement: "Okay, thanks." },
+    });
+    expect(moved.data.interviewer).toMatchObject({ kind: "question", question: "2 of 3", say: "Okay, thanks. How do you check your numbers?" });
+
+    expect((await call("skip_interview_question", { interview_id: id })).data.interviewer.question).toBe("3 of 3");
+    expect((await call("end_interview", { interview_id: id })).data.status).toBe("ended");
+
+    // The agent grades: one brief per step, then the summary. Coaching is off by default when the agent writes.
+    const gradeBrief = await call("get_interview_report", { interview_id: id });
+    expect(gradeBrief.data.status).toBe("your_turn");
+    const grade = { scores: { relevance: 3, structure: 3, evidence: 4, ownership: 3, impact: 2 }, summary: "Clear and specific.", strengths: ["Named the tool"], improvements: ["Say the result"] };
+    const summaryBrief = await call("get_interview_report", { interview_id: id, answer: grade });
+    expect(summaryBrief.data.status).toBe("your_turn");
+    const report = await call("get_interview_report", {
+      interview_id: id,
+      answer: { headline: "A solid start.", strengths: ["Specifics"], focusAreas: ["Results"], questionsFeedback: "Prepare 2 questions." },
+    });
+    expect(report.data).toMatchObject({ status: "done", summary: { headline: "A solid start." }, model: "Your AI agent" });
+    expect(report.data.questions.map((r: { result?: string; score?: number }) => r.result ?? r.score)).toEqual([3, "skipped", "not_reached"]);
+
+    const list = await call("list_mock_interviews");
+    expect(list.data.interviews[0]).toMatchObject({ id, status: "done", answered: "1 of 3", score: 3 });
+  });
+
+  it("offers ready-made prompts, only reading ones in Read only, naming real tools", async () => {
+    const write = await connect("write");
+    const all = (await write.client.listPrompts()).prompts.map((p) => p.name);
+    expect(all).toEqual(MCP_PROMPTS.map((p) => p.name));
+    const read = await connect("read");
+    const readable = (await read.client.listPrompts()).prompts.map((p) => p.name);
+    expect(readable).toEqual(MCP_PROMPTS.filter((p) => !p.writes).map((p) => p.name));
+
+    const prompt = await write.client.getPrompt({ name: "mock_interview", arguments: { for: "Acme", style: "tough" } });
+    const text = (prompt.messages[0].content as { text: string }).text;
+    expect(text).toContain('"Acme"');
+    expect(text).toContain('"tough"');
+
+    // Every snake_case word a prompt mentions is a real tool (or one of the few argument values it names).
+    const tools = new Set(MCP_TOOLS.map((t) => t.name));
+    const allowed = new Set(["application_id", "ruled_out"]);
+    for (const p of MCP_PROMPTS) {
+      const words = p.text({}).match(/\b[a-z]+(?:_[a-z]+)+\b/g) ?? [];
+      for (const w of words) expect(tools.has(w) || allowed.has(w), `${p.name} mentions ${w}`).toBe(true);
+      // Read-only prompts may only call tools that read.
+      if (!p.writes) for (const w of words) if (tools.has(w)) expect(MCP_TOOLS.find((t) => t.name === w)!.writes, `${p.name} uses ${w}`).toBe(false);
+    }
   });
 });

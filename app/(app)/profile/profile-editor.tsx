@@ -2,6 +2,7 @@
 
 import { Check, FileUp, Loader2, Plus, RefreshCw, Sparkles, Trash2, X } from "lucide-react";
 import { useRef, useState, useTransition, type ReactNode } from "react";
+import { AgentPrompt } from "@/components/app/agent-prompt";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +12,7 @@ import { MonthPicker, MonthRangePicker } from "@/components/ui/month-picker";
 import { Select } from "@/components/ui/select";
 import { COUNTRIES, countryName, findCountry } from "@/lib/geo/countries";
 import { currencySymbol } from "@/lib/jobs/format";
+import { importCvPrompt } from "@/lib/mcp/agent-prompts";
 import { PH_REGIONS } from "@/lib/ph-locations";
 import type { CvImport } from "@/lib/profile/cv-file";
 import { normalizeProfileDates } from "@/lib/profile/dates";
@@ -244,6 +246,13 @@ export function ProfileEditor({
             </Button>
           </div>
         </CardContent>
+        {!aiEnabled && (
+          <AgentPrompt
+            className="mx-5 mb-5"
+            prompt={importCvPrompt()}
+            what="reads your CV into your whole profile with your plan, and shows you the draft before saving. Reload this page to see it"
+          />
+        )}
         <details className="border-t border-border">
           <summary className="flex cursor-pointer items-center gap-2 px-5 py-2.5 text-[13px] font-medium text-muted select-none hover:text-fg">
             See or change what the AI is told

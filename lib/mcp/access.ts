@@ -56,3 +56,15 @@ export function authorizeMcp(request: Request, settings: { mcpAccess: McpAccess 
   }
   return { ok: true, access: settings.mcpAccess };
 }
+
+/**
+ * Whether the app offers copy-paste requests for the agent where a feature needs AI: the server
+ * is on and may change things, and the agent is the one writing (RolePort has no AI of its own,
+ * or Settings says the agent always writes).
+ */
+export function agentPromptsOn(settings: { mcpAccess: McpAccess | null; mcpWriter: "roleport" | "agent" | null } | null, hasAi: boolean): boolean {
+  if (settings?.mcpAccess !== "write") return false;
+  if (settings.mcpWriter === "agent") return true;
+  if (settings.mcpWriter === "roleport") return false;
+  return !hasAi;
+}

@@ -105,6 +105,7 @@ Any agent that supports MCP over HTTP works: give it the address (`http://localh
 | `list_applications`, `get_application` | Your tracker, and one application's history, contacts, emails and documents |
 | `follow_ups_due` | What Home shows under Follow up |
 | `list_followed_companies` | The companies you follow |
+| `list_mock_interviews`, `get_mock_interview` | Your mock interviews, and one interview's transcript, the question waiting for you and its report |
 
 **Change** (not available in Read only):
 
@@ -119,8 +120,55 @@ Any agent that supports MCP over HTTP works: give it the address (`http://localh
 | `tailor_cv`, `draft_cover_letter` | Write the tailored CV and cover letter, saved on the application |
 | `draft_email`, `mark_email_sent` | Draft an email or follow-up, and mark it sent once you've sent it |
 | `import_cv` | Read your CV into your profile. It shows you the draft first, and saves only when you agree |
+| `start_mock_interview`, `answer_interview`, `skip_interview_question`, `end_interview` | Run a mock interview in the chat (see below) |
+| `get_interview_report` | Grade a finished interview |
 
 Agents can't delete anything, change Settings or your API keys, edit your profile by hand, or import backups. Those stay in the app.
+
+## Ready-made prompts
+
+RolePort also offers ready-made requests, so you can pick one instead of working out what to ask. In **Claude Code** they're slash commands: type `/` and look for `mcp__roleport__…`, such as `/mcp__roleport__mock_interview`. In **Claude Desktop**, they're in the **+** menu under the message box, under RolePort. Other agents show them if they support MCP prompts.
+
+| Prompt | What it does |
+| --- | --- |
+| **Find and evaluate jobs** | Searches for your roles (or one you give), evaluates the three best matches and asks before saving any |
+| **Mock interview** | Runs an Interview Coach interview in the chat, for an application or a role, then grades it |
+| **Prepare an application** | Tailors your CV, writes the cover letter and drafts the application email for one job |
+| **Follow-ups due** | Lists what's due and drafts each one |
+| **Import my CV** | Reads your CV into your profile, showing you the draft first |
+| **Look back at evaluated jobs** | Goes through jobs you've evaluated and suggests which to apply to first |
+| **My job search this week** | Where your applications stand and the next things to do |
+
+Each one asks for a detail or two, like the role or the application, and every detail is optional. In **Read only**, only the last two are offered.
+
+### Copy-paste requests in the app
+
+If the MCP server is on and RolePort has no AI of its own, the screens that need AI show an **Or ask your AI agent** box with a request ready to copy. It's already filled in with that job, application or interview, so the agent goes straight to the right one. Paste it into Claude, ChatGPT or another connected agent.
+
+| Where | What the request does |
+| --- | --- |
+| Jobs search results | Evaluates the 5 best matches that aren't evaluated yet |
+| A job's page | Evaluates that job |
+| An application | Tailors the CV, writes the letter and drafts the application email |
+| Tailored CV, Cover letter, Emails | Writes that one document or message |
+| Coach → New interview | Runs the interview you set up, in the chat |
+| An interview that stopped, or a report waiting to be graded | Carries on from where it stopped, or grades it |
+| Profile → Import CV | Reads your CV into your profile, showing you the draft first |
+| Home | Finds jobs for your roles and evaluates the best matches |
+
+What the agent writes is saved in RolePort, so reload the page to see it. The boxes also show when Settings says the agent always writes. They don't show in Lite or in Read only.
+
+## Mock interviews in the chat
+
+The agent can run an [Interview Coach](/docs/guides/interview-coach) interview with you in the chat. RolePort is still the interviewer: it plans the questions from the application's posting and what you sent, decides when to follow up, and grades your answers with the Coach's rubric. The agent only asks you RolePort's questions and passes your answers back, word for word.
+
+1. Pick **Mock interview** from the prompts, or ask: "Run a quick mock interview for my Acme application."
+2. Answer each question in the chat. Say **skip** to skip a question or **stop** to end early.
+3. At the end, the agent grades it and tells you the verdict, your best and weakest answers and what to work on.
+
+The interview is saved like one you ran in the app, so it shows on the **Coach** page with its full report and counts toward your progress there. Voice answers stay in the app.
+
+**About usage:** if your agent does the AI writing, an interview takes more of your plan than an evaluation. It plans the questions, decides after each answer whether to follow up, then grades each answer and writes a summary. To save usage, the agent grades without the extra coaching steps (checking each answer against your CV and letter, and writing a stronger version) unless you ask for them before it grades. The report is then final, so ask for coaching up front if you want it.
 
 ## No API key? Your agent can do the writing
 
@@ -167,6 +215,7 @@ In Settings, **When the agent writes** tells the agent how much to spend: **Keep
 - "Add this job to RolePort: https://boards.greenhouse.io/…"
 - "I applied to the Acme job. Mark it applied, tailor my CV for it and draft the application email."
 - "Which applications need a follow-up? Draft the first one."
+- "Run a tough mock interview for my Acme application."
 
 ## If it doesn't connect
 
