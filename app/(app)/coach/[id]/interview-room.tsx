@@ -2,6 +2,8 @@
 
 import { ArrowLeft, BookOpen, ChevronDown, CornerDownLeft, Loader2, Mic, MicOff, Play, RotateCcw, Settings2, SkipForward, Square, Volume2, VolumeX } from "lucide-react";
 import Link from "next/link";
+import { AgentPrompt } from "@/components/app/agent-prompt";
+import { resumeInterviewPrompt } from "@/lib/mcp/agent-prompts";
 import { useRouter } from "next/navigation";
 import { useEffect, useEffectEvent, useRef, useState, type MouseEvent } from "react";
 import type { InterviewResult } from "@/app/(app)/coach/actions";
@@ -254,14 +256,23 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
   }
 
   const errorNote = error && (
-    <p className="mt-3 rounded-md border border-danger/20 bg-danger-soft px-3 py-2 text-xs text-danger">
-      {error}{" "}
-      {needsSetup && (
-        <Link href="/settings" className="font-medium underline">
-          Open Settings
-        </Link>
+    <>
+      <p className="mt-3 rounded-md border border-danger/20 bg-danger-soft px-3 py-2 text-xs text-danger">
+        {error}{" "}
+        {needsSetup && (
+          <Link href="/settings" className="font-medium underline">
+            Open Settings
+          </Link>
+        )}
+      </p>
+      {needsSetup && view.status === "active" && (
+        <AgentPrompt
+          className="mt-3"
+          prompt={resumeInterviewPrompt({ id: view.id, title: view.title })}
+          what="carries on this interview with you in the chat, from the question it stopped at"
+        />
       )}
-    </p>
+    </>
   );
 
   if (!started) {

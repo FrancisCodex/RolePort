@@ -2,6 +2,8 @@
 
 import { Check, Download, FileSearch, Loader2, RotateCcw, Save, Sparkles, TriangleAlert, UserRound, X } from "lucide-react";
 import Link from "next/link";
+import { AgentPrompt } from "@/components/app/agent-prompt";
+import { tailorCvPrompt } from "@/lib/mcp/agent-prompts";
 import { useState, useTransition, type ReactNode } from "react";
 import { EmptyState } from "@/components/app/empty-state";
 import { PromptDetails } from "@/components/app/prompt-details";
@@ -375,12 +377,18 @@ function TailorCard({
         {!data.hasPosting ? (
           <p className="text-[13px] text-muted">The posting for this application isn&apos;t stored anymore, so there&apos;s nothing to tailor to.</p>
         ) : !data.aiEnabled ? (
-          <p className="text-[13px] text-muted">
-            <Link href="/settings" className="font-medium text-brand-ink hover:underline">
-              Choose an AI provider
-            </Link>{" "}
-            to tailor. You can still edit and download the CV from your profile.
-          </p>
+          <>
+            <p className="text-[13px] text-muted">
+              <Link href="/settings" className="font-medium text-brand-ink hover:underline">
+                Choose an AI provider
+              </Link>{" "}
+              to tailor. You can still edit and download the CV from your profile.
+            </p>
+            <AgentPrompt
+              prompt={tailorCvPrompt({ id: data.applicationId, role: data.role, company: data.company })}
+              what="tailors your CV to this posting with your plan. Reload this page to see it"
+            />
+          </>
         ) : (
           <Button onClick={onTailor} disabled={pending}>
             {pending ? <Loader2 className="animate-spin" /> : <Sparkles />}

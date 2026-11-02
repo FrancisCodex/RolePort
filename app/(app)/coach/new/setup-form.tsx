@@ -2,6 +2,8 @@
 
 import { Briefcase, Flame, Loader2, Play, Target, UserRound, Users } from "lucide-react";
 import Link from "next/link";
+import { AgentPrompt } from "@/components/app/agent-prompt";
+import { mockInterviewPrompt } from "@/lib/mcp/agent-prompts";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { EmptyState } from "@/components/app/empty-state";
@@ -245,13 +247,30 @@ export function SetupForm({ data }: { data: InterviewSetupData }) {
               <li>No scores until the end, then a graded report.</li>
             </ul>
             {!data.aiEnabled ? (
-              <p className="rounded-md border border-border bg-surface-2 px-3 py-2 text-xs text-muted">
-                The interviewer is an AI model.{" "}
-                <Link href="/settings" className="font-medium text-brand-ink hover:underline">
-                  Choose an AI provider
-                </Link>{" "}
-                to start.
-              </p>
+              <>
+                <p className="rounded-md border border-border bg-surface-2 px-3 py-2 text-xs text-muted">
+                  The interviewer is an AI model.{" "}
+                  <Link href="/settings" className="font-medium text-brand-ink hover:underline">
+                    Choose an AI provider
+                  </Link>{" "}
+                  to start.
+                </p>
+                {(fromApplication || targetRole.trim()) && (
+                  <AgentPrompt
+                    prompt={mockInterviewPrompt({
+                      applicationId: fromApplication ? application.id : null,
+                      role: fromApplication ? application.role : targetRole.trim(),
+                      company: fromApplication ? application.company : company.trim(),
+                      focus: chosenFocus,
+                      length,
+                      style,
+                      panel,
+                      pastedPosting: !fromApplication && jobDescription.trim().length > 0,
+                    })}
+                    what="runs this interview with you in the chat, with RolePort as the interviewer. It shows up on the Coach page with its report"
+                  />
+                )}
+              </>
             ) : (
               <Button size="lg" onClick={() => void start()} disabled={working}>
                 {working ? <Loader2 className="animate-spin" /> : <Play />}

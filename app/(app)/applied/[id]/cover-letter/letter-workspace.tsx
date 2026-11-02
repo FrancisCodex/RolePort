@@ -2,6 +2,8 @@
 
 import { Check, Copy, Download, Loader2, RotateCcw, Save, Sparkles, TriangleAlert, UserRound } from "lucide-react";
 import Link from "next/link";
+import { AgentPrompt } from "@/components/app/agent-prompt";
+import { coverLetterPrompt } from "@/lib/mcp/agent-prompts";
 import { useState, useTransition, type ReactNode } from "react";
 import { EmptyState } from "@/components/app/empty-state";
 import { PromptDetails } from "@/components/app/prompt-details";
@@ -223,12 +225,18 @@ export function LetterWorkspace({ data }: { data: LetterPageData }) {
             {!data.hasPosting ? (
               <p className="text-[13px] text-muted">The posting for this application isn&apos;t stored anymore, so there&apos;s nothing to write to.</p>
             ) : !data.aiEnabled ? (
-              <p className="text-[13px] text-muted">
-                <Link href="/settings" className="font-medium text-brand-ink hover:underline">
-                  Choose an AI provider
-                </Link>{" "}
-                to draft it. You can still write it here, copy it and download the PDF.
-              </p>
+              <>
+                <p className="text-[13px] text-muted">
+                  <Link href="/settings" className="font-medium text-brand-ink hover:underline">
+                    Choose an AI provider
+                  </Link>{" "}
+                  to draft it. You can still write it here, copy it and download the PDF.
+                </p>
+                <AgentPrompt
+                  prompt={coverLetterPrompt({ id: data.applicationId, role: data.role, company: data.company })}
+                  what="writes this letter with your plan. Reload this page to see it"
+                />
+              </>
             ) : (
               <Button onClick={draft} disabled={drafting}>
                 {drafting ? <Loader2 className="animate-spin" /> : <Sparkles />}

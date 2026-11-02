@@ -2,6 +2,8 @@
 
 import { BookOpen, Check, ChevronDown, Copy, Eye, Loader2, Mic, Quote, RotateCcw, Target, Trash2, TrendingUp, TriangleAlert } from "lucide-react";
 import Link from "next/link";
+import { AgentPrompt } from "@/components/app/agent-prompt";
+import { interviewReportPrompt } from "@/lib/mcp/agent-prompts";
 import { useRouter } from "next/navigation";
 import { useState, type ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -213,6 +215,12 @@ function Progress({
             </Link>{" "}
             to grade this interview.
           </p>
+        )}
+        {!aiEnabled && (
+          <AgentPrompt
+            prompt={interviewReportPrompt({ id: view.id, title: view.title })}
+            what="grades this interview with your plan. Reload this page to see the report"
+          />
         )}
         {error && (
           <div className="flex flex-wrap items-center gap-2 rounded-md border border-danger/20 bg-danger-soft px-3 py-2 text-xs text-danger">

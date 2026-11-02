@@ -14,6 +14,8 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { AgentPrompt } from "@/components/app/agent-prompt";
+import { findJobsPrompt } from "@/lib/mcp/agent-prompts";
 import { useState, type ReactNode } from "react";
 import { PasteJob } from "@/components/jobs/paste-job";
 import { Badge } from "@/components/ui/badge";
@@ -213,6 +215,9 @@ export function HomeView({ firstName, stats, setup }: HomeData) {
                   {setup.aiEnabled ? "Find jobs" : "Set up AI"}
                 </Link>
               </p>
+            )}
+            {!stats.evaluations.count && !setup.aiEnabled && (
+              <AgentPrompt className="mt-3" prompt={findJobsPrompt()} what="searches for your roles and evaluates the best matches with your plan" />
             )}
           </Panel>
         </div>

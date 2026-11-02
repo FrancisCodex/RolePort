@@ -2,6 +2,8 @@
 
 import { BellRing, Check, ChevronRight, Copy, Download, FileText, Loader2, Mail, MessageSquareText, Send, Sparkles, TriangleAlert, Wand2 } from "lucide-react";
 import Link from "next/link";
+import { AgentPrompt } from "@/components/app/agent-prompt";
+import { prepareApplicationPrompt } from "@/lib/mcp/agent-prompts";
 import { useState, type ReactNode } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,7 +32,7 @@ type Busy = "cv-ai" | "cv-pdf" | "letter-ai" | "letter-pdf" | null;
  * cover letter with one click each (or both at once), download the CV, copy the letter. Each
  * row links to its own page for the full editor, the checks and the prompt.
  */
-export function ApplicationKit({ applicationId, company, kit }: { applicationId: string; company: string; kit: Kit }) {
+export function ApplicationKit({ applicationId, role, company, kit }: { applicationId: string; role: string; company: string; kit: Kit }) {
   const [cv, setCv] = useState<{ content: CvContent; tailoring: CvTailoring | null } | null>(kit.cv && { content: kit.cv.content, tailoring: kit.cv.tailoring });
   const [letter, setLetter] = useState<{ content: LetterContent; review: LetterReview | null } | null>(
     kit.letter && { content: kit.letter.content, review: kit.letter.review },
@@ -224,6 +226,13 @@ export function ApplicationKit({ applicationId, company, kit }: { applicationId:
             </>
           )}
         </p>
+      )}
+      {!profileEmpty && info?.hasPosting && !canAi && (
+        <AgentPrompt
+          className="mx-5 mb-4"
+          prompt={prepareApplicationPrompt({ id: applicationId, role, company })}
+          what="tailors your CV, writes the cover letter and drafts the application email with your plan. They show up here"
+        />
       )}
       {errors.setup && (
         <p className="border-t border-border px-5 py-3 text-xs text-danger">

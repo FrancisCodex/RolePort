@@ -141,6 +141,23 @@ RolePort also offers ready-made requests, so you can pick one instead of working
 
 Each one asks for a detail or two, like the role or the application, and every detail is optional. In **Read only**, only the last two are offered.
 
+### Copy-paste requests in the app
+
+If the MCP server is on and RolePort has no AI of its own, the screens that need AI show an **Or ask your AI agent** box with a request ready to copy. It's already filled in with that job, application or interview, so the agent goes straight to the right one. Paste it into Claude, ChatGPT or another connected agent.
+
+| Where | What the request does |
+| --- | --- |
+| Jobs search results | Evaluates the 5 best matches that aren't evaluated yet |
+| A job's page | Evaluates that job |
+| An application | Tailors the CV, writes the letter and drafts the application email |
+| Tailored CV, Cover letter, Emails | Writes that one document or message |
+| Coach → New interview | Runs the interview you set up, in the chat |
+| An interview that stopped, or a report waiting to be graded | Carries on from where it stopped, or grades it |
+| Profile → Import CV | Reads your CV into your profile, showing you the draft first |
+| Home | Finds jobs for your roles and evaluates the best matches |
+
+What the agent writes is saved in RolePort, so reload the page to see it. The boxes also show when Settings says the agent always writes. They don't show in Lite or in Read only.
+
 ## Mock interviews in the chat
 
 The agent can run an [Interview Coach](/docs/guides/interview-coach) interview with you in the chat. RolePort is still the interviewer: it plans the questions from the application's posting and what you sent, decides when to follow up, and grades your answers with the Coach's rubric. The agent only asks you RolePort's questions and passes your answers back, word for word.

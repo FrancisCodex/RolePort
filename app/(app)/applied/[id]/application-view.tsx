@@ -53,7 +53,7 @@ export function ApplicationView({ data }: { data: ApplicationData }) {
     </>
   );
 
-  const kit = <ApplicationKit applicationId={data.id} company={data.company} kit={data.kit} />;
+  const kit = <ApplicationKit applicationId={data.id} role={data.role} company={data.company} kit={data.kit} />;
 
   if (data.job) {
     // The posting is reference material here: a short preview in the title card, "Show more" for the rest.

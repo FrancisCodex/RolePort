@@ -7,6 +7,8 @@ import type { FitMatch } from "@/lib/jobs/evaluation";
 import { daysSince, daysUntil, FIT_BANDS, FIT_WEIGHTS, fitBand, vetoReason, type GateVerdict } from "@/lib/jobs/fit";
 import { timeAgo } from "@/lib/jobs/format";
 import { cn } from "@/lib/utils";
+import { AgentPrompt } from "@/components/app/agent-prompt";
+import { evaluateJobPrompt } from "@/lib/mcp/agent-prompts";
 import { EvaluateButton } from "./evaluate-button";
 
 const GATE_STYLE: Record<GateVerdict, { label: string; icon: LucideIcon; tone: "success" | "warning" | "danger" | "neutral"; tile: string }> = {
@@ -26,11 +28,14 @@ const DIMENSIONS = [
 /** The AI fit evaluation card on the job page: a call to action until the first run, then the full result. */
 export function FitEvaluation({
   jobId,
+  job,
   fit,
   aiEnabled,
   postedAt,
 }: {
   jobId: string;
+  /** For the request to an AI agent when RolePort has no AI. */
+  job: { title: string; company: string };
   fit: FitMatch | null;
   aiEnabled: boolean;
   postedAt: Date | null;
@@ -62,6 +67,13 @@ export function FitEvaluation({
             </Link>
           )}
         </CardContent>
+        {!aiEnabled && (
+          <AgentPrompt
+            className="mx-5 mb-5"
+            prompt={evaluateJobPrompt({ id: jobId, ...job })}
+            what="evaluates this job with your plan, and RolePort saves the result here"
+          />
+        )}
       </Card>
     );
   }

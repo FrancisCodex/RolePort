@@ -73,7 +73,7 @@ export function ResultsView({ jobs, statuses, hasSkills, aiEnabled }: ResultsDat
         )}
 
         {jobs.length > 0 && (
-          <AnalyzePanel jobs={jobs.map((j) => ({ id: j.id, title: j.title }))} topIds={topIds} aiEnabled={aiEnabled} />
+          <AnalyzePanel jobs={jobs.map((j) => ({ id: j.id, title: j.title, company: j.company }))} topIds={topIds} aiEnabled={aiEnabled} />
         )}
 
         {statuses.length > 0 && statuses.every((s) => s.failed || s.note) && (
