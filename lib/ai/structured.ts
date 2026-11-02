@@ -3,7 +3,7 @@ import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 import { isLite } from "@/lib/mode";
 import { isLocalUrl } from "./local-server";
-import type { AiConfig } from "./settings";
+import type { AgentConfig, AiConfig } from "./settings";
 
 /*
  * Structured model calls on any provider, given its config. Runs on the server
@@ -34,7 +34,43 @@ export type StructuredRequest<Schema extends z.ZodType> = {
 
 /** One model call that returns JSON validated against `schema`, on the given provider. */
 export async function generateStructured<Schema extends z.ZodType>(req: StructuredRequest<Schema>): Promise<z.infer<Schema>> {
-  return req.config.provider === "anthropic" ? anthropicStructured(req.config, req) : openAiCompatibleStructured(req.config, req);
+  const { config } = req;
+  if (config.provider === "agent") return agentStructured(config, req);
+  return config.provider === "anthropic" ? anthropicStructured(config, req) : openAiCompatibleStructured(config, req);
+}
+
+/* -------------------------------------------------------------------------- */
+/* The user's own AI agent (lib/mcp)                                          */
+/* -------------------------------------------------------------------------- */
+
+export type AgentRequest = { system: string; prompt: string; schema: z.ZodType; effort: "low" | "medium" | "high" };
+
+/** Stops a model call on the agent config that has no answer yet: the request, for the agent to answer. */
+export class AgentBrief extends Error {
+  constructor(readonly request: AgentRequest) {
+    super("This answer is written by the AI agent.");
+  }
+}
+
+/** The agent's answer didn't fit the call's schema; the message lists what to fix. */
+export class AgentAnswerError extends Error {}
+
+function agentStructured<Schema extends z.ZodType>(config: AgentConfig, { system, prompt, schema, effort = "medium" }: StructuredRequest<Schema>): z.infer<Schema> {
+  if (config.answer === undefined) throw new AgentBrief({ system, prompt, schema, effort });
+  let answer = config.answer;
+  if (typeof answer === "string") {
+    try {
+      answer = JSON.parse(answer);
+    } catch {
+      throw new AgentAnswerError("The answer isn't valid JSON. Send the JSON object itself.");
+    }
+  }
+  const parsed = schema.safeParse(answer);
+  if (!parsed.success) {
+    const issues = parsed.error.issues.slice(0, 20).map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`);
+    throw new AgentAnswerError(`The answer doesn't match answerSchema. Fix these and send it again: ${issues.join("; ")}`);
+  }
+  return parsed.data;
 }
 
 // The Anthropic SDK refuses to run in a browser unless told to; the lite edition calls it with the user's own key.

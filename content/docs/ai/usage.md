@@ -4,7 +4,7 @@ description: Which features need AI, how many requests each one makes, and how t
 updated: 2026-10-31
 ---
 
-RolePort charges nothing. With a hosted provider, you pay it directly for what you use. A local model costs nothing but your computer's time.
+RolePort charges nothing. With a hosted provider, you pay it directly for what you use. A local model costs nothing but your computer's time. On a self-hosted install, a Claude or ChatGPT plan works too, through an AI agent: see [Connect an AI agent](/docs/ai/agents#no-api-key-your-agent-can-do-the-writing).
 
 ## How many requests each feature makes
 

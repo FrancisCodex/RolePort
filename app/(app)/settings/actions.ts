@@ -207,3 +207,14 @@ export async function regenerateMcpToken(): Promise<Result<{ token: string }>> {
   await writeSettings(db, user.id, { mcpTokenHash: hashMcpToken(token) });
   return { ok: true, data: { token } };
 }
+
+/** Who writes when an agent asks (RolePort's AI or the agent), and how much the agent should spend on it. */
+export async function saveMcpPreferences(raw: { writer: "auto" | "roleport" | "agent"; usage: "low" | "balanced" | "best" }): Promise<Result> {
+  const user = await getCurrentUser();
+  const input = z.object({ writer: z.enum(["auto", "roleport", "agent"]), usage: z.enum(["low", "balanced", "best"]) }).safeParse(raw);
+  if (!input.success) return { ok: false, error: "Invalid setting." };
+  const { writer, usage } = input.data;
+  await writeSettings(await getDb(), user.id, { mcpWriter: writer === "auto" ? null : writer, mcpUsage: usage === "balanced" ? null : usage });
+  refresh();
+  return { ok: true, data: undefined };
+}

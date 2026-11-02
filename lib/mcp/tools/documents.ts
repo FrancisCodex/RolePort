@@ -5,16 +5,13 @@ import { draftApplicationLetter } from "@/lib/letter/letter";
 import { draftOutreachEmail, markOutreachSent, readOutreachDocs } from "@/lib/outreach/outreach";
 import { EMAIL_INFO, EMAIL_KINDS, gmailHref, mailtoHref } from "@/lib/outreach/types";
 import { AI_NOT_SET_UP, notFound } from "../errors";
-import { tool, ToolError, type McpContext } from "../tool";
+import { answerInput, tool, ToolError, writerFor, type McpContext } from "../tool";
 import { applicationId } from "./applications";
 
-/* Tailored CVs, cover letters and emails: written with the AI set up in RolePort, and saved where the app shows them. */
-
-async function aiOrThrow(ctx: McpContext) {
-  const config = await ctx.ai();
-  if (!config) throw new ToolError(AI_NOT_SET_UP);
-  return config;
-}
+/*
+ * Tailored CVs, cover letters and emails: written by the AI set up in RolePort, or by the agent
+ * (a brief first, then its answer), checked the same way, and saved where the app shows them.
+ */
 
 async function ensureApplication(ctx: McpContext, id: string) {
   if (!(await readApplication(ctx.db, ctx.user.id, id))) throw notFound("application", id);
@@ -26,13 +23,13 @@ export const tailorCv = tool({
   name: "tailor_cv",
   title: "Tailor the CV",
   description:
-    "Tailors the user's CV to an application's job posting with the AI set up in RolePort, from the profile's facts only, and saves it on the application. Returns the CV and its checks (keywords covered and missing, claims to verify). Local models can take a few minutes.",
-  input: { application_id: applicationId },
+    "Tailors the user's CV to an application's job posting, from the profile's facts only, and saves it on the application. Returns the CV and its checks (keywords covered and missing, claims to verify). Written by the AI set up in RolePort, or by you: then this returns a brief to answer.",
+  input: { application_id: applicationId, answer: answerInput },
   writes: true,
   external: true,
-  async run({ application_id }, ctx) {
-    const config = await aiOrThrow(ctx);
+  async run({ application_id, answer }, ctx) {
     await ensureApplication(ctx, application_id);
+    const config = await writerFor(ctx, answer, AI_NOT_SET_UP);
     const { content, tailoring } = await tailorApplicationCv(ctx.db, ctx.user, application_id, config);
     return { cv: content, checks: tailoring, note: PDF_NOTE };
   },
@@ -42,13 +39,13 @@ export const draftCoverLetter = tool({
   name: "draft_cover_letter",
   title: "Write the cover letter",
   description:
-    "Writes a cover letter for an application with the AI set up in RolePort and saves it on the application. Returns the letter and its review (key points, warnings to check). Local models can take a few minutes.",
-  input: { application_id: applicationId },
+    "Writes a cover letter for an application and saves it on the application. Returns the letter and its review (key points, warnings to check). Written by the AI set up in RolePort, or by you: then this returns a brief to answer.",
+  input: { application_id: applicationId, answer: answerInput },
   writes: true,
   external: true,
-  async run({ application_id }, ctx) {
-    const config = await aiOrThrow(ctx);
+  async run({ application_id, answer }, ctx) {
     await ensureApplication(ctx, application_id);
+    const config = await writerFor(ctx, answer, AI_NOT_SET_UP);
     const { content, review } = await draftApplicationLetter(ctx.db, ctx.user, application_id, config);
     return { letter: content, review, note: PDF_NOTE };
   },
@@ -59,13 +56,13 @@ const kinds = EMAIL_KINDS.map((k) => `${k} (${EMAIL_INFO[k].label})`).join(", ")
 export const draftEmail = tool({
   name: "draft_email",
   title: "Draft an email",
-  description: `Drafts one message for an application with the AI set up in RolePort and saves it in the application's Emails and follow-ups. Kinds: ${kinds}. RolePort never sends email: give the user the draft and its mailto link, and call mark_email_sent once they've sent it.`,
-  input: { application_id: applicationId, kind: z.enum(EMAIL_KINDS) },
+  description: `Drafts one message for an application and saves it in the application's Emails and follow-ups. Kinds: ${kinds}. Written by the AI set up in RolePort, or by you: then this returns a brief to answer. RolePort never sends email: give the user the draft and its mailto link, and call mark_email_sent once they've sent it.`,
+  input: { application_id: applicationId, kind: z.enum(EMAIL_KINDS), answer: answerInput },
   writes: true,
   external: true,
-  async run({ application_id, kind }, ctx) {
-    const config = await aiOrThrow(ctx);
+  async run({ application_id, kind, answer }, ctx) {
     await ensureApplication(ctx, application_id);
+    const config = await writerFor(ctx, answer, AI_NOT_SET_UP);
     const draft = await draftOutreachEmail(ctx.db, ctx.user, application_id, kind, config);
     return {
       kind,

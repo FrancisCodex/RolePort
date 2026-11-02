@@ -1,5 +1,5 @@
 import { AI_PRESETS, type AiPresetId } from "@/lib/ai/presets";
-import { describeAiConfig, type AiConfig, type UserSettingsRow } from "@/lib/ai/settings";
+import { describeAiConfig, type ProviderConfig, type UserSettingsRow } from "@/lib/ai/settings";
 import { maskSecret } from "@/lib/secret-hint";
 import type { AiSettingsView } from "./ai-settings-form";
 
@@ -7,7 +7,7 @@ import type { AiSettingsView } from "./ai-settings-form";
 export function aiSettingsView(
   row: UserSettingsRow | null,
   readSecret: (stored: string | null | undefined) => string | null,
-  active: AiConfig | null,
+  active: ProviderConfig | null,
 ): AiSettingsView {
   const preset = row?.aiPreset && row.aiPreset in AI_PRESETS ? (row.aiPreset as AiPresetId) : null;
   return {

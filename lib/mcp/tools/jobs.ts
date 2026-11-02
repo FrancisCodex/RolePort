@@ -11,7 +11,7 @@ import { readFitMatches, readJob, readJobRow, readTrackedJobs, sortJobs, storeJo
 import { parseJobSearch, POSTED_WITHIN_DAYS } from "@/lib/jobs/search-params";
 import { readProfile } from "@/lib/profile/queries";
 import { AI_NOT_SET_UP, notFound } from "../errors";
-import { POSTING_NOTE, tool, ToolError, type McpContext } from "../tool";
+import { answerInput, POSTING_NOTE, tool, ToolError, writerFor, type McpContext } from "../tool";
 import { jobDetail, jobSummary } from "../views";
 
 async function jobOrThrow(ctx: McpContext, jobId: string) {
@@ -133,7 +133,7 @@ export const addJob = tool({
   name: "add_job",
   title: "Add a job from a link or text",
   description:
-    "RolePort's Paste a job: give a job link or the posting's text and it's read, checked and saved on the user's list. Hiring-system links (Greenhouse, Lever, Ashby…) and pages with job data need no AI; plain text uses the AI set up in RolePort. LinkedIn, Facebook, Indeed and Glassdoor pages can't be read: paste their text instead. If a field couldn't be read, the result says which; call again with `fields` to fill them in.",
+    "RolePort's Paste a job: give a job link or the posting's text and it's read, checked and saved on the user's list. Hiring-system links (Greenhouse, Lever, Ashby…) and pages with job data need no AI. Plain text is read by the AI set up in RolePort, or by you: then this returns a brief to answer. LinkedIn, Facebook, Indeed and Glassdoor pages can't be read: paste their text instead. If a field couldn't be read, the result says which; call again with `fields` to fill them in.",
   input: {
     input: z.string().min(1).max(60_000).describe("A job link, or the posting's full text."),
     fields: z
@@ -147,11 +147,14 @@ export const addJob = tool({
       .partial()
       .optional()
       .describe("Values to use instead of what was read, e.g. a missing company name."),
+    answer: answerInput,
   },
   writes: true,
   external: true,
-  async run({ input, fields }, ctx) {
-    const read = await readPaste(input, { readLink: ctx.readLink, config: await ctx.ai() });
+  async run({ input, fields, answer }, ctx) {
+    // Without any AI, text can still be added: the fields are then filled in by hand.
+    const config = answer === undefined && ctx.writer === "roleport" ? await ctx.ai() : await writerFor(ctx, answer, AI_NOT_SET_UP);
+    const read = await readPaste(input, { readLink: ctx.readLink, config });
     if (!read.ok) throw new ToolError(read.error);
     const review = read.data;
     const job = {
@@ -204,14 +207,13 @@ export const evaluateJob = tool({
   name: "evaluate_job",
   title: "Evaluate fit",
   description:
-    "Runs RolePort's AI fit evaluation of one job against the profile (eligibility, language and location gates, then skills, experience, culture and career) with the AI set up in RolePort, and saves it. Local models can take a minute.",
-  input: { job_id: jobId },
+    "Runs RolePort's AI fit evaluation of one job against the profile (eligibility, language and location gates, then skills, experience, culture and career) and saves it. Written by the AI set up in RolePort, or by you: then this returns a brief to answer.",
+  input: { job_id: jobId, answer: answerInput },
   writes: true,
   external: true,
-  async run({ job_id }, ctx) {
-    const config = await ctx.ai();
-    if (!config) throw new ToolError(AI_NOT_SET_UP);
+  async run({ job_id, answer }, ctx) {
     if (!(await readJobRow(ctx.db, job_id))) throw notFound("job", job_id);
+    const config = await writerFor(ctx, answer, AI_NOT_SET_UP);
     await evaluateStoredJob(ctx.db, ctx.user, job_id, config);
     return jobDetail(await jobOrThrow(ctx, job_id), false).fit;
   },

@@ -3,6 +3,7 @@ import { applyToJob, followUpsDue, getApplication, listApplications, setApplicat
 import { draftCoverLetter, draftEmail, markEmailSent, tailorCv } from "./tools/documents";
 import { addJob, checkJobOpen, evaluateJob, getJob, saveJob, searchJobs, unsaveJob } from "./tools/jobs";
 import { getProfile, listFollowedCompanies } from "./tools/profile";
+import { importCv } from "./tools/profile-import";
 
 /**
  * Every tool the MCP server offers, in the order agents list them. A new tool is one entry here;
@@ -29,4 +30,5 @@ export const MCP_TOOLS: McpTool[] = [
   draftCoverLetter,
   draftEmail,
   markEmailSent,
+  importCv,
 ];

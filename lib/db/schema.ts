@@ -432,6 +432,10 @@ export const userSettings = pgTable("user_settings", {
   mcpAccess: text("mcp_access").$type<"read" | "write">(),
   /** SHA-256 of the MCP token; the token itself is only shown once. */
   mcpTokenHash: text("mcp_token_hash"),
+  /** Who writes evaluations, CVs, letters and emails asked for by an agent: "roleport", "agent", or null for RolePort's AI when set up, else the agent. */
+  mcpWriter: text("mcp_writer").$type<"roleport" | "agent">(),
+  /** How much the agent should spend on writing: "low", "best", or null for balanced. */
+  mcpUsage: text("mcp_usage").$type<"low" | "best">(),
   ...timestamps,
 });
 

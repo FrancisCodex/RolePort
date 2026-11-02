@@ -88,6 +88,9 @@ async function SettingsContent() {
       followUpRules={rulesOf(row?.followUpRules)}
       mcp={{
         access: row?.mcpAccess ?? null,
+        writer: row?.mcpWriter ?? "auto",
+        usage: row?.mcpUsage ?? "balanced",
+        hasAi: active !== null,
         url: mcpUrl,
         bridgePath: path.join(process.cwd(), "scripts", "mcp-stdio.mjs").replace(/\\/g, "/"),
       }}

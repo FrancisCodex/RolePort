@@ -1,6 +1,7 @@
 import { aiErrorMessage } from "@/lib/ai/errors";
 import { extractJobFromText } from "@/lib/ai/extract-job";
 import type { AiConfig } from "@/lib/ai/settings";
+import { AgentAnswerError, AgentBrief } from "@/lib/ai/structured";
 import { cleanDescription } from "@/lib/jobs/html";
 import { textToHtml } from "@/lib/jobs/sources/feed";
 import type { Result } from "@/lib/result";
@@ -39,6 +40,8 @@ export async function reviewFromText({
       : [];
     return { job: { ...job, ...fields }, how: "ai", board: null, check, notes };
   } catch (error) {
+    // The agent's turn to write (lib/mcp), or its answer to fix: not a failure to fall back from.
+    if (error instanceof AgentBrief || error instanceof AgentAnswerError) throw error;
     console.error("[paste] reading the posting failed", error);
     return {
       job,

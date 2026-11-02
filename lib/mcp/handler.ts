@@ -32,6 +32,8 @@ export async function handleMcpRequest(request: Request): Promise<Response> {
     db,
     user,
     ai: async () => aiConfigFor(row),
+    writer: row?.mcpWriter ?? "auto",
+    usage: row?.mcpUsage ?? "balanced",
     search: (params, companies) => searchAllSources(params, { rapidApiKey: rapidApiKeyFor(row), jobspyEnabled: Boolean(row?.jobspyEnabled), companies }),
     readLink: readJobLink,
     checkPosting,

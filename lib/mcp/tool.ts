@@ -1,5 +1,5 @@
-import type { z } from "zod";
-import type { AiConfig } from "@/lib/ai/settings";
+import { z } from "zod";
+import type { AiConfig, ProviderConfig } from "@/lib/ai/settings";
 import type { AnyDb } from "@/lib/db/types";
 import type { CompanyRef } from "@/lib/jobs/sources/companies/types";
 import type { KeyedJob } from "@/lib/jobs/queries";
@@ -15,7 +15,11 @@ export type McpContext = {
   db: AnyDb;
   user: { id: string; name: string };
   /** The AI set up in RolePort, or null when there's none. */
-  ai: () => Promise<AiConfig | null>;
+  ai: () => Promise<ProviderConfig | null>;
+  /** Who writes evaluations, CVs, letters and emails: RolePort's AI when set up ("auto"), always RolePort's, or always the agent. */
+  writer: "auto" | "roleport" | "agent";
+  /** How much the user wants the agent to spend writing them. */
+  usage: "low" | "balanced" | "best";
   /** Searches the job sources with the user's keys and switches. */
   search: (params: JobSearchParams, companies: CompanyRef[]) => Promise<{ jobs: KeyedJob[]; statuses: SourceStatus[] }>;
   readLink: (url: string) => Promise<Result<LinkRead>>;
@@ -41,6 +45,32 @@ export function tool<S extends z.ZodRawShape>(t: McpTool<S>): McpTool {
 
 /** A failure the agent should read and act on (not found, set up AI first…), not a crash. */
 export class ToolError extends Error {}
+
+/** How RolePort labels what the agent wrote, where it shows which model wrote something. */
+export const AGENT_LABEL = "Your AI agent";
+
+/**
+ * Who writes for an AI tool. With an `answer`, the agent already has; otherwise RolePort's AI
+ * when it's set up and allowed, else the agent (the tool then returns a brief, lib/mcp/brief.ts).
+ */
+export async function writerFor(ctx: McpContext, answer: unknown, missing: string): Promise<AiConfig> {
+  if (answer !== undefined) {
+    if (ctx.writer === "roleport") throw new ToolError("RolePort's Settings say its own AI writes these, so answers from the agent aren't accepted.");
+    return { provider: "agent", model: AGENT_LABEL, answer, source: "agent" };
+  }
+  if (ctx.writer !== "agent") {
+    const own = await ctx.ai();
+    if (own) return own;
+    if (ctx.writer === "roleport") throw new ToolError(missing);
+  }
+  return { provider: "agent", model: AGENT_LABEL, source: "agent" };
+}
+
+/** The optional `answer` every AI tool takes, for the second call of the agent's turn. */
+export const answerInput = z
+  .unknown()
+  .optional()
+  .describe("Only when this tool returned a brief: your answer, one JSON object matching its answerSchema.");
 
 /** Added to every result that carries an employer's text. */
 export const POSTING_NOTE =

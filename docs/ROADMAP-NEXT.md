@@ -17,7 +17,7 @@ Each step ships on its own branch and works in self-hosted and Lite, unless it s
 | 2. Paste a job (and "still open" checks) | ✅ Done | `feat/paste-a-job` |
 | 3. Email applications and follow-ups | ✅ Done (pasting an employer's reply is still for later, see 3B) | `feat/email-and-follow-ups` |
 | 4. Documentation page (`/docs`) with search | ✅ Done (screenshots still to add) | `feat/docs-page` |
-| MCP server | ✅ Built (still to try: Claude Desktop itself, and the AI tools with a real model) | `feat/mcp-server` |
+| MCP server | ✅ Built, and the agent can do the AI writing (still to try: Claude Desktop itself, a real agent model) | `feat/mcp-server` |
 | 5. Desktop app: job scout, apply assistant | ⏭️ Next | — |
 
 **Next up: Phase 5, the desktop app.** It builds on the MCP server's tools. Everything marked ✅ Done is finished.
@@ -239,7 +239,7 @@ Each tool is one file in `lib/mcp/tools/`, listed in one registry (like the job 
 
 - **Postings are untrusted.** Job text goes back to the agent labelled as the employer's text, not instructions, with the same prompt-injection guard as the app's own prompts. Pasted links still go through the private-address guard.
 - **Changes are visible.** Every change made through MCP adds "(via AI agent)" to the application's status history.
-- **Whose AI:** `evaluate_job`, `tailor_cv`, `draft_cover_letter` and `draft_email` use the AI set up in RolePort (the user's key or local model), with its checks. Without one they return the same "set up AI first" message as the app. The agent's own model only decides which tools to call.
+- **Whose AI:** `evaluate_job`, `tailor_cv`, `draft_cover_letter`, `draft_email`, `import_cv` and `add_job` (for text) use the AI set up in RolePort, or the agent's own model when RolePort has none (or Settings says so). That second way is for people with a Claude or ChatGPT plan but no API key or capable computer: see **The agent writes** below.
 - **Small results.** Lists are capped and paged, and long descriptions are cut with a way to ask for the rest, so a small local model's context isn't flooded.
 
 ### Docs and tests
@@ -247,7 +247,17 @@ Each tool is one file in `lib/mcp/tools/`, listed in one registry (like the job 
 - A docs page, **Connect an AI agent** (`content/docs`), with setup per agent and example requests. **Learn more** from the Settings card.
 - Tests run the server through the SDK's in-memory transport against an in-memory database: the token is required, a wrong `Origin` is refused, Read only hides the changing tools, every tool in the registry has a description and a schema, and a search, evaluate, apply, draft flow ends in the tracker.
 
-**Done when:** from Claude Desktop or Claude Code, with the token from Settings, you can search for jobs, evaluate one, apply to it, draft its follow-up and see all of it in the app, and turning the switch off makes every call fail. *(Checked with the MCP SDK's own client over HTTP and through the stdio bridge, against a running install: search, read, save, apply, status, wrong token, other origin, switch off. Still to try: Claude Desktop itself, and evaluate, tailor and draft with a real AI model; without one they answer "set up AI first" as planned.)*
+**Done when:** from Claude Desktop or Claude Code, with the token from Settings, you can search for jobs, evaluate one, apply to it, draft its follow-up and see all of it in the app, and turning the switch off makes every call fail. *(Checked with the MCP SDK's own client over HTTP and through the stdio bridge, against a running install: search, read, save, apply, status, wrong token, other origin, switch off, and the agent-writes flow for CV import, evaluation and an email, which showed up in the app labelled "Your AI agent". Still to try: Claude Desktop itself, a real agent model answering the briefs, and RolePort's own AI through MCP.)*
+
+### The agent writes (no API key needed)
+
+Added because the main audience may have a Claude or ChatGPT plan but no API key or computer that runs a good local model.
+
+- **How:** a fourth provider, `agent`, in `lib/ai/settings.ts`. Every AI feature already goes through `generateStructured()`; on the agent provider with no answer it throws an `AgentBrief` holding the exact system prompt, input, schema and effort. The tool returns that as a brief (`lib/mcp/brief.ts`: instructions, input, the answer's JSON Schema, an approximate input size, the effort RolePort would use, the user's usage choice). The agent calls the same tool again with `answer`; `generateStructured()` validates it against the schema (listing up to 20 problems to fix) and returns it, so each feature's own checks and saving run unchanged. Paste-a-job's text reading passes the brief through instead of falling back to manual.
+- **New tool `import_cv`:** the CV into the profile, draft first, saved only with `save: true` after the user agrees.
+- **Settings:** **Who writes** (RolePort's AI, else the agent / Always the agent / Only RolePort's AI; `mcp_writer`) and **When the agent writes** (Keep usage low / Balanced / Best quality; `mcp_usage`), passed to the agent in every brief.
+- **Usage:** RolePort can't choose the agent's model or effort; the agent app does. Each brief says how big the task is and how much effort is enough, the server's instructions say these are routine tasks, and Settings and the docs say where each agent picks its model and effort.
+- **Labelled:** what the agent wrote shows "Your AI agent" where the app shows which model wrote something.
 
 ### How it was built
 
@@ -258,9 +268,9 @@ Each tool is one file in `lib/mcp/tools/`, listed in one registry (like the job 
 - **Settings → Connect an AI agent** (`app/(app)/settings/mcp-form.tsx`): Read and change / Read only, **Turn on**, **New token**, **Turn off**, and the setup for Claude Code, Claude Desktop, Codex and Cursor (`lib/mcp/setup.ts`) with this install's address and the token filled in while it's shown.
 - **Claude Desktop bridge:** `scripts/mcp-stdio.mjs`, no dependencies, forwards stdin JSON-RPC lines to `/api/mcp`.
 - **Docs:** `content/docs/ai/agents.md`, linked from the Settings card and the Settings docs table.
-- **Tests:** `lib/mcp/mcp.test.ts` (access checks, the registry, Read only, a search → save → apply → status flow with the agent note, no-AI and unknown-id messages).
+- **Tests:** `lib/mcp/mcp.test.ts` (access checks, the registry, Read only, a search → save → apply → status flow with the agent note, the brief → wrong answer → saved answer flow, Only RolePort's AI, the usage choice, unknown-id messages).
 
-**Later:** a `draft_*` option that returns the prompt and facts so the agent's own model writes the text (for people without an AI set up in RolePort), and MCP prompts for common requests ("weekly job hunt").
+**Later:** MCP prompts for common requests ("weekly job hunt"), and the same agent-writes flow for application questions and the Interview Coach if people ask.
 
 ## 5. Desktop app and the in-app AI agent
 

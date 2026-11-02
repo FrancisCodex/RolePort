@@ -120,6 +120,13 @@
       "when": 1793622112386,
       "tag": "0016_mcp_server",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1793623734703,
+      "tag": "0017_mcp_agent_writes",
+      "breakpoints": true
     }
   ]
 }

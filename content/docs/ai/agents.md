@@ -55,15 +55,46 @@ RolePort needs to be running while you use the agent.
 | `set_status`, `set_notes`, `set_interview_date` | Update an application |
 | `tailor_cv`, `draft_cover_letter` | Write the tailored CV and cover letter, saved on the application |
 | `draft_email`, `mark_email_sent` | Draft an email or follow-up, and mark it sent once you've sent it |
+| `import_cv` | Read your CV into your profile. It shows you the draft first, and saves only when you agree |
 
-Agents can't delete anything, change Settings or your API keys, edit your profile, or import backups. Those stay in the app.
+Agents can't delete anything, change Settings or your API keys, edit your profile by hand, or import backups. Those stay in the app.
+
+## No API key? Your agent can do the writing
+
+Evaluations, tailored CVs, cover letters, emails, CV import and reading a pasted job need an AI. If you don't have an API key or a computer that runs a good local model, but you pay for Claude or ChatGPT, your agent can be that AI:
+
+1. The agent asks RolePort for the job (say, `evaluate_job`).
+2. RolePort sends back a brief: its own instructions, your profile and the posting, and the exact form the answer must take.
+3. The agent's model writes the answer and sends it back.
+4. RolePort checks it the same way it checks its own AI's answers (only facts from your profile and CV, the right fields, scores in range, no made-up numbers) and saves it. If a check fails, it tells the agent what to fix.
+
+What the agent wrote is labelled "Your AI agent" wherever RolePort shows which model wrote something. This uses your Claude or ChatGPT plan, not an API key.
+
+In **Settings → Connect an AI agent**, choose who writes:
+
+| Option | What happens |
+| --- | --- |
+| **RolePort's AI, else the agent** (default) | The AI set up in Settings writes. Without one, the agent does |
+| **Always the agent** | The agent writes, even when RolePort has an AI set up |
+| **Only RolePort's AI** | The agent never writes. Without an AI in Settings, these tools say to set one up |
+
+## Keep usage down
+
+RolePort can't pick your agent's model or effort level: your agent app does. These tasks are routine, so a fast or mid-size model at low or medium effort does them well, and uses much less of your plan than the largest model with long thinking.
+
+- **Claude Code:** pick the model with `/model`, and a lower effort level where your plan offers one.
+- **Claude Desktop:** pick the model in the menu under the message box, and leave extended thinking off.
+- **Codex:** pick the model and its reasoning effort with `/model`.
+- **Cursor:** pick the model in the chat panel.
+
+In Settings, **When the agent writes** tells the agent how much to spend: **Keep usage low** (one pass, no extended thinking, short text), **Balanced** or **Best quality**. Each brief also says how big the task is (about how many tokens it sends) and how much effort RolePort itself would use for it. Agents usually follow this, but your agent app's model setting is what counts.
 
 ## What stays the same
 
 - **RolePort never applies or sends email for you.** `apply_to_job` and `mark_email_sent` only record what you did. A drafted email comes back with a link that opens it in your mail app.
 - **Most agents ask you first** before a tool that changes something, since RolePort marks those tools.
 - **Changes are marked.** Status changes an agent makes show "(via AI agent)" in the application's history.
-- **The writing uses your AI.** Evaluations, CVs, letters and emails are written by the provider you set up in [Settings → AI provider](/docs/ai/providers), with the same checks as in the app. Without one, those tools say to set it up first. The agent's own model only decides which tools to call.
+- **Every answer is checked.** Whether RolePort's AI or your agent writes it, it goes through the same checks as in the app before it's saved.
 - **Postings are treated as data.** Job text goes to the agent labelled as the employer's words, not instructions.
 
 ## Example requests

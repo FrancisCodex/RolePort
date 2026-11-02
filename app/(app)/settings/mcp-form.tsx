@@ -7,10 +7,14 @@ import { Label } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import type { McpAccess } from "@/lib/mcp/access";
 import { agentSetups } from "@/lib/mcp/setup";
-import { regenerateMcpToken, saveMcpAccess } from "./actions";
+import { regenerateMcpToken, saveMcpAccess, saveMcpPreferences } from "./actions";
 
 export type McpSettingsView = {
   access: McpAccess | null;
+  writer: "auto" | "roleport" | "agent";
+  usage: "low" | "balanced" | "best";
+  /** Whether RolePort has an AI of its own set up. */
+  hasAi: boolean;
   /** Where agents reach this install's MCP server. */
   url: string;
   /** The stdio bridge for agents that can't connect over HTTP (Claude Desktop). */
@@ -22,9 +26,35 @@ const ACCESS_OPTIONS = [
   { value: "read", label: "Read only" },
 ];
 
+const WRITER_OPTIONS = [
+  { value: "auto", label: "RolePort's AI, else the agent" },
+  { value: "agent", label: "Always the agent" },
+  { value: "roleport", label: "Only RolePort's AI" },
+];
+
+const USAGE_OPTIONS = [
+  { value: "low", label: "Keep usage low" },
+  { value: "balanced", label: "Balanced" },
+  { value: "best", label: "Best quality" },
+];
+
+function writerNote(writer: McpSettingsView["writer"], hasAi: boolean): string {
+  if (writer === "roleport") {
+    return hasAi
+      ? "Evaluations, CVs, letters and emails always use the AI set up above, never the agent's."
+      : "No AI is set up above, so agents can't evaluate jobs or write CVs, letters or emails.";
+  }
+  if (writer === "agent" || !hasAi) {
+    return "The agent's own model writes evaluations, CVs, letters, emails and CV imports, from the facts and instructions RolePort gives it. RolePort checks every answer the same way it checks its own AI's, then saves it. This uses your Claude or ChatGPT plan, not an API key.";
+  }
+  return "The AI set up above writes them. Without it, the agent writes them instead.";
+}
+
 /** Settings → Connect an AI agent: the switch, the token (shown once) and each agent's setup. */
 export function McpForm({ initial }: { initial: McpSettingsView }) {
   const [access, setAccess] = useState<McpAccess>(initial.access ?? "write");
+  const [writer, setWriter] = useState(initial.writer);
+  const [usage, setUsage] = useState(initial.usage);
   const [token, setToken] = useState<string | null>(null);
   const [agent, setAgent] = useState("claude-code");
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -51,6 +81,14 @@ export function McpForm({ initial }: { initial: McpSettingsView }) {
       if (!result.ok) return { ok: false, text: result.error };
       setToken(result.data.token);
       return { ok: true, text: "New token made. Agents set up with the old one stop working until you update them." };
+    });
+
+  const savePreferences = (next: { writer: McpSettingsView["writer"]; usage: McpSettingsView["usage"] }) =>
+    run(async () => {
+      setWriter(next.writer);
+      setUsage(next.usage);
+      const result = await saveMcpPreferences(next);
+      return result.ok ? null : { ok: false, text: result.error };
     });
 
   const setups = agentSetups({ url: initial.url, token, bridgePath: initial.bridgePath });
@@ -101,6 +139,45 @@ export function McpForm({ initial }: { initial: McpSettingsView }) {
         </p>
       )}
 
+      {on && access === "write" && (
+        <div className="flex flex-col gap-3 border-t border-border pt-4">
+          <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="mcp-writer">Who writes evaluations, CVs and emails</Label>
+              <Select
+                id="mcp-writer"
+                options={WRITER_OPTIONS}
+                value={writer}
+                onValueChange={(value) => savePreferences({ writer: value as McpSettingsView["writer"], usage })}
+                disabled={pending}
+                className="w-64"
+              />
+            </div>
+            {writer !== "roleport" && (
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="mcp-usage">When the agent writes</Label>
+                <Select
+                  id="mcp-usage"
+                  options={USAGE_OPTIONS}
+                  value={usage}
+                  onValueChange={(value) => savePreferences({ writer, usage: value as McpSettingsView["usage"] })}
+                  disabled={pending}
+                  className="w-48"
+                />
+              </div>
+            )}
+          </div>
+          <p className="text-[13px] text-muted">{writerNote(writer, initial.hasAi)}</p>
+          {writer !== "roleport" && (
+            <p className="text-[13px] text-muted">
+              RolePort can&apos;t choose the agent&apos;s model; your agent app does. These are routine tasks, so a fast or mid-size model at low
+              or medium effort is enough, and uses much less of your plan than the largest one. RolePort tells the agent what you chose here
+              and how much effort each task needs.
+            </p>
+          )}
+        </div>
+      )}
+
       {on && (
         <div className="flex flex-col gap-3 border-t border-border pt-4">
           {token ? (
@@ -122,6 +199,7 @@ export function McpForm({ initial }: { initial: McpSettingsView }) {
           <div role="tabpanel" className="flex flex-col gap-2">
             <p className="text-[13px] text-muted">{setup.where}</p>
             <CodeBlock code={setup.code} />
+            {access === "write" && writer !== "roleport" && <p className="text-[13px] text-muted">Keep usage down: {setup.usage}</p>}
           </div>
         </div>
       )}

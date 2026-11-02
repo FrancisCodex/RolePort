@@ -94,6 +94,8 @@ describe("the MCP server", () => {
       db: db as unknown as AnyDb,
       user: { id: LOCAL_USER.id, name: "Juan" },
       ai: async () => null,
+      writer: "auto",
+      usage: "balanced",
       search: async () => ({ jobs: [posting], statuses: [{ id: "greenhouse", label: "Greenhouse", count: 1 }] }),
       readLink: async () => ({ ok: false, error: "No network in tests." }),
       checkPosting: async () => ({ status: "open", reason: null, at: new Date().toISOString() }),
@@ -147,11 +149,69 @@ describe("the MCP server", () => {
     expect(list.data.applications).toHaveLength(1);
   });
 
-  it("says to set up AI instead of failing when there's none", async () => {
+  it("hands the writing to the agent when RolePort has no AI, then checks and saves its answer", async () => {
     const { call } = await connect("write");
     const [row] = await ctx.db.select().from(schema.job);
-    const result = await call("evaluate_job", { job_id: row.id });
-    expect(result).toMatchObject({ isError: true, text: AI_NOT_SET_UP });
+
+    const brief = await call("evaluate_job", { job_id: row.id });
+    expect(brief.data.status).toBe("your_turn");
+    expect(brief.data.instructions).toMatch(/TRUST BOUNDARY/);
+    expect(brief.data.input).toContain("Data Analyst");
+    expect(brief.data.answerSchema.properties.skillsScore).toBeDefined();
+    expect(brief.data.usage).toMatchObject({ effort: "medium" });
+    expect(brief.data.usage.approxInputTokens).toBeGreaterThan(0);
+
+    const wrong = await call("evaluate_job", { job_id: row.id, answer: { skillsScore: "high" } });
+    expect(wrong.isError).toBe(true);
+    expect(wrong.text).toMatch(/skillsScore/);
+
+    const answer = {
+      eligibilityQuote: "",
+      eligibility: "pass",
+      eligibilityNote: "Based in Cebu.",
+      languageQuote: "",
+      language: "pass",
+      languageNote: "",
+      location: "pass",
+      locationNote: "",
+      dealBreakerQuote: "",
+      dealBreaker: "",
+      postingClosed: false,
+      deadline: "",
+      skillsScore: 80.4,
+      experienceScore: 70,
+      cultureScore: 60,
+      careerScore: 75,
+      strengths: ["SQL", "Excel"],
+      gaps: [],
+      summary: "A good match on the core tools.",
+      recommendation: "Apply.",
+    };
+    const saved = await call("evaluate_job", { job_id: row.id, answer: JSON.stringify(answer) });
+    expect(saved.isError).toBe(false);
+    expect(saved.data).toMatchObject({ scores: { skills: 80 }, model: "Your AI agent" });
+  });
+
+  it("only takes RolePort's own AI when Settings says so", async () => {
+    const own = { ...ctx, writer: "roleport" as const };
+    const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+    await createMcpServer(own, "write").connect(serverSide);
+    const client = new Client({ name: "test", version: "1" });
+    await client.connect(clientSide);
+    const [row] = await ctx.db.select().from(schema.job);
+    const result = (await client.callTool({ name: "evaluate_job", arguments: { job_id: row.id } })) as { content: { text: string }[]; isError?: boolean };
+    expect(result).toMatchObject({ isError: true, content: [{ text: AI_NOT_SET_UP }] });
+  });
+
+  it("asks the agent to keep usage low when the user chose that", async () => {
+    const thrifty = { ...ctx, usage: "low" as const };
+    const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+    await createMcpServer(thrifty, "write").connect(serverSide);
+    const client = new Client({ name: "test", version: "1" });
+    await client.connect(clientSide);
+    const [row] = await ctx.db.select().from(schema.job);
+    const result = (await client.callTool({ name: "evaluate_job", arguments: { job_id: row.id } })) as { content: { text: string }[] };
+    expect(JSON.parse(result.content[0].text).usage.userPreference).toMatch(/keep usage low/);
   });
 
   it("answers unknown ids with a message the agent can act on", async () => {

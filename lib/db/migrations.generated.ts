@@ -195,5 +195,14 @@ export const migrations: MigrationMeta[] = [
     "bps": true,
     "folderMillis": 1793622112386,
     "hash": "7fc06e559cb75d2faa89254ae7f0f4891a2959ba626baf7b94729ed6514a792c"
+  },
+  {
+    "sql": [
+      "ALTER TABLE \"user_settings\" ADD COLUMN \"mcp_writer\" text;",
+      "\nALTER TABLE \"user_settings\" ADD COLUMN \"mcp_usage\" text;"
+    ],
+    "bps": true,
+    "folderMillis": 1793623734703,
+    "hash": "89a9a892b2e761a8890c99f4d970d35b13cd00f6401ff15f1cff4f6a1aa608aa"
   }
 ];
