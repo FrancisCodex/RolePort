@@ -47,8 +47,8 @@ export type Backup = {
   tables: BackupRows;
 };
 
-/** Settings columns that hold API keys: always left out of a backup. */
-export const KEY_COLUMNS = ["aiApiKeyEnc", "rapidApiKeyEnc"] as const;
+/** Settings columns that hold API keys or agent access: always left out of a backup. */
+export const KEY_COLUMNS = ["aiApiKeyEnc", "rapidApiKeyEnc", "mcpAccess", "mcpTokenHash"] as const;
 
 const rows = z.array(z.record(z.string(), z.unknown()));
 const backupSchema = z.object({

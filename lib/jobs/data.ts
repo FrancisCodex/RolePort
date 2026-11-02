@@ -5,9 +5,9 @@ import { getDb } from "@/lib/db";
 import { getMyProfile } from "@/lib/profile/data";
 import { getCurrentUser } from "@/lib/session";
 import { countApplications, readApplication, readApplications, type ApplicationDetail, type PipelineItem } from "./applications";
-import { readFitMatches, readJob, readTrackedJobs, sortJobs, storeJobs, toListItem, type JobListItem, type KeyedJob } from "./queries";
+import { countEvaluatedJobs, readEvaluatedJobs, readFitMatches, readJob, readTrackedJobs, sortJobs, storeJobs, toListItem, type JobListItem, type KeyedJob } from "./queries";
 import { browseCompanyJobs, searchAllSources } from "./search";
-import { companyJobFilters, type ParsedCompanyBrowse } from "./search-params";
+import { companyJobFilters, type ParsedCompanyBrowse, type ParsedEvaluated } from "./search-params";
 import type { JobSearchParams, SourceStatus } from "./types";
 
 export { matchSortScore, type JobExtras, type JobListItem, type JobRow } from "./queries";
@@ -74,4 +74,16 @@ export async function getMyApplication(id: string): Promise<{ application: Appli
   if (!application) return null;
   const job = application.jobId ? await readJob(db, user.id, application.jobId, (await getMyProfile()).profile) : null;
   return { application, job };
+}
+
+/** The current user's evaluated jobs, for "Jobs you've evaluated". */
+export async function getMyEvaluatedJobs(filter: ParsedEvaluated): Promise<{ jobs: JobListItem[]; total: number }> {
+  const user = await getCurrentUser();
+  const { profile } = await getMyProfile();
+  return readEvaluatedJobs(await getDb(), user.id, profile, filter);
+}
+
+export async function countMyEvaluatedJobs(): Promise<number> {
+  const user = await getCurrentUser();
+  return countEvaluatedJobs(await getDb(), user.id);
 }

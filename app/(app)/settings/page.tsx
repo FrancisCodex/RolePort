@@ -1,4 +1,6 @@
+import path from "node:path";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { Suspense } from "react";
 import { BackToGuide } from "@/components/app/back-to-guide";
 import { PageHeader } from "@/components/app/page-header";
@@ -51,14 +53,23 @@ async function jobSpyReachable(): Promise<boolean> {
   }
 }
 
+/** This install's MCP address, as the browser reached it. */
+async function mcpAddress(): Promise<string> {
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? (/^(localhost|127\.0\.0\.1|\[::1\])(:|$)/.test(host) ? "http" : "https");
+  return `${proto}://${host}/api/mcp`;
+}
+
 async function SettingsContent() {
   const showJobSpy = Boolean(jobSpyUrl);
-  const [row, active, reachable, companies, { profile }] = await Promise.all([
+  const [row, active, reachable, companies, { profile }, mcpUrl] = await Promise.all([
     getMySettingsRow(),
     getAiConfig(),
     showJobSpy ? jobSpyReachable() : false,
     getMyFollowedCompanies(),
     getMyProfile(),
+    mcpAddress(),
   ]);
 
   return (
@@ -75,6 +86,14 @@ async function SettingsContent() {
       interviewPrompt={row?.interviewPrompt ?? null}
       emailPrompt={row?.emailPrompt ?? null}
       followUpRules={rulesOf(row?.followUpRules)}
+      mcp={{
+        access: row?.mcpAccess ?? null,
+        writer: row?.mcpWriter ?? "auto",
+        usage: row?.mcpUsage ?? "balanced",
+        hasAi: active !== null,
+        url: mcpUrl,
+        bridgePath: path.join(process.cwd(), "scripts", "mcp-stdio.mjs").replace(/\\/g, "/"),
+      }}
       dataNote={
         process.env.DATABASE_URL
           ? "Your profile, jobs and applications are stored in the Postgres database set in DATABASE_URL."

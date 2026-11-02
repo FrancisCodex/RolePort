@@ -4,10 +4,11 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { LiteData } from "@/components/app/lite-data";
 import type { LiteSearchResult } from "@/lib/client/lite-search";
-import { companyJobFilters, isCompanyBrowse, parseCompanyBrowse, parseJobSearch, type JobSort } from "@/lib/jobs/search-params";
+import { companyJobFilters, isCompanyBrowse, isEvaluatedView, parseCompanyBrowse, parseEvaluated, parseJobSearch, type JobSort } from "@/lib/jobs/search-params";
 import type { CompanyJobFilters } from "@/lib/jobs/sources/companies/match";
 import type { JobSearchParams } from "@/lib/jobs/types";
 import { CompanyJobsView } from "./company-jobs-view";
+import { EvaluatedJobsView, EvaluatedResults } from "./evaluated-view";
 import { ResultsSkeleton, ResultsView } from "./results-view";
 import { JobSearchView } from "./search-view";
 
@@ -18,10 +19,28 @@ type LiteRequest = { kind: "search"; params: JobSearchParams } | { kind: "compan
 export function LiteJobs() {
   const urlParams = Object.fromEntries(useSearchParams().entries());
   return (
-    <LiteData load={(q) => q.loadJobSearch()} tables={["profile", "followed_company"]} fallback={<ResultsSkeleton withForm />}>
-      {({ profile, companies }) => {
+    <LiteData load={(q) => q.loadJobSearch()} tables={["profile", "followed_company", "job_match"]} fallback={<ResultsSkeleton withForm />}>
+      {({ profile, companies, evaluatedCount }) => {
         // Following or unfollowing a company changes the results, so it's part of the keys.
         const companyIds = companies.map((c) => c.id);
+        if (isEvaluatedView(urlParams)) {
+          const filter = parseEvaluated(urlParams);
+          return (
+            <EvaluatedJobsView
+              filter={filter}
+              results={
+                <LiteData
+                  key={JSON.stringify(filter)}
+                  load={(q) => q.loadEvaluatedJobs(filter)}
+                  tables={["application", "job_match", "profile", "user_settings"]}
+                  fallback={<ResultsSkeleton />}
+                >
+                  {(data) => <EvaluatedResults {...data} filtered={Boolean(filter.query) || filter.fit !== "all"} />}
+                </LiteData>
+              }
+            />
+          );
+        }
         if (isCompanyBrowse(urlParams)) {
           const browse = parseCompanyBrowse(urlParams);
           const request: LiteRequest = { kind: "companies", company: browse.company, filters: companyJobFilters(browse) };
@@ -41,6 +60,7 @@ export function LiteJobs() {
             profile={profile}
             search={search}
             companies={companies}
+            evaluatedCount={evaluatedCount}
             results={<LiteResults key={JSON.stringify({ request, sort: search.sort, companyIds })} request={request} sort={search.sort} />}
           />
         );

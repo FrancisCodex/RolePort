@@ -34,7 +34,7 @@ export async function exportBackup(db: AnyDb, user: { id: string; name: string }
     user: { name: user.name },
     tables: {
       profile,
-      userSettings: settings.map((s) => ({ ...s, aiApiKeyEnc: null, rapidApiKeyEnc: null })),
+      userSettings: settings.map((s) => ({ ...s, aiApiKeyEnc: null, rapidApiKeyEnc: null, mcpAccess: null, mcpTokenHash: null })),
       job,
       jobMatch,
       application,

@@ -1,23 +1,26 @@
 ---
 title: Settings
 description: Every card in Settings, what it does and where to read more.
-updated: 2026-10-31
+updated: 2026-11-02
 ---
 
-| Card | What it does | Read more |
-| --- | --- | --- |
-| AI provider | Choose your provider, key and model, and test the connection | [AI providers](/docs/ai/providers) |
-| CV reading prompt | How the AI reads your CV into your profile | [Customizing the prompts](/docs/ai/prompts) |
-| CV tailoring prompt | How the AI tailors your CV | [Customizing the prompts](/docs/ai/prompts) |
-| Cover letter prompt | How the AI writes letters | [Customizing the prompts](/docs/ai/prompts) |
-| Application questions prompt | How the AI answers form questions | [Customizing the prompts](/docs/ai/prompts) |
-| Email prompt | How the AI writes each kind of email | [Customizing the prompts](/docs/ai/prompts) |
-| Follow-up reminders | When follow-ups come due | [Emails and follow-ups](/docs/guides/emails#follow-up-reminders) |
-| Mock interviewer prompt | When the interviewer presses and moves on | [Customizing the prompts](/docs/ai/prompts) |
-| Job sources | Your JSearch key and JobSpy | [Job sources](/docs/job-sources) |
-| Companies you follow | Add and remove companies | [Companies you follow](/docs/guides/companies) |
-| Voice | Microphone, speech-to-text and the interviewer's voice | [Answering out loud](/docs/guides/voice) |
-| Your data | Backups, restoring, and how your data is stored | [Privacy and your data](/docs/privacy-and-data) |
+Settings is split into four groups. Use the section menu to jump to a card: beside the cards on a wide screen, or the row of buttons at the top on a phone or tablet. It follows along as you scroll.
+
+| Group | Card | What it does | Read more |
+| --- | --- | --- | --- |
+| AI | AI provider | Choose your provider, key and model, and test the connection | [AI providers](/docs/ai/providers) |
+| AI | Connect an AI agent | Let Claude, Codex, Cursor or another agent use RolePort (self-hosted only) | [Connect an AI agent](/docs/ai/agents) |
+| Job search | Job sources | Your JSearch key and JobSpy | [Job sources](/docs/job-sources) |
+| Job search | Companies you follow | Add and remove companies | [Companies you follow](/docs/guides/companies) |
+| Job search | Follow-up reminders | When follow-ups come due | [Emails and follow-ups](/docs/guides/emails#follow-up-reminders) |
+| Prompts | CV reading prompt | How the AI reads your CV into your profile | [Customizing the prompts](/docs/ai/prompts) |
+| Prompts | CV tailoring prompt | How the AI tailors your CV | [Customizing the prompts](/docs/ai/prompts) |
+| Prompts | Cover letter prompt | How the AI writes letters | [Customizing the prompts](/docs/ai/prompts) |
+| Prompts | Application questions prompt | How the AI answers form questions | [Customizing the prompts](/docs/ai/prompts) |
+| Prompts | Email prompt | How the AI writes each kind of email | [Customizing the prompts](/docs/ai/prompts) |
+| Prompts | Mock interviewer prompt | When the interviewer presses and moves on | [Customizing the prompts](/docs/ai/prompts) |
+| Voice and data | Voice | Microphone, speech-to-text and the interviewer's voice | [Answering out loud](/docs/guides/voice) |
+| Voice and data | Your data | Backups, restoring, and how your data is stored | [Privacy and your data](/docs/privacy-and-data) |
 
 ## Self-hosted settings
 

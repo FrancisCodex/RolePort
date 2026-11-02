@@ -4,7 +4,7 @@ import { getDb } from "@/lib/db";
 import { decryptSecret } from "@/lib/secrets";
 import { getCurrentUser } from "@/lib/session";
 import { readSettings } from "@/lib/settings/queries";
-import { aiConfigFromRow, DEFAULT_ANTHROPIC_MODEL, type AiConfig, type UserSettingsRow } from "./settings";
+import { aiConfigFromRow, DEFAULT_ANTHROPIC_MODEL, type ProviderConfig, type UserSettingsRow } from "./settings";
 
 export { DEFAULT_ANTHROPIC_MODEL, describeAiConfig, type AiConfig, type UserSettingsRow } from "./settings";
 
@@ -13,7 +13,7 @@ export const getMySettingsRow = cache(async (): Promise<UserSettingsRow | null> 
   return readSettings(await getDb(), user.id);
 });
 
-function fromEnv(): AiConfig | null {
+function fromEnv(): ProviderConfig | null {
   if (process.env.ANTHROPIC_API_KEY) {
     return {
       provider: "anthropic",
@@ -39,9 +39,12 @@ function fromEnv(): AiConfig | null {
  * The AI provider to use for the current user: what they chose in Settings,
  * falling back to environment variables, or null when nothing is configured.
  */
-export const getAiConfig = cache(async (): Promise<AiConfig | null> => {
-  return aiConfigFromRow(await getMySettingsRow(), decryptSecret) ?? fromEnv();
-});
+export const getAiConfig = cache(async (): Promise<ProviderConfig | null> => aiConfigFor(await getMySettingsRow()));
+
+/** The AI provider for a settings row, for callers that already read it (the MCP server). */
+export function aiConfigFor(row: UserSettingsRow | null): ProviderConfig | null {
+  return aiConfigFromRow(row, decryptSecret) ?? fromEnv();
+}
 
 export async function isAiConfigured(): Promise<boolean> {
   return (await getAiConfig()) !== null;
@@ -53,6 +56,9 @@ export async function getJobSpyEnabled(): Promise<boolean> {
 }
 
 export async function getRapidApiKey(): Promise<string | null> {
-  const row = await getMySettingsRow();
+  return rapidApiKeyFor(await getMySettingsRow());
+}
+
+export function rapidApiKeyFor(row: UserSettingsRow | null): string | null {
   return decryptSecret(row?.rapidApiKeyEnc) ?? process.env.RAPIDAPI_KEY ?? null;
 }

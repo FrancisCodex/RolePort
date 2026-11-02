@@ -24,8 +24,18 @@ import { LOCAL_USER } from "@/lib/db/local-user";
 import * as schema from "@/lib/db/schema";
 import { readApplication, readApplications } from "@/lib/jobs/applications";
 import { readDashboard } from "@/lib/jobs/dashboard";
-import { readFitMatches, readJob, readJobsByIds, readTrackedJobs, sortJobs, toListItem, type JobListItem } from "@/lib/jobs/queries";
-import type { JobSort } from "@/lib/jobs/search-params";
+import {
+  countEvaluatedJobs,
+  readEvaluatedJobs,
+  readFitMatches,
+  readJob,
+  readJobsByIds,
+  readTrackedJobs,
+  sortJobs,
+  toListItem,
+  type JobListItem,
+} from "@/lib/jobs/queries";
+import type { JobSort, ParsedEvaluated } from "@/lib/jobs/search-params";
 import { sourceCredit } from "@/lib/jobs/sources/credits";
 import { followedCompanyView, readFollowedCompanies, type FollowedCompanyView } from "@/lib/companies/queries";
 import { readOnboarding, readProfile, readProfilePrompt, type ProfileView } from "@/lib/profile/queries";
@@ -55,10 +65,22 @@ export async function loadProfile(): Promise<ProfileView & { aiEnabled: boolean;
 }
 
 /** Jobs: the profile (for the search defaults) and the companies the user follows. */
-export async function loadJobSearch(): Promise<ProfileView & { companies: FollowedCompanyView[] }> {
+export async function loadJobSearch(): Promise<ProfileView & { companies: FollowedCompanyView[]; evaluatedCount: number }> {
   const db = await getBrowserDb();
-  const [view, companies] = await Promise.all([readProfile(db, await me(db)), readFollowedCompanies(db, LOCAL_USER.id)]);
-  return { ...view, companies: companies.map(followedCompanyView) };
+  const [view, companies, evaluatedCount] = await Promise.all([
+    readProfile(db, await me(db)),
+    readFollowedCompanies(db, LOCAL_USER.id),
+    countEvaluatedJobs(db, LOCAL_USER.id),
+  ]);
+  return { ...view, companies: companies.map(followedCompanyView), evaluatedCount };
+}
+
+/** "Jobs you've evaluated", from the browser database. */
+export async function loadEvaluatedJobs(filter: ParsedEvaluated): Promise<{ jobs: JobListItem[]; total: number; aiEnabled: boolean }> {
+  const db = await getBrowserDb();
+  const { profile } = await readProfile(db, await me(db));
+  const [found, ai] = await Promise.all([readEvaluatedJobs(db, LOCAL_USER.id, profile, filter), aiEnabled(db)]);
+  return { ...found, aiEnabled: ai };
 }
 
 export async function loadHome(): Promise<HomeData> {

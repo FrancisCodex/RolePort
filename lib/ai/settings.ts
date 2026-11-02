@@ -19,12 +19,23 @@ export type AiConfig =
       /** Sent as reasoning_effort when set (e.g. "none" makes local thinking models much faster). */
       reasoningEffort: string | null;
       source: "settings" | "env";
-    };
+    }
+  | AgentConfig;
+
+/**
+ * The user's own AI agent writes instead of a provider (lib/mcp). Without `answer`, a model call
+ * stops with an AgentBrief holding the request; with it, the answer is checked against the
+ * call's schema and used as the model's reply, so every check after the call still runs.
+ */
+export type AgentConfig = { provider: "agent"; model: string; answer?: unknown; source: "agent" };
+
+/** A provider RolePort calls itself: what Settings saves and lists models for. */
+export type ProviderConfig = Exclude<AiConfig, AgentConfig>;
 
 export type UserSettingsRow = typeof schema.userSettings.$inferSelect;
 
 /** The provider chosen in Settings, or null. `readSecret` turns a stored key back into plain text. */
-export function aiConfigFromRow(row: UserSettingsRow | null, readSecret: (stored: string | null | undefined) => string | null): AiConfig | null {
+export function aiConfigFromRow(row: UserSettingsRow | null, readSecret: (stored: string | null | undefined) => string | null): ProviderConfig | null {
   if (row?.aiProvider === "anthropic") {
     const apiKey = readSecret(row.aiApiKeyEnc);
     if (apiKey) return { provider: "anthropic", apiKey, model: row.aiModel || DEFAULT_ANTHROPIC_MODEL, source: "settings" };
@@ -45,6 +56,7 @@ export function aiConfigFromRow(row: UserSettingsRow | null, readSecret: (stored
 /** Short human label, e.g. "Ollama · gemma4:12b". */
 export function describeAiConfig(config: AiConfig): string {
   if (config.provider === "anthropic") return `Claude · ${config.model}`;
+  if (config.provider === "agent") return config.model;
   const host = (() => {
     try {
       return new URL(config.baseUrl).host;
@@ -88,7 +100,7 @@ export function checkBaseUrl(raw: string | null): string | null {
 }
 
 /** Turn form input into a provider config, reusing `savedKey` when the key field was left blank. */
-export function resolveAiInput(input: AiSettingsInput, savedKey: string | null): { config: AiConfig; apiKey: string | null } {
+export function resolveAiInput(input: AiSettingsInput, savedKey: string | null): { config: ProviderConfig; apiKey: string | null } {
   const preset = AI_PRESETS[input.preset as keyof typeof AI_PRESETS];
   const apiKey = input.clearApiKey ? null : input.apiKey || savedKey;
   const model = input.model || preset.defaultModel;
@@ -116,7 +128,7 @@ export const CONNECTION_TEST = {
 };
 
 /** The `user_settings` columns for a resolved provider. `storedKey` is the key as stored: encrypted (server) or encoded (lite). */
-export function aiSettingsValues(preset: string, config: AiConfig, storedKey: string | null) {
+export function aiSettingsValues(preset: string, config: ProviderConfig, storedKey: string | null) {
   return {
     aiProvider: config.provider,
     aiPreset: preset,

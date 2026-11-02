@@ -118,6 +118,33 @@ export function parseCompanyBrowse(sp: UrlParams): ParsedCompanyBrowse {
   };
 }
 
+/** Which evaluated jobs to show: every one, those worth applying to (good fit or better), strong fits only, or those ruled out. */
+export const FIT_FILTERS = ["all", "worth", "strong", "ruled_out"] as const;
+export type FitFilter = (typeof FIT_FILTERS)[number];
+
+export const FIT_FILTER_OPTIONS: { value: FitFilter; label: string }[] = [
+  { value: "all", label: "Every evaluated job" },
+  { value: "worth", label: "Good fit or better" },
+  { value: "strong", label: "Strong fits only" },
+  { value: "ruled_out", label: "Ruled out" },
+];
+
+/** The "Jobs you've evaluated" view: `?view=evaluated`, with optional words, fit and sort. */
+export type ParsedEvaluated = { query: string; fit: FitFilter; sort: "score" | "recent" };
+
+export function isEvaluatedView(sp: UrlParams): boolean {
+  return one(sp.view) === "evaluated";
+}
+
+export function parseEvaluated(sp: UrlParams): ParsedEvaluated {
+  const fit = one(sp.fit) as FitFilter | undefined;
+  return {
+    query: one(sp.q)?.slice(0, 120) ?? "",
+    fit: fit && FIT_FILTERS.includes(fit) ? fit : "all",
+    sort: one(sp.sort) === "recent" ? "recent" : "score",
+  };
+}
+
 /** What the company feeds are filtered by. */
 export function companyJobFilters({ query, country, workSetup, postedWithinDays }: ParsedCompanyBrowse): CompanyJobFilters {
   return { query: query || undefined, country, workSetup, postedWithinDays };

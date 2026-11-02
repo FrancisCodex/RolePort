@@ -42,6 +42,13 @@ A job shows its summary, requirements, salary if stated, your quick match, and t
 
 Pick jobs from the results, or take the top 10, and RolePort evaluates them one at a time and ranks them. A local model takes about 30 to 60 seconds per job.
 
+## Jobs you've evaluated
+
+Every job with an AI fit evaluation is kept, even after it drops out of your search results. Open them from **N jobs you've evaluated** under the search form, from **See them** in Home's Fit evaluations panel, or at `/jobs?view=evaluated`. This includes evaluations an [AI agent](/docs/ai/agents) ran for you.
+
+- **Filter** by words in the title or company, and by fit: **Good fit or better** (60 or more), **Strong fits only** (75 or more), or **Ruled out** (failed a gate, closed or past its deadline). Ruled-out jobs are never counted as good or strong, whatever their score.
+- **Sort** by best fit or by most recently evaluated.
+
 ## Is the job still open?
 
 **Check again** on a job's page checks a company-feed job or a pasted link. A saved job is also checked once a day when you open its page. Closed jobs are marked on the job page, on job cards and on your Applied list. See [Paste a job](/docs/guides/paste-a-job#still-open-checks).

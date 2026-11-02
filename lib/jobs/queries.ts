@@ -3,10 +3,11 @@ import type { FitEvaluation } from "@/lib/ai/evaluate-job";
 import * as schema from "@/lib/db/schema";
 import type { AnyDb } from "@/lib/db/types";
 import type { ProfileInput } from "@/lib/profile/schema";
-import { overallFitScore, vetoReason } from "./fit";
+import { fitBand, overallFitScore, vetoReason } from "./fit";
 import { toPlainText } from "./html";
 import { quickMatch, type QuickMatch } from "./quick-match";
 import type { JobCheck } from "./paste/types";
+import type { ParsedEvaluated } from "./search-params";
 import type { JobLink, NormalizedJob } from "./types";
 
 /*
@@ -231,4 +232,48 @@ export async function writeFitMatch(db: AnyDb, userId: string, jobId: string, re
     .onConflictDoUpdate({ target: [schema.jobMatch.userId, schema.jobMatch.jobId], set: values })
     .returning();
   return row;
+}
+
+/**
+ * The jobs the user has had evaluated, for "Jobs you've evaluated" (and the MCP server's
+ * list_evaluated_jobs): narrowed by words in the title or company and by fit, best score or most
+ * recently evaluated first. `total` counts every evaluated job, before the filters.
+ */
+export async function readEvaluatedJobs(
+  db: AnyDb,
+  userId: string,
+  profile: ProfileInput,
+  { query, fit, sort }: ParsedEvaluated,
+): Promise<{ jobs: JobListItem[]; total: number }> {
+  const rows = await db
+    .select({ job: schema.job, match: schema.jobMatch })
+    .from(schema.jobMatch)
+    .innerJoin(schema.job, eq(schema.jobMatch.jobId, schema.job.id))
+    .where(eq(schema.jobMatch.userId, userId));
+  const tracked = await readTrackedJobs(db, userId);
+  const fits = new Map(rows.map((r) => [r.job.id, r.match]));
+  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
+
+  const jobs = rows
+    .map((r) => toListItem(r.job, profile, tracked, fits))
+    .filter((job) => {
+      const text = `${job.title} ${job.company}`.toLowerCase();
+      if (!words.every((w) => text.includes(w))) return false;
+      const veto = vetoReason(job.fit!);
+      const score = job.fit!.overallScore ?? 0;
+      if (fit === "ruled_out") return veto !== null;
+      if (fit === "strong") return !veto && fitBand(score) === "strong";
+      if (fit === "worth") return !veto && score >= 60;
+      return true;
+    });
+  jobs.sort(
+    sort === "recent" ? (a, b) => b.fit!.scoredAt.getTime() - a.fit!.scoredAt.getTime() : (a, b) => matchSortScore(b) - matchSortScore(a),
+  );
+  return { jobs, total: rows.length };
+}
+
+/** How many jobs the user has had evaluated, for the link to them. */
+export async function countEvaluatedJobs(db: AnyDb, userId: string): Promise<number> {
+  const [row] = await db.select({ n: sql<number>`count(*)::int` }).from(schema.jobMatch).where(eq(schema.jobMatch.userId, userId));
+  return row?.n ?? 0;
 }
