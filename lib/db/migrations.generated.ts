@@ -204,5 +204,15 @@ export const migrations: MigrationMeta[] = [
     "bps": true,
     "folderMillis": 1793623734703,
     "hash": "89a9a892b2e761a8890c99f4d970d35b13cd00f6401ff15f1cff4f6a1aa608aa"
+  },
+  {
+    "sql": [
+      "ALTER TYPE \"public\".\"ai_provider\" ADD VALUE 'chatgpt';",
+      "\nCREATE TABLE \"chatgpt_account\" (\n\t\"user_id\" text PRIMARY KEY NOT NULL,\n\t\"host_id\" text NOT NULL,\n\t\"client_id\" text,\n\t\"email\" text,\n\t\"subject\" text,\n\t\"id_token_enc\" text,\n\t\"access_token_enc\" text,\n\t\"refresh_token_enc\" text,\n\t\"expires_at\" timestamp with time zone,\n\t\"scopes\" text,\n\t\"pending_enc\" text,\n\t\"problem\" text,\n\t\"created_at\" timestamp with time zone DEFAULT now() NOT NULL,\n\t\"updated_at\" timestamp with time zone DEFAULT now() NOT NULL\n);\n",
+      "\nALTER TABLE \"chatgpt_account\" ADD CONSTRAINT \"chatgpt_account_user_id_user_id_fk\" FOREIGN KEY (\"user_id\") REFERENCES \"public\".\"user\"(\"id\") ON DELETE cascade ON UPDATE no action;"
+    ],
+    "bps": true,
+    "folderMillis": 1793711880802,
+    "hash": "50fe71e13a97faf6f82b464c8fff0eeb8d492c7753cc1d2a62dd881c8bb9ad15"
   }
 ];

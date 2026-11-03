@@ -20,7 +20,14 @@ export type AiConfig =
       reasoningEffort: string | null;
       source: "settings" | "env";
     }
+  | ChatGptConfig
   | AgentConfig;
+
+/**
+ * The user's ChatGPT plan (Sign in with ChatGPT, lib/chatgpt), self-hosted only. `accessToken`
+ * returns a fresh token, renewing it when needed, so the config never holds an expired one.
+ */
+export type ChatGptConfig = { provider: "chatgpt"; model: string; accessToken: () => Promise<string>; source: "settings" };
 
 /**
  * The user's own AI agent writes instead of a provider (lib/mcp). Without `answer`, a model call
@@ -57,6 +64,7 @@ export function aiConfigFromRow(row: UserSettingsRow | null, readSecret: (stored
 export function describeAiConfig(config: AiConfig): string {
   if (config.provider === "anthropic") return `Claude · ${config.model}`;
   if (config.provider === "agent") return config.model;
+  if (config.provider === "chatgpt") return `ChatGPT plan · ${config.model}`;
   const host = (() => {
     try {
       return new URL(config.baseUrl).host;

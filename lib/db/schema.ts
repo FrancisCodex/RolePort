@@ -396,7 +396,35 @@ export const followedCompany = pgTable(
   (t) => [uniqueIndex("followed_company_user_board_idx").on(t.userId, t.ats, t.slug)],
 );
 
-export const aiProvider = pgEnum("ai_provider", ["anthropic", "openai_compatible"]);
+export const aiProvider = pgEnum("ai_provider", ["anthropic", "openai_compatible", "chatgpt"]);
+
+/**
+ * Sign in with ChatGPT (lib/chatgpt): the user's ChatGPT plan as RolePort's AI, self-hosted only.
+ * One row per user. `hostId` and `clientId` outlive signing out, so signing in again reuses
+ * them; the tokens (encrypted with lib/secrets.ts) are cleared on sign-out.
+ */
+export const chatgptAccount = pgTable("chatgpt_account", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  /** This install's ext_agent_host_id ("urn:uuid:…"), made once. */
+  hostId: text("host_id").notNull(),
+  /** The client ID OpenAI issued on the first sign-in ("oaiapp_…"). */
+  clientId: text("client_id"),
+  email: text("email"),
+  /** The ID token's verified `sub`. */
+  subject: text("subject"),
+  idTokenEnc: text("id_token_enc"),
+  accessTokenEnc: text("access_token_enc"),
+  refreshTokenEnc: text("refresh_token_enc"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  scopes: text("scopes"),
+  /** A sign-in in progress (state, nonce, PKCE verifier…), encrypted; cleared by the callback. */
+  pendingEnc: text("pending_enc"),
+  /** Why the last sign-in or refresh stopped working, shown in Settings until the next sign-in. */
+  problem: text("problem"),
+  ...timestamps,
+});
 
 /** Per-user settings. Secrets are encrypted with lib/secrets.ts and never sent to the browser. */
 export const userSettings = pgTable("user_settings", {

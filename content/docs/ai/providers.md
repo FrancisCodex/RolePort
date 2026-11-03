@@ -1,7 +1,7 @@
 ---
 title: AI providers
 description: Choose where RolePort's AI runs. Use your own key with a hosted provider, or a free local model.
-updated: 2026-10-31
+updated: 2026-11-03
 ---
 
 RolePort works with any provider you choose, and charges nothing for it. AI is optional. Without it, job search, quick match, the pipeline, PDFs and reminders still work.
@@ -20,6 +20,7 @@ RolePort works with any provider you choose, and charges nothing for it. AI is o
 | Provider | Good for | What you need |
 | --- | --- | --- |
 | Claude | The best quality. The default model is `claude-opus-5-5` | An [Anthropic API key](https://console.anthropic.com/settings/keys) |
+| ChatGPT | A ChatGPT plan and no API key. Self-hosted only | A ChatGPT plan (see below) |
 | OpenAI | A familiar choice | An [OpenAI API key](https://platform.openai.com/api-keys) |
 | OpenRouter | One key for hundreds of models | An [OpenRouter key](https://openrouter.ai/keys) |
 | Groq | Fast hosted open models | A [Groq key](https://console.groq.com/keys) |
@@ -27,6 +28,25 @@ RolePort works with any provider you choose, and charges nothing for it. AI is o
 | Custom | LM Studio, vLLM or any OpenAI-compatible server | The server's address |
 
 See [Local models](/docs/ai/local-models) for Ollama and LM Studio.
+
+## Use your ChatGPT plan
+
+If you pay for ChatGPT but have no API key, RolePort can use your plan instead. It's an OpenAI preview, open to open-source apps you run yourself, so it's on self-hosted installs only, not Lite.
+
+1. Open RolePort in a browser on the computer it runs on (for example `http://localhost:3000`). OpenAI sends you back to `127.0.0.1` on that computer after signing in, so a phone or another PC can't finish it.
+2. Go to **Settings → AI provider**, pick **ChatGPT** and click **Continue with ChatGPT**.
+3. Sign in on OpenAI's page and allow RolePort to use your plan. You come back to Settings.
+4. Pick one of the models your account offers, click **Test connection**, then **Save**.
+
+Every AI feature then uses your plan: evaluations, tailored CVs, cover letters, emails, CV import, pasted jobs and the Interview Coach. RolePort itself still charges nothing.
+
+**Usage.** RolePort's requests count against your plan. See them, and set a limit for RolePort, in [ChatGPT's usage settings](https://chatgpt.com/settings/usage). When the limit is used up, RolePort says so instead of failing, and works again once ChatGPT allows it.
+
+**Signing out.** **Sign out** in Settings tells OpenAI to end the sign-in and turns AI off. You can also disconnect RolePort in ChatGPT's settings; RolePort notices the next time it uses AI and asks you to sign in again.
+
+**Where your sign-in goes.** Like API keys, the sign-in is encrypted before it's saved on your server and never sent to the browser. Backups don't include it.
+
+**On a remote server (a VPS).** The sign-in has to finish on the computer RolePort runs on, so it doesn't work yet when RolePort runs somewhere else. Use an API key there, or [connect an AI agent](/docs/ai/agents).
 
 ## Advanced options
 

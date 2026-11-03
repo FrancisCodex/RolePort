@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { BackToGuide } from "@/components/app/back-to-guide";
 import { PageHeader } from "@/components/app/page-header";
 import { getAiConfig, getMySettingsRow } from "@/lib/ai/config";
+import { hasPlanScope, isSignedIn, readAccount } from "@/lib/chatgpt/account";
 import { getMyFollowedCompanies } from "@/lib/companies/data";
 import { jobSpyUrl } from "@/lib/env";
 import { isLite } from "@/lib/mode";
@@ -12,6 +13,7 @@ import { rulesOf } from "@/lib/outreach/rules";
 import { getMyProfile } from "@/lib/profile/data";
 import { maskSecret } from "@/lib/secret-hint";
 import { decryptSecret } from "@/lib/secrets";
+import { getCurrentUser } from "@/lib/session";
 import { LiteSettings } from "./lite-settings";
 import { SettingsView } from "./settings-view";
 import { aiSettingsView } from "./view";
@@ -63,18 +65,25 @@ async function mcpAddress(): Promise<string> {
 
 async function SettingsContent() {
   const showJobSpy = Boolean(jobSpyUrl);
-  const [row, active, reachable, companies, { profile }, mcpUrl] = await Promise.all([
+  const user = await getCurrentUser();
+  const [row, active, reachable, companies, { profile }, mcpUrl, chatgpt] = await Promise.all([
     getMySettingsRow(),
     getAiConfig(),
     showJobSpy ? jobSpyReachable() : false,
     getMyFollowedCompanies(),
     getMyProfile(),
     mcpAddress(),
+    readAccount(user.id),
   ]);
 
   return (
     <SettingsView
-      ai={aiSettingsView(row, decryptSecret, active)}
+      ai={aiSettingsView(row, decryptSecret, active, {
+        signedIn: isSignedIn(chatgpt),
+        email: chatgpt?.email ?? null,
+        planEnabled: hasPlanScope(chatgpt),
+        problem: chatgpt?.problem ?? null,
+      })}
       rapidApiKeyHint={maskSecret(decryptSecret(row?.rapidApiKeyEnc))}
       companies={companies}
       countries={[profile.country, ...profile.targetCountries]}

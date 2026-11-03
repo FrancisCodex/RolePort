@@ -1,6 +1,8 @@
 import "server-only";
 import { cache } from "react";
+import { chatGptAccessToken } from "@/lib/chatgpt/account";
 import { getDb } from "@/lib/db";
+import { isLite } from "@/lib/mode";
 import { decryptSecret } from "@/lib/secrets";
 import { getCurrentUser } from "@/lib/session";
 import { readSettings } from "@/lib/settings/queries";
@@ -43,6 +45,10 @@ export const getAiConfig = cache(async (): Promise<ProviderConfig | null> => aiC
 
 /** The AI provider for a settings row, for callers that already read it (the MCP server). */
 export function aiConfigFor(row: UserSettingsRow | null): ProviderConfig | null {
+  if (row?.aiProvider === "chatgpt" && row.aiModel && !isLite) {
+    const { userId } = row;
+    return { provider: "chatgpt", model: row.aiModel, accessToken: () => chatGptAccessToken(userId), source: "settings" };
+  }
   return aiConfigFromRow(row, decryptSecret) ?? fromEnv();
 }
 

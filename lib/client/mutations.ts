@@ -53,6 +53,13 @@ export const testAiConnection: typeof settings.testAiConnection = isLite
   ? async (...a) => (await lite()).testAiConnection(...a)
   : settings.testAiConnection;
 export const fetchModels: typeof settings.fetchModels = isLite ? async (...a) => (await lite()).fetchModels(...a) : settings.fetchModels;
+// Sign in with ChatGPT is self-hosted only: OpenAI puts hosted websites like the lite edition on another path.
+const selfHostedOnly = async () => ({ ok: false as const, error: "Sign in with ChatGPT needs a self-hosted RolePort." });
+export const startChatGptSignIn: typeof settings.startChatGptSignIn = isLite ? selfHostedOnly : settings.startChatGptSignIn;
+export const signOutChatGpt: typeof settings.signOutChatGpt = isLite ? selfHostedOnly : settings.signOutChatGpt;
+export const fetchChatGptModels: typeof settings.fetchChatGptModels = isLite ? selfHostedOnly : settings.fetchChatGptModels;
+export const saveChatGptModel: typeof settings.saveChatGptModel = isLite ? selfHostedOnly : settings.saveChatGptModel;
+export const testChatGpt: typeof settings.testChatGpt = isLite ? selfHostedOnly : settings.testChatGpt;
 export const followCompany: typeof settings.followCompany = isLite ? async (...a) => (await lite()).followCompany(...a) : settings.followCompany;
 export const unfollowCompany: typeof settings.unfollowCompany = isLite
   ? async (...a) => (await lite()).unfollowCompany(...a)

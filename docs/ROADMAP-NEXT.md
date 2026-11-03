@@ -19,10 +19,10 @@ Each step ships on its own branch and works in self-hosted and Lite, unless it s
 | 4. Documentation page (`/docs`) with search | ✅ Done (screenshots still to add) | `feat/docs-page` |
 | MCP server | ✅ Done, and the agent can do the AI writing (merged in #24; still to try: Claude Desktop itself, a real agent model) | `feat/mcp-server` |
 | MCP: Interview Coach tools and ready-made prompts | ✅ Built | `feat/mcp-coach-and-prompts` |
-| Sign in with ChatGPT: a ChatGPT plan as RolePort's AI | ⏭️ Next | `feat/chatgpt-sign-in` |
+| Sign in with ChatGPT: a ChatGPT plan as RolePort's AI | 🧪 Built, waiting on a real ChatGPT sign-in (see "Check first") | `feat/chatgpt-sign-in` |
 | 5. Desktop app: job scout, apply assistant | After Sign in with ChatGPT | — |
 
-**Next up: Sign in with ChatGPT**, so people with a ChatGPT plan but no API key or capable computer can use RolePort's AI. Then Phase 5, the desktop app, which builds on the MCP server's tools. Everything marked ✅ Done is finished.
+**Next up: trying Sign in with ChatGPT with a real ChatGPT account** (it's built), so people with a ChatGPT plan but no API key or capable computer can use RolePort's AI. Then Phase 5, the desktop app, which builds on the MCP server's tools. Everything marked ✅ Done is finished.
 
 ---
 
@@ -290,7 +290,7 @@ Two gaps after the MCP server: an agent couldn't run a mock interview (it could 
 
 **Still to try:** a real interview in Claude Code and Claude Desktop, with RolePort's AI and with the agent writing; whether Codex and Cursor show the prompts.
 
-## Sign in with ChatGPT ⏭️ Next
+## Sign in with ChatGPT 🧪 Built
 
 Many job seekers pay for ChatGPT Plus or Pro but have no API key and no computer that runs a good local model. OpenAI's **Sign in with ChatGPT** lets an app's AI requests count against the user's ChatGPT plan instead of an API key, and it's open to **open-source, locally hosted apps** with no approval or client secret. That describes self-hosted RolePort. Branch: `feat/chatgpt-sign-in`.
 
@@ -319,6 +319,17 @@ This is better for them than the MCP agent-writes mode: every AI button in RoleP
 4. **The refresh request.** The token reference describes refreshing but the exact request is on another page ("Refreshing tokens"); read it before writing the refresh.
 5. **Remote self-hosted servers.** The callback has to reach `127.0.0.1` on the computer whose browser signs in. Fine for RolePort on your own PC (Docker included, with the port published as now). For a VPS, read OpenAI's "Self-hosted VMs" page, or show a clear "sign in on the computer RolePort runs on" message.
 6. **Branding.** Follow OpenAI's Sign in with ChatGPT UI guidelines for the button and the plan-usage wording.
+
+### How it was built
+
+Docs re-read on 2026-11-03; they now cover the refresh and revoke requests, the error codes and the button wording, and still say nothing about `text.format` or `reasoning`.
+
+- **Sign-in** (`lib/chatgpt/oauth.ts`): the authorize URL, code exchange, ID-token check with `jose` against OpenAI's JWKS (issuer, audience = issued client ID, nonce), refresh (`grant_type=refresh_token`, no scope), revoke (endpoint from the discovery document) and the model list (`models[]`, `visibility == "list"`). Reauthorization sends the saved client ID, `id_token_hint` and `login_hint`; **Use your ChatGPT plan** after a declined consent adds `prompt=consent`.
+- **Storage** (`lib/chatgpt/account.ts`, table `chatgpt_account`, migration 0018, `chatgpt` added to the `ai_provider` enum): host ID, issued client ID, verified `sub` and email, and the tokens encrypted with `lib/secrets.ts`. The sign-in in progress (state, nonce, PKCE verifier) is kept there too, encrypted, because the callback arrives at `127.0.0.1` while the user opened `localhost`: different sites, so no shared cookie. Refreshes run one at a time per user, five minutes before expiry; a terminal refresh error clears the tokens (keeping client and host IDs) and Settings asks to sign in again. Backups don't include the table.
+- **Callback** (`app/api/chatgpt/callback/route.ts`): checks `state`, handles `access_denied`, rejects a different `client_id` on reauthorization, exchanges the code, verifies the ID token, saves, checks the plan scope, picks the account's first model (or keeps the saved one) and sends the browser back to Settings.
+- **Calls** (`lib/ai/structured.ts` → `lib/ai/responses-stream.ts`): `POST /v1/responses` with `store: false`, `stream: true`, `instructions` and the whole conversation in `input`, a strict JSON schema in `text.format` and `reasoning.effort`. If the route refuses either (`subscription_sharing_unsupported_capability` or a 400 naming `text…`/`reasoning…`), it's dropped for as long as the server runs and the schema goes in the instructions instead; replies that don't match the schema get the same "reply again" turn as local models. Every `subscription_sharing_*` code becomes a plain sentence; the used-up limit links to ChatGPT's usage settings, and nothing retries in a loop.
+- **Settings** (`app/(app)/settings/chatgpt-sign-in.tsx`): a **ChatGPT** tile next to Claude (self-hosted only), **Continue with ChatGPT** (`data-oai-siwc-button`), the account's models, **Test connection**, **Save**, **Sign out**, "Using ChatGPT plan" with **Manage usage**, and the one-time "You're using your ChatGPT plan" dialog with **Got it**. Starting a sign-in from an address that isn't `localhost`/`127.0.0.1` says to open RolePort on the computer it runs on.
+- **Not done yet:** the ChatGPT logo on the button (OpenAI's `chatgpt-logo-white.svg` asset), and everything under **Check first** that needs a real account.
 
 **Done when:** on a self-hosted install with no API key, a user with a ChatGPT plan signs in from Settings, picks a model, evaluates a job, tailors a CV and drafts an email, and sees RolePort's usage in ChatGPT's usage settings; signing out (and disconnecting in ChatGPT) stops it; an exhausted weekly cap shows a clear message instead of an error.
 

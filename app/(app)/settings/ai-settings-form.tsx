@@ -9,10 +9,13 @@ import { AI_PRESET_IDS, AI_PRESETS, type AiPresetId } from "@/lib/ai/presets";
 import type { AiSettingsInput } from "@/lib/ai/settings";
 import { fetchModels, saveAiSettings, testAiConnection, turnOffAi } from "@/lib/client/mutations";
 import { cn } from "@/lib/utils";
+import { ChatGptSignIn, type ChatGptView } from "./chatgpt-sign-in";
 import { OllamaSetup } from "./ollama-setup";
 
 export type AiSettingsView = {
-  preset: AiPresetId | null;
+  preset: AiPresetId | "chatgpt" | null;
+  /** Sign in with ChatGPT, on self-hosted installs only. */
+  chatgpt: ChatGptView | null;
   baseUrl: string | null;
   model: string | null;
   reasoningEffort: string | null;
@@ -29,7 +32,8 @@ type Status = { tone: "success" | "error" | "info"; text: string } | null;
  * Ollama needs to allow this site (setup steps instead of the self-hosted Docker hint).
  */
 export function AiSettingsForm({ initial, aiInBrowser = false }: { initial: AiSettingsView; aiInBrowser?: boolean }) {
-  const [preset, setPreset] = useState<AiPresetId>(initial.preset ?? "ollama");
+  const [preset, setPreset] = useState<AiPresetId>(initial.preset && initial.preset !== "chatgpt" ? initial.preset : "ollama");
+  const [chatgptChosen, setChatgptChosen] = useState(initial.preset === "chatgpt" && initial.chatgpt !== null);
   const config = AI_PRESETS[preset];
   const samePreset = preset === initial.preset;
 
@@ -49,6 +53,7 @@ export function AiSettingsForm({ initial, aiInBrowser = false }: { initial: AiSe
   function choosePreset(id: AiPresetId) {
     const next = AI_PRESETS[id];
     const isSaved = id === initial.preset;
+    setChatgptChosen(false);
     setPreset(id);
     setBaseUrl(isSaved ? (initial.baseUrl ?? next.baseUrl ?? "") : (next.baseUrl ?? ""));
     setModel(isSaved ? (initial.model ?? next.defaultModel) : next.defaultModel);
@@ -109,27 +114,35 @@ export function AiSettingsForm({ initial, aiInBrowser = false }: { initial: AiSe
       )}
 
       <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
-        {AI_PRESET_IDS.map((id) => {
-          const p = AI_PRESETS[id];
-          const active = id === preset;
-          return (
+        {[
+          ...AI_PRESET_IDS.map((id) => ({ id, ...AI_PRESETS[id], active: !chatgptChosen && id === preset, choose: () => choosePreset(id) })),
+          ...(initial.chatgpt
+            ? [{ id: "chatgpt", label: "ChatGPT", description: "Use your ChatGPT plan. No API key.", active: chatgptChosen, choose: () => (setChatgptChosen(true), setStatus(null)) }]
+            : []),
+        ]
+          // ChatGPT sits next to Claude, before the local and other hosted options.
+          .sort((a, b) => Number(b.id === "anthropic") - Number(a.id === "anthropic") || Number(b.id === "chatgpt") - Number(a.id === "chatgpt"))
+          .map(({ id, label, description, active, choose }) => (
             <button
               key={id}
               type="button"
-              onClick={() => choosePreset(id)}
+              onClick={choose}
               aria-pressed={active}
               className={cn(
                 "flex flex-col items-start gap-0.5 rounded-lg border px-3 py-2.5 text-left transition-colors",
                 active ? "border-brand/50 bg-brand-soft shadow-[inset_0_0_0_1px_var(--brand)]" : "border-border bg-surface hover:border-border-strong hover:bg-surface-2",
               )}
             >
-              <span className={cn("text-[13px] font-medium", active && "text-brand-ink")}>{p.label}</span>
-              <span className="text-xs text-muted">{p.description}</span>
+              <span className={cn("text-[13px] font-medium", active && "text-brand-ink")}>{label}</span>
+              <span className="text-xs text-muted">{description}</span>
             </button>
-          );
-        })}
+          ))}
       </div>
 
+      {chatgptChosen && initial.chatgpt ? (
+        <ChatGptSignIn view={initial.chatgpt} active={initial.preset === "chatgpt" && initial.activeLabel !== null} savedModel={initial.preset === "chatgpt" ? initial.model : null} />
+      ) : (
+      <>
       <div className="grid gap-4 sm:grid-cols-2">
         {config.provider === "openai_compatible" && (
           <div className="flex flex-col gap-1.5 sm:col-span-2">
@@ -266,6 +279,8 @@ export function AiSettingsForm({ initial, aiInBrowser = false }: { initial: AiSe
           </Button>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 }

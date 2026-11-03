@@ -1,12 +1,15 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { headers } from "next/headers";
 import { z } from "zod";
 import { generateStructured, listModels } from "@/lib/ai/client";
 import { aiConfigFor, getMySettingsRow } from "@/lib/ai/config";
 import { AI_PRESETS } from "@/lib/ai/presets";
 import { aiInput, aiSettingsValues, checkBaseUrl, CONNECTION_TEST, resolveAiInput, type AiSettingsInput } from "@/lib/ai/settings";
 import { exportBackup } from "@/lib/backup/export";
+import { chatGptAccessToken, ensureAccount, hasPlanScope, isSignedIn, readAccount, savePending, signOut } from "@/lib/chatgpt/account";
+import { listChatGptModels, startSignIn, type ChatGptModel } from "@/lib/chatgpt/oauth";
 import { importErrorMessage, readBackupForm } from "@/lib/backup/form";
 import { importBackup, type ImportSummary } from "@/lib/backup/import";
 import { deleteFollowedCompany, insertFollowedCompany, insertStarterCompanies, TOO_MANY_COMPANIES } from "@/lib/companies/queries";
@@ -89,6 +92,90 @@ export async function fetchModels(raw: AiSettingsInput): Promise<Result<string[]
       apiKey,
     });
     return { ok: true, data: models };
+  } catch (error) {
+    return { ok: false, error: errorMessage(error) };
+  }
+}
+
+/* Sign in with ChatGPT ------------------------------------------------------ */
+
+const LOOPBACK = /^(localhost|127\.0\.0\.1|\[::1\])$/;
+
+/**
+ * Starts "Continue with ChatGPT": returns OpenAI's sign-in address for the browser to open.
+ * OpenAI sends the browser back to 127.0.0.1 on this port, which only reaches RolePort from a
+ * browser on the computer it runs on.
+ */
+export async function startChatGptSignIn(raw: { consent?: boolean } = {}): Promise<Result<{ url: string }>> {
+  const user = await getCurrentUser();
+  const h = await headers();
+  const host = h.get("host") ?? "";
+  let address: URL;
+  try {
+    address = new URL(`http://${host}`);
+  } catch {
+    return { ok: false, error: "Couldn't tell which address RolePort was opened at." };
+  }
+  const port = address.port || "80";
+  if (!LOOPBACK.test(address.hostname)) {
+    return {
+      ok: false,
+      error: `Sign in with ChatGPT works from a browser on the computer RolePort runs on. Open http://localhost:${port}/settings there and try again.`,
+    };
+  }
+  const account = await ensureAccount(user.id);
+  const { url, pending } = startSignIn({
+    hostId: account.hostId,
+    port,
+    returnTo: `http://${address.host}`,
+    clientId: account.clientId,
+    idTokenHint: decryptSecret(account.idTokenEnc),
+    email: account.email,
+    consent: Boolean(raw.consent),
+  });
+  await savePending(user.id, pending);
+  return { ok: true, data: { url } };
+}
+
+/** Signs out of ChatGPT; `confirmed` is false when OpenAI couldn't be told, so the user can disconnect RolePort in ChatGPT instead. */
+export async function signOutChatGpt(): Promise<Result<{ confirmed: boolean }>> {
+  const user = await getCurrentUser();
+  const confirmed = await signOut(user.id);
+  refresh();
+  return { ok: true, data: { confirmed } };
+}
+
+export async function fetchChatGptModels(): Promise<Result<ChatGptModel[]>> {
+  const user = await getCurrentUser();
+  try {
+    return { ok: true, data: await listChatGptModels(await chatGptAccessToken(user.id)) };
+  } catch (error) {
+    return { ok: false, error: errorMessage(error) };
+  }
+}
+
+export async function saveChatGptModel(raw: { model: string }): Promise<Result> {
+  const user = await getCurrentUser();
+  const input = z.object({ model: z.string().trim().min(1).max(200) }).safeParse(raw);
+  if (!input.success) return { ok: false, error: "Choose a model." };
+  const account = await readAccount(user.id);
+  if (!isSignedIn(account) || !hasPlanScope(account)) return { ok: false, error: "Sign in with ChatGPT first." };
+  await writeSettings(await getDb(), user.id, { aiProvider: "chatgpt", aiPreset: "chatgpt", aiModel: input.data.model, aiBaseUrl: null, aiReasoningEffort: null });
+  refresh();
+  return { ok: true, data: undefined };
+}
+
+export async function testChatGpt(raw: { model: string }): Promise<Result<{ ms: number; reply: string }>> {
+  const user = await getCurrentUser();
+  const input = z.object({ model: z.string().trim().min(1).max(200) }).safeParse(raw);
+  if (!input.success) return { ok: false, error: "Choose a model first." };
+  try {
+    const started = Date.now();
+    const result = await generateStructured({
+      ...CONNECTION_TEST,
+      config: { provider: "chatgpt", model: input.data.model, accessToken: () => chatGptAccessToken(user.id), source: "settings" },
+    });
+    return { ok: true, data: { ms: Date.now() - started, reply: result.reply } };
   } catch (error) {
     return { ok: false, error: errorMessage(error) };
   }

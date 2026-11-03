@@ -3,7 +3,8 @@ import { betaZodOutputFormat } from "@anthropic-ai/sdk/helpers/beta/zod";
 import { z } from "zod";
 import { isLite } from "@/lib/mode";
 import { isLocalUrl } from "./local-server";
-import type { AgentConfig, AiConfig } from "./settings";
+import { chatGptErrorMessage, ResponsesError, streamResponse } from "./responses-stream";
+import type { AgentConfig, AiConfig, ChatGptConfig } from "./settings";
 
 /*
  * Structured model calls on any provider, given its config. Runs on the server
@@ -36,6 +37,7 @@ export type StructuredRequest<Schema extends z.ZodType> = {
 export async function generateStructured<Schema extends z.ZodType>(req: StructuredRequest<Schema>): Promise<z.infer<Schema>> {
   const { config } = req;
   if (config.provider === "agent") return agentStructured(config, req);
+  if (config.provider === "chatgpt") return chatGptStructured(config, req);
   return config.provider === "anthropic" ? anthropicStructured(config, req) : openAiCompatibleStructured(config, req);
 }
 
@@ -239,6 +241,67 @@ async function openAiCompatibleStructured<Schema extends z.ZodType>(
     ];
   }
   throw new Error("The model couldn't produce valid structured output. Try a larger model.");
+}
+
+/* -------------------------------------------------------------------------- */
+/* ChatGPT plan (Sign in with ChatGPT, lib/chatgpt): the Responses API         */
+/* -------------------------------------------------------------------------- */
+
+// OpenAI's docs don't yet say whether this route takes a JSON schema or a reasoning effort.
+// Both are sent until it refuses one, and then left out for as long as this server runs.
+const chatGptUnsupported = new Set<"text" | "reasoning">();
+
+async function chatGptStructured<Schema extends z.ZodType>(
+  config: ChatGptConfig,
+  { system, prompt, schema, effort = "medium" }: StructuredRequest<Schema>,
+): Promise<z.infer<Schema>> {
+  const jsonSchema = toStrictJsonSchema(schema);
+  const input: { role: "user" | "assistant"; content: string }[] = [{ role: "user", content: prompt }];
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const withFormat = !chatGptUnsupported.has("text");
+    const withReasoning = !chatGptUnsupported.has("reasoning");
+    let content: string;
+    try {
+      content = await streamResponse(await config.accessToken(), {
+        model: config.model,
+        // Without the schema format, the schema goes in the instructions like local models' JSON mode.
+        instructions: withFormat ? system : `${system}\n\nReply with a single JSON object that matches this JSON Schema exactly:\n${JSON.stringify(jsonSchema)}`,
+        input,
+        ...(withFormat ? { text: { format: { type: "json_schema", name: "result", strict: true, schema: jsonSchema } } } : {}),
+        ...(withReasoning ? { reasoning: { effort } } : {}),
+      });
+    } catch (error) {
+      if (!(error instanceof ResponsesError)) throw error;
+      const refused = error.code === "subscription_sharing_unsupported_capability" || error.status === 400 ? (error.param ?? "") : "";
+      const drop = withFormat && refused.startsWith("text") ? "text" : withReasoning && refused.startsWith("reasoning") ? "reasoning" : null;
+      if (drop) {
+        // Not a failed attempt: the same request without the part it refused.
+        chatGptUnsupported.add(drop);
+        attempt--;
+        continue;
+      }
+      throw new Error(chatGptErrorMessage(error));
+    }
+
+    let problem: string;
+    try {
+      const parsed = schema.safeParse(extractJson(content));
+      if (parsed.success) return parsed.data;
+      problem = parsed.error.issues
+        .slice(0, 5)
+        .map((i) => `${i.path.join(".") || "(root)"}: ${i.message}`)
+        .join("; ");
+    } catch (error) {
+      problem = error instanceof Error ? error.message : "Invalid JSON";
+    }
+    // Every request carries the whole conversation (no stored responses on this route).
+    input.push(
+      { role: "assistant", content },
+      { role: "user", content: `That reply didn't match the required JSON schema (${problem}). Reply again with only the corrected JSON object.` },
+    );
+  }
+  throw new Error("ChatGPT couldn't produce valid structured output. Try another model in Settings.");
 }
 
 /* -------------------------------------------------------------------------- */

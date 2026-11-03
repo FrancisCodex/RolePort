@@ -127,6 +127,13 @@
       "when": 1793623734703,
       "tag": "0017_mcp_agent_writes",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793711880802,
+      "tag": "0018_chatgpt_sign_in",
+      "breakpoints": true
     }
   ]
 }
