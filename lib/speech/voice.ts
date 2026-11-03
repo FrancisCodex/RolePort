@@ -419,6 +419,11 @@ export function useDictation(onText: (text: string) => void, { deviceId, engine,
 
 export const canSpeak = () => typeof window !== "undefined" && "speechSynthesis" in window;
 
+/** Whether this browser can read text aloud, for rendering (false during server rendering, so hydration matches). */
+export function useSpeechSupported(): boolean {
+  return useSyncExternalStore(noSubscribe, canSpeak, () => false);
+}
+
 /** The browser's voices for the page's language (all of them if none match). */
 export function availableVoices(): SpeechSynthesisVoice[] {
   if (!canSpeak()) return [];
