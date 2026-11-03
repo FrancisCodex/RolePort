@@ -18,7 +18,17 @@ import { cn } from "@/lib/utils";
 import { Briefing } from "./briefing";
 import { InterviewReport } from "./report";
 import { useSpeechEngine, useWhisperModel } from "@/lib/speech/settings";
-import { agreeToVoice, canSpeak, speak, useDictation, useDictationSupported, useMicLevel, useMicSetting, useReadAloudSetting, voiceAgreed } from "@/lib/speech/voice";
+import {
+  agreeToVoice,
+  speak,
+  useDictation,
+  useDictationSupported,
+  useMicLevel,
+  useMicSetting,
+  useReadAloudSetting,
+  useSpeechSupported,
+  voiceAgreed,
+} from "@/lib/speech/voice";
 import { VoiceSettings } from "@/components/speech/voice-settings";
 
 type Busy = "answer" | "skip" | "end" | "grade" | "brief" | null;
@@ -49,6 +59,7 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
   const dictation = useDictation(addText, { deviceId: mic, engine, model });
   // Whisper only needs a way to record; built-in recognition needs the browser to have it.
   const canDictate = useDictationSupported() || engine === "whisper";
+  const canSpeak = useSpeechSupported();
   const [voiceSettings, setVoiceSettings] = useState(false);
   const [readAloud, setReadAloud] = useReadAloudSetting();
   const spokenSeconds = useRef(0);
@@ -215,7 +226,7 @@ export function InterviewRoom({ data }: { data: InterviewPageData }) {
         </div>
         {view.status === "active" && (
           <div className="flex items-center gap-1">
-            {canSpeak() && (
+            {canSpeak && (
               <Button
                 variant="ghost"
                 onClick={() => setReadAloud(!readAloud)}

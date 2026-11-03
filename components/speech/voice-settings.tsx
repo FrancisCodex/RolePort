@@ -23,6 +23,7 @@ import {
   useMicLevel,
   useMicSetting,
   useReadAloudSetting,
+  useSpeechSupported,
   useVoiceSetting,
 } from "@/lib/speech/voice";
 
@@ -257,6 +258,7 @@ function VoicePicker() {
   const [voice, setVoice] = useVoiceSetting();
   const [readAloud, setReadAloud] = useReadAloudSetting();
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const speechSupported = useSpeechSupported();
 
   // Chrome loads its voices after the page, and says so with voiceschanged.
   useEffect(() => {
@@ -267,7 +269,7 @@ function VoicePicker() {
     return () => speechSynthesis.removeEventListener("voiceschanged", load);
   }, []);
 
-  if (!canSpeak()) return null;
+  if (!speechSupported) return null;
   return (
     <section className="flex flex-col gap-2">
       <h3 className="text-xs font-medium tracking-wide text-subtle uppercase">3 · Interviewer voice</h3>
