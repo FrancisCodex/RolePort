@@ -2,7 +2,8 @@
 // needed on the user's computer). Runs on Windows, macOS and Linux, here and in CI
 // (.github/workflows/jobspy-binary.yml):
 //   node services/jobspy/build-binary.mjs
-// Needs Python 3.10+ (set PYTHON to choose one). Writes services/jobspy/dist/jobspy-server-<platform>
+// Needs Python 3.10+ (set PYTHON to choose one; CI sets the one actions/setup-python installed).
+// Package versions are pinned in build-constraints.txt. Writes services/jobspy/dist/jobspy-server-<platform>
 // (.exe on Windows) and prints its size and SHA-256 for lib/desktop/jobspy-release.ts.
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
@@ -32,7 +33,17 @@ if (!existsSync(venvPython)) {
   run(python, ["-m", "venv", venv]);
 }
 run(venvPython, ["-m", "pip", "install", "--quiet", "--upgrade", "pip"]);
-run(venvPython, ["-m", "pip", "install", "--quiet", "-r", "requirements.txt", PYINSTALLER]);
+run(venvPython, ["-m", "pip", "install", "--quiet", "-r", "requirements.txt", PYINSTALLER, "-c", "build-constraints.txt"]);
+run(venvPython, ["--version"]);
+
+// curl_cffi (JobSpy's HTTP client) loads libcurl from a curl_cffi.libs folder beside the package on
+// Windows. Bundle that folder by name instead of relying on PyInstaller to find it, or the program
+// fails at start with "DLL load failed while importing _wrapper".
+const sitePackages = spawnSync(venvPython, ["-c", "import sysconfig; print(sysconfig.get_paths()['purelib'])"], {
+  encoding: "utf8",
+}).stdout.trim();
+const curlLibs = path.join(sitePackages, "curl_cffi.libs");
+const extra = existsSync(curlLibs) ? ["--add-binary", `${curlLibs}${path.delimiter}curl_cffi.libs`] : [];
 run(venvPython, [
   "-m",
   "PyInstaller",
@@ -44,6 +55,9 @@ run(venvPython, [
   // JobSpy reads data files at runtime; take the whole package.
   "--collect-all",
   "jobspy",
+  "--collect-all",
+  "curl_cffi",
+  ...extra,
   "--distpath",
   "dist",
   "--workpath",

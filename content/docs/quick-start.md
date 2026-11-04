@@ -1,7 +1,7 @@
 ---
 title: Quick start
-description: From nothing to your first evaluated job in a few minutes, in RolePort Lite or on your own computer.
-updated: 2026-10-31
+description: From nothing to your first evaluated job in a few minutes, in RolePort Lite, the desktop app or on your own computer.
+updated: 2026-11-04
 ---
 
 ## Start RolePort
@@ -9,6 +9,13 @@ updated: 2026-10-31
 ### RolePort Lite
 
 Open the RolePort Lite website and click **Open RolePort**. There's nothing to install and no account. The setup guide starts on its own.
+
+### Desktop app (Windows)
+
+Download **RolePort-Setup-x64.exe** from the RolePort website (**Download for Windows**) and run it. Windows may say "Windows protected your PC" because the app isn't code signed yet: click **More info → Run anyway**. RolePort opens when it's installed, with the setup guide.
+
+- **Updates:** RolePort checks for new versions on its own and downloads them in the background. When one is ready it asks you to restart. Choose **Later** and it installs the next time you close RolePort. You never need to download it again.
+- **Uninstall:** Windows **Settings → Apps → Installed apps → RolePort → Uninstall**. Your jobs, CVs and settings stay in `%APPDATA%\RolePort`, so reinstalling picks up where you left off. To remove them too, delete that folder after uninstalling.
 
 ### Self-hosted with Docker
 

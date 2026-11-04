@@ -33,6 +33,9 @@ jobs:
           node-version: 22
       - name: Build
         shell: bash
+        env:
+          # The Python setup-python installed, not whatever the runner's `py` launcher picks.
+          PYTHON: python
         run: node services/jobspy/build-binary.mjs | tee build.log
       - name: Smoke test
         shell: bash
