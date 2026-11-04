@@ -1,7 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { readSetting as read, useStoredSetting as useStored, writeSetting as write, type SpeechEngine } from "@/lib/speech/settings";
+import {
+  builtInSpeechUnavailable,
+  readSetting as read,
+  useStoredSetting as useStored,
+  writeSetting as write,
+  type SpeechEngine,
+} from "@/lib/speech/settings";
 import { transcribeWithWhisper, toWhisperAudio } from "@/lib/speech/whisper";
 import { downloadedModels, type WhisperModelId } from "@/lib/speech/whisper-models";
 
@@ -136,7 +142,7 @@ type Recognition = {
 type RecognitionCtor = new () => Recognition;
 
 function recognitionCtor(): RecognitionCtor | null {
-  if (typeof window === "undefined") return null;
+  if (typeof window === "undefined" || builtInSpeechUnavailable()) return null;
   const w = window as unknown as { SpeechRecognition?: RecognitionCtor; webkitSpeechRecognition?: RecognitionCtor };
   return w.SpeechRecognition ?? w.webkitSpeechRecognition ?? null;
 }
@@ -269,7 +275,11 @@ export function useDictation(onText: (text: string) => void, { deviceId, engine,
 
     if (engine === "whisper" && !(await downloadedModels()).includes(model)) {
       setStarting(false);
-      return setError("The Whisper model isn't downloaded in this browser yet. Download it in Voice settings, or switch to built-in speech there.");
+      return setError(
+        builtInSpeechUnavailable()
+          ? "The Whisper model isn't downloaded yet. Download it in Voice settings, or type your answer."
+          : "The Whisper model isn't downloaded in this browser yet. Download it in Voice settings, or switch to built-in speech there.",
+      );
     }
 
     // Open the microphone first: this is what makes the browser ask for permission.

@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Radio } from "@/components/ui/checkbox";
 import { useConfirm } from "@/components/ui/dialog";
-import { useSpeechEngine, useWhisperModel } from "@/lib/speech/settings";
+import { useBuiltInSpeechUnavailable, useSpeechEngine, useWhisperModel } from "@/lib/speech/settings";
 import { downloadWhisper } from "@/lib/speech/whisper";
 import {
   deleteModel,
@@ -71,29 +71,42 @@ function useRemoveModel() {
 export function SpeechSettings({ intro = true }: { intro?: boolean }) {
   const [engine, setEngine] = useSpeechEngine();
   const { have } = useWhisperStorage();
+  // The desktop app: built-in speech has no service there, so Whisper is the way to answer out loud.
+  const desktop = useBuiltInSpeechUnavailable();
   return (
     <div className="flex flex-col gap-3">
-      {intro && (
-        <p className="text-[13px] text-muted">
-          When you answer a mock interview out loud, this turns your speech into text. Built-in speech needs no download. Whisper is an optional
-          download that works in every browser and keeps your voice on this device.
-        </p>
-      )}
+      {intro &&
+        (desktop ? (
+          <p className="text-[13px] text-muted">
+            When you answer a mock interview out loud, this turns your speech into text. In the desktop app that&apos;s Whisper: download it once
+            and your voice is turned into text on this computer, offline. Without it, you type your answers.
+          </p>
+        ) : (
+          <p className="text-[13px] text-muted">
+            When you answer a mock interview out loud, this turns your speech into text. Built-in speech needs no download. Whisper is an optional
+            download that works in every browser and keeps your voice on this device.
+          </p>
+        ))}
       <div className="grid gap-2 sm:grid-cols-2">
         <EngineChoice
           active={engine === "browser"}
           onClick={() => setEngine("browser")}
+          disabled={desktop}
           icon={Globe}
           title="Built-in browser speech"
-          badge="Default"
-          body="Nothing to download. Works in Chrome, Edge and Safari, not in Brave, Firefox or most in-app browsers. Chrome and Edge send your audio to Google or Microsoft to transcribe."
+          badge={desktop ? "Not in the desktop app" : "Default"}
+          body={
+            desktop
+              ? "Only works in Chrome, Edge and Safari, which send your audio to Google, Microsoft or Apple. The desktop app has no such service, so use Whisper."
+              : "Nothing to download. Works in Chrome, Edge and Safari, not in Brave, Firefox or most in-app browsers. Chrome and Edge send your audio to Google or Microsoft to transcribe."
+          }
         />
         <EngineChoice
           active={engine === "whisper"}
           onClick={() => setEngine("whisper")}
           icon={Cpu}
           title="Whisper on this device"
-          badge="Optional download"
+          badge={desktop ? "One-time download" : "Optional download"}
           body="Works in every modern browser and in the desktop app. Your voice never leaves this computer. Needs a one-time download, and text appears when you stop rather than while you talk."
         />
       </div>
@@ -109,6 +122,7 @@ export function SpeechSettings({ intro = true }: { intro?: boolean }) {
 function EngineChoice({
   active,
   onClick,
+  disabled = false,
   icon: Icon,
   title,
   badge,
@@ -116,6 +130,7 @@ function EngineChoice({
 }: {
   active: boolean;
   onClick: () => void;
+  disabled?: boolean;
   icon: typeof Globe;
   title: string;
   badge: string;
@@ -126,9 +141,11 @@ function EngineChoice({
       type="button"
       aria-pressed={active}
       onClick={onClick}
+      disabled={disabled}
       className={cn(
         "flex flex-col gap-1.5 rounded-lg border p-3 text-left transition-colors",
         active ? "border-brand/50 bg-brand-soft" : "border-border bg-surface hover:border-border-strong",
+        disabled && "cursor-not-allowed opacity-60 hover:border-border",
       )}
     >
       <span className={cn("flex flex-wrap items-center gap-1.5 text-[13px] font-medium", active && "text-brand-ink")}>
@@ -180,6 +197,9 @@ export function WhisperManager({ onDownloaded }: { onDownloaded?: () => void }) 
   const [remove, confirmDialog] = useRemoveModel();
   const chosen = whisperModel(model);
   const downloaded = have?.includes(chosen.id) ?? false;
+  const skipNote = useBuiltInSpeechUnavailable()
+    ? "Without it, you type your answers."
+    : "Optional. Built-in speech keeps working without it.";
 
   async function download() {
     setError(null);
@@ -298,7 +318,7 @@ export function WhisperManager({ onDownloaded }: { onDownloaded?: () => void }) 
           <Button onClick={() => void download()} disabled={tooBig}>
             <Download /> Download Whisper {chosen.label} (about {needMb} MB)
           </Button>
-          <span className="text-xs text-subtle">Optional. Built-in speech keeps working without it.</span>
+          <span className="text-xs text-subtle">{skipNote}</span>
         </div>
       )}
       {tooBig && !downloaded && (
