@@ -19,10 +19,12 @@ Each step ships on its own branch and works in self-hosted and Lite, unless it s
 | 4. Documentation page (`/docs`) with search | ✅ Done (screenshots still to add) | `feat/docs-page` |
 | MCP server | ✅ Done, and the agent can do the AI writing (merged in #24; still to try: Claude Desktop itself, a real agent model) | `feat/mcp-server` |
 | MCP: Interview Coach tools and ready-made prompts | ✅ Built | `feat/mcp-coach-and-prompts` |
-| Sign in with ChatGPT: a ChatGPT plan as RolePort's AI | ⏭️ Next | `feat/chatgpt-sign-in` |
-| 5. Desktop app: job scout, apply assistant | After Sign in with ChatGPT | — |
+| Sign in with ChatGPT: a ChatGPT plan as RolePort's AI | 🧪 Built on its branch, waiting for a ChatGPT account to try it (not merged) | `feat/chatgpt-sign-in` |
+| 5A. Desktop app: install and run RolePort with no setup | 🚧 In progress | `feat/desktop-app` |
+| 5B. Desktop app: LinkedIn, Indeed and more without Python or Docker | After 5A | `feat/desktop-app` |
+| 5C. Desktop app: job scout, apply assistant | After 5B | — |
 
-**Next up: Sign in with ChatGPT**, so people with a ChatGPT plan but no API key or capable computer can use RolePort's AI. Then Phase 5, the desktop app, which builds on the MCP server's tools. Everything marked ✅ Done is finished.
+**Next up: the desktop app (5A, 5B)**, so people who aren't technical can install RolePort like any other program, with no hosting, Docker or Python. Sign in with ChatGPT waits on its branch until someone with a ChatGPT plan can try it. Everything marked ✅ Done is finished.
 
 ---
 
@@ -325,6 +327,30 @@ This is better for them than the MCP agent-writes mode: every AI button in RoleP
 Sources: [Using your ChatGPT plan in other apps](https://help.openai.com/en/articles/20001542-using-your-chatgpt-plan-in-other-apps-and-sites), [Quickstart](https://developers.openai.com/siwc/quickstart), [Open-source plan usage](https://developers.openai.com/siwc/token-sharing-open-source), [Sign in](https://developers.openai.com/siwc/token-sharing-open-source/sign-in), [Preview limitations](https://developers.openai.com/siwc/token-sharing-open-source/preview-limitations), [Models and inference](https://developers.openai.com/siwc/token-sharing-open-source/models-and-inference), [Token reference](https://developers.openai.com/siwc/token-sharing-open-source/token-reference). It's a preview, so check them again when starting.
 
 ## 5. Desktop app and the in-app AI agent
+
+Most job seekers can't host a web app, run Docker or install Python. The desktop app is RolePort as a normal program: download the installer, double-click, use it. Everything stays on the user's computer, as with self-hosting. Branch: `feat/desktop-app`.
+
+### 5A. Install and run with no setup 🚧
+
+- **Electron**, because RolePort is a Next.js server with an embedded database and Electron already ships Node. (Tauri would still need Node bundled beside it, plus Rust.)
+- **The server inside the app:** `next build` with `output: "standalone"` (only when `ROLEPORT_DESKTOP_BUILD=1`, so `next start`, Docker and Vercel are unchanged) makes a self-contained server folder (~93 MB) plus `public`, `.next/static` and `drizzle`. The app runs it in an Electron utility process on `127.0.0.1` only, at a fixed port (`47100`, the next free one if that's taken, so the browser storage that settings like voice use survives restarts).
+- **Data** goes in the system's app-data folder (`%APPDATA%\RolePort` on Windows, `~/Library/Application Support/RolePort` on macOS, `~/.config/RolePort` on Linux), with the encryption key beside it. Uninstalling doesn't delete it; Settings says where it is.
+- **One window, one copy:** a second launch focuses the open window (two copies can't share the database). Links to other sites open in the normal browser, including OpenAI's sign-in for Sign in with ChatGPT, which comes back to `127.0.0.1` on the app's port.
+- **Its own folder** (`desktop/`) with its own `package.json`, so `npm install` for the web version doesn't download Electron. `npm run desktop` builds the server and opens the app; `npm run desktop:dist` makes the installer.
+- **Installers:** Windows (NSIS `.exe`) first, then macOS (`.dmg`) and Linux (`.AppImage`) from a GitHub Actions workflow on release tags. Unsigned at first, so Windows SmartScreen and macOS Gatekeeper warn on first launch; the download page explains the click-through. Code signing (a Windows certificate, an Apple developer account) and auto-update come later.
+
+**Done when:** on a Windows PC with nothing else installed, the installer puts RolePort in the Start menu, it opens in its own window, the profile, jobs and applications survive restarts and updates, and AI works with an API key or Ollama.
+
+### 5B. LinkedIn, Indeed and more without Python or Docker
+
+- **JobSpy as one program file:** a GitHub Actions job builds `services/jobspy/server.py` with PyInstaller into `jobspy-server` for Windows, macOS and Linux and attaches it to each release with its SHA-256.
+- **Downloaded only when asked:** JobSpy stays opt-in (LinkedIn's and Indeed's terms forbid scraping). Turning the boards on in the desktop app's Settings shows the file, its size, where it comes from and where it will be stored, and downloads it only after the user agrees. The app checks the SHA-256, runs it on a private `127.0.0.1` port, tells RolePort's server where it is (`JOBSPY_URL`), and stops it on quit. **Remove** deletes it.
+
+**Done when:** on a PC with no Python, turning on the boards downloads JobSpy after a clear prompt, and a LinkedIn search returns jobs.
+
+### 5C. Job scout and apply assistant
+
+The two desktop-only features below, once 5A and 5B are out.
 
 ### Recommendation: not a general chat agent. Build two narrow desktop-only features instead.
 

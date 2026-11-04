@@ -1,0 +1,51 @@
+{
+  "name": "roleport-desktop",
+  "productName": "RolePort",
+  "version": "0.1.0",
+  "private": true,
+  "description": "RolePort as a desktop app: your job search, on your computer.",
+  "license": "MIT",
+  "author": "RolePort contributors",
+  "homepage": "https://github.com/FrancisCodex/RolePort",
+  "main": "main.mjs",
+  "type": "module",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "44.9.0",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "io.github.franciscodex.roleport",
+    "productName": "RolePort",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.mjs",
+      "starting.html",
+      "package.json"
+    ],
+    "afterPack": "./scripts/after-pack.mjs",
+    "icon": "../public/icons/icon-512.png",
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false
+    },
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.productivity"
+    },
+    "linux": {
+      "target": "AppImage",
+      "category": "Office"
+    }
+  }
+}

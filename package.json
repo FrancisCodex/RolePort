@@ -11,6 +11,8 @@
     "dev:lite": "node scripts/lite.mjs dev --port 3100",
     "build:lite": "node scripts/lite.mjs build",
     "start:lite": "node scripts/lite.mjs start --port 3100",
+    "desktop": "node desktop/scripts/prepare-server.mjs && npm --prefix desktop start",
+    "desktop:dist": "node desktop/scripts/prepare-server.mjs && npm --prefix desktop run dist",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",

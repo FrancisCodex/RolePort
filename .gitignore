@@ -48,3 +48,8 @@ next-env.d.ts
 
 # local database
 /.data
+
+# desktop app (desktop/): its own dependencies, the server copied in, and installers
+/desktop/node_modules/
+/desktop/server/
+/desktop/dist/

@@ -1,0 +1,191 @@
+// RolePort desktop (docs/ROADMAP-NEXT.md, 5A): runs RolePort's own server inside the app, on this
+// computer only, and shows it in a window. The server is the Next.js standalone build that
+// scripts/prepare-server.mjs puts in ./server (in the installed app: resources/server).
+import { app, BrowserWindow, dialog, shell, utilityProcess } from "electron";
+import { createWriteStream, existsSync, mkdirSync } from "node:fs";
+import { createServer } from "node:net";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+// Another data folder, for trying the app without touching your own data (or a portable copy).
+if (process.env.ROLEPORT_DESKTOP_DATA) app.setPath("userData", path.resolve(process.env.ROLEPORT_DESKTOP_DATA));
+const serverDir = app.isPackaged ? path.join(process.resourcesPath, "server") : path.join(here, "server");
+
+// A fixed port keeps the address the same between launches, so what the pages keep in browser
+// storage (voice settings, open tabs) survives a restart. The next free one if it's taken.
+const PREFERRED_PORTS = [47100, 47101, 47102, 47103, 47104, 47105];
+const STARTUP_TIMEOUT_MS = 90_000;
+
+/** @type {import("electron").UtilityProcess | null} */
+let server = null;
+/** @type {BrowserWindow | null} */
+let win = null;
+let origin = "";
+let quitting = false;
+
+// Two copies can't share the database: a second launch brings the open window forward instead.
+if (!app.requestSingleInstanceLock()) {
+  app.quit();
+} else {
+  app.on("second-instance", () => {
+    if (!win) return;
+    if (win.isMinimized()) win.restore();
+    win.focus();
+  });
+  app.whenReady().then(start);
+}
+
+function portFree(port) {
+  return new Promise((resolve) => {
+    const probe = createServer()
+      .once("error", () => resolve(false))
+      .once("listening", () => probe.close(() => resolve(true)))
+      .listen(port, "127.0.0.1");
+  });
+}
+
+async function pickPort() {
+  for (const port of PREFERRED_PORTS) if (await portFree(port)) return port;
+  // All taken: let the system choose one.
+  return new Promise((resolve) => {
+    const probe = createServer().listen(0, "127.0.0.1", () => {
+      const { port } = /** @type {import("node:net").AddressInfo} */ (probe.address());
+      probe.close(() => resolve(port));
+    });
+  });
+}
+
+async function waitUntilUp(url) {
+  const deadline = Date.now() + STARTUP_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    if (!server) throw new Error("RolePort's server stopped while starting.");
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(5_000) });
+      if (res.ok) return;
+    } catch {
+      // Not listening yet.
+    }
+    await new Promise((r) => setTimeout(r, 300));
+  }
+  throw new Error("RolePort's server took too long to start.");
+}
+
+/** Everything RolePort keeps: the database, its encryption key and the server's log. */
+function dataPaths() {
+  const data = path.join(app.getPath("userData"), "data");
+  const logs = path.join(app.getPath("userData"), "logs");
+  mkdirSync(data, { recursive: true });
+  mkdirSync(logs, { recursive: true });
+  // lib/secrets.ts keeps the encryption key next to the database folder: data/secret.key.
+  return { pglite: path.join(data, "pglite"), log: path.join(logs, "server.log") };
+}
+
+function startServer(port) {
+  const { pglite, log } = dataPaths();
+  const logFile = createWriteStream(log, { flags: "a" });
+  logFile.write(`\n--- ${new Date().toISOString()} RolePort ${app.getVersion()} on port ${port}\n`);
+  server = utilityProcess.fork(path.join(serverDir, "server.js"), [], {
+    cwd: serverDir,
+    serviceName: "RolePort server",
+    stdio: "pipe",
+    env: {
+      ...process.env,
+      NODE_ENV: "production",
+      NEXT_TELEMETRY_DISABLED: "1",
+      HOSTNAME: "127.0.0.1",
+      PORT: String(port),
+      PGLITE_DIR: pglite,
+      ROLEPORT_DESKTOP: "1",
+    },
+  });
+  server.stdout?.pipe(logFile);
+  server.stderr?.pipe(logFile);
+  server.on("exit", (code) => {
+    server = null;
+    if (!quitting) {
+      dialog.showErrorBox("RolePort stopped", `RolePort's server stopped unexpectedly (code ${code}). Details are in ${log}. Open RolePort again to restart it.`);
+      app.quit();
+    }
+  });
+}
+
+function createWindow() {
+  win = new BrowserWindow({
+    width: 1320,
+    height: 860,
+    minWidth: 380,
+    minHeight: 560,
+    title: "RolePort",
+    show: false,
+    autoHideMenuBar: true,
+    webPreferences: { contextIsolation: true, sandbox: true, nodeIntegration: false },
+  });
+  win.once("ready-to-show", () => win?.show());
+  win.on("closed", () => (win = null));
+
+  // Pages from other sites (job postings, OpenAI's sign-in, docs links) open in the normal browser.
+  const isApp = (url) => {
+    try {
+      return new URL(url).origin === origin;
+    } catch {
+      return false;
+    }
+  };
+  const openOutside = (url) => {
+    if (/^https?:\/\//i.test(url) || /^mailto:/i.test(url)) shell.openExternal(url);
+  };
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (!isApp(url)) openOutside(url);
+    else win?.loadURL(url);
+    return { action: "deny" };
+  });
+  win.webContents.on("will-navigate", (event, url) => {
+    if (isApp(url) || url.startsWith("file:")) return;
+    event.preventDefault();
+    openOutside(url);
+  });
+  // The page asks for the microphone (dictation) itself, with its own explanation first.
+  win.webContents.session.setPermissionRequestHandler((contents, permission, callback) => {
+    callback(isApp(contents.getURL()) && ["media", "clipboard-sanitized-write", "notifications"].includes(permission));
+  });
+}
+
+async function start() {
+  if (!existsSync(path.join(serverDir, "server.js"))) {
+    dialog.showErrorBox("RolePort can't start", `RolePort's server is missing from ${serverDir}. Build it with: npm run desktop`);
+    app.quit();
+    return;
+  }
+  createWindow();
+  await win.loadFile(path.join(here, "starting.html"));
+
+  const port = await pickPort();
+  origin = `http://127.0.0.1:${port}`;
+  startServer(port);
+  try {
+    await waitUntilUp(`${origin}/`);
+    // Straight into the app (or the welcome guide on a first run), not the website's landing page.
+    await win?.loadURL(`${origin}/home`);
+  } catch (error) {
+    dialog.showErrorBox("RolePort can't start", `${error instanceof Error ? error.message : error} Details are in ${dataPaths().log}.`);
+    app.quit();
+  }
+}
+
+app.on("activate", () => {
+  // macOS: clicking the dock icon with no window open shows it again.
+  if (!win && origin) {
+    createWindow();
+    win.loadURL(`${origin}/home`);
+  }
+});
+
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") app.quit();
+});
+
+app.on("before-quit", () => {
+  quitting = true;
+  server?.kill();
+});

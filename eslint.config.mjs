@@ -14,6 +14,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Desktop app: its dependencies, the server copied in and the installers.
+    "desktop/node_modules/**",
+    "desktop/server/**",
+    "desktop/dist/**",
   ]),
 ]);
 
