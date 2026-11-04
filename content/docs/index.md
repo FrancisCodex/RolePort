@@ -1,7 +1,7 @@
 ---
 title: Introduction
 description: RolePort is a free, open-source job search app. It finds jobs, shows how well each one fits you, prepares your applications, tracks them and coaches you for the interview.
-updated: 2026-10-31
+updated: 2026-11-04
 ---
 
 RolePort takes you through a whole job search in one place:
@@ -28,15 +28,15 @@ RolePort charges nothing and has no accounts, ads or analytics. "Bring your own 
 
 AI is optional. Job search, quick match scores, the tracker, PDF CVs and reminders all work without it. See [AI providers](/docs/ai/providers) to set one up, and [Customizing the prompts](/docs/ai/prompts) to change how the AI writes.
 
-## Two editions
+## Three editions
 
-| | RolePort Lite | Self-hosted |
-| --- | --- | --- |
-| Install | None, it's a website | Docker or Node.js |
-| Your data | In your browser, on that device | In a database on your computer |
-| LinkedIn and Indeed through JobSpy | Runs on your computer, your browser connects to it | Included with Docker |
+| | Desktop app | RolePort Lite | Self-hosted |
+| --- | --- | --- | --- |
+| Install | Windows installer, nothing else to set up | None, it's a website | Docker or Node.js |
+| Your data | In a database on your computer | In your browser, on that device | In a database on your computer or server |
+| LinkedIn and Indeed through JobSpy | One-click download in the app | Run JobSpy on your computer yourself | Included with Docker |
 
-[Which edition should I use?](/docs/editions) compares them in full.
+On Windows, the desktop app is the easiest choice. [Which edition should I use?](/docs/editions) compares them in full.
 
 ## Where to go next
 

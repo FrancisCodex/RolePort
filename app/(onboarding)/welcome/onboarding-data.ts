@@ -8,13 +8,17 @@ export function toOnboardingData(
   aiEnabled: boolean,
   onboarding: { done: boolean; step: number },
   inBrowser: boolean,
+  desktopJobSpy: OnboardingData["desktopJobSpy"] = null,
 ): OnboardingData {
+  // The desktop app has one more step (more job boards), so its guide ends at 7.
+  const last = desktopJobSpy ? 7 : 6;
   return {
     profile,
     cvFileName,
     aiEnabled,
     done: onboarding.done,
-    startStep: onboarding.done ? 0 : Math.max(0, Math.min(6, onboarding.step)),
+    startStep: onboarding.done ? 0 : Math.max(0, Math.min(last, onboarding.step)),
     inBrowser,
+    desktopJobSpy,
   };
 }

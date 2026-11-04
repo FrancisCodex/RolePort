@@ -22,6 +22,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState, useTransition, type ReactNode } from "react";
 import { CountryPicker, mergeDraft, SORTED_COUNTRIES } from "@/app/(app)/profile/profile-editor";
+import { DesktopJobSpy } from "@/app/(app)/settings/desktop-jobspy";
 import { LogoMark } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -32,13 +33,17 @@ import { Select } from "@/components/ui/select";
 import { importCv, saveProfile, setOnboardingStep } from "@/lib/client/mutations";
 import { countryName } from "@/lib/geo/countries";
 import { normalizeProfileDates } from "@/lib/profile/dates";
+import type { DesktopJobSpy as DesktopJobSpyView } from "@/lib/desktop/jobspy";
 import type { ProfileInput } from "@/lib/profile/schema";
 import { cn } from "@/lib/utils";
 
 /** profile.onboarding_step when the guide is finished or skipped (lib/profile/queries.ts). */
 const DONE = 100;
-const LAST = 6;
 const STEP_NAMES = ["About you", "What you want", "Your CV", "AI", "Voice", "Ready"];
+// The desktop app adds a step before Ready: JobSpy for LinkedIn, Indeed and more.
+const DESKTOP_STEP_NAMES = ["About you", "What you want", "Your CV", "AI", "Voice", "Job boards", "Ready"];
+/** The desktop app's job-boards step. */
+const BOARDS = 6;
 
 type Status = { tone: "error" | "info" | "success"; text: string } | null;
 
@@ -46,17 +51,21 @@ export type OnboardingData = {
   profile: ProfileInput;
   cvFileName: string | null;
   aiEnabled: boolean;
-  /** Where the user left off (0-6), or 0 when revisiting a finished guide. */
+  /** Where the user left off (0-6, or 0-7 in the desktop app), or 0 when revisiting a finished guide. */
   startStep: number;
   /** The guide was finished or skipped before: this is a revisit. */
   done: boolean;
   /** Lite edition: say where data lives. */
   inBrowser: boolean;
+  /** Desktop app: JobSpy's download state, for the job-boards step. Null elsewhere. */
+  desktopJobSpy?: { jobspy: DesktopJobSpyView; enabled: boolean } | null;
 };
 
 /** The welcome guide: just enough profile to start searching, then pointers to everything else. */
-export function OnboardingFlow({ profile: initial, cvFileName: initialCv, aiEnabled, startStep, done, inBrowser }: OnboardingData) {
+export function OnboardingFlow({ profile: initial, cvFileName: initialCv, aiEnabled, startStep, done, inBrowser, desktopJobSpy }: OnboardingData) {
   const router = useRouter();
+  const names = desktopJobSpy ? DESKTOP_STEP_NAMES : STEP_NAMES;
+  const LAST = names.length;
   const [step, setStep] = useState(startStep);
   const [profile, setProfile] = useState(() => normalizeProfileDates(initial));
   const [cvFileName, setCvFileName] = useState(initialCv);
@@ -120,7 +129,7 @@ export function OnboardingFlow({ profile: initial, cvFileName: initialCv, aiEnab
 
   return (
     <div className="flex flex-col gap-5">
-      {step > 0 && <Progress step={step} />}
+      {step > 0 && <Progress step={step} names={names} />}
 
       <Card className="p-5 shadow-[var(--shadow-soft)] sm:p-8">
         {step === 0 && (
@@ -222,12 +231,22 @@ export function OnboardingFlow({ profile: initial, cvFileName: initialCv, aiEnab
           </Step>
         )}
 
+        {desktopJobSpy && step === BOARDS && (
+          <Step
+            title="Search the big job sites too (optional)"
+            description="RolePort already searches free job feeds and official job boards. Add JobSpy below to include the largest job sites as well. You can add or remove it any time in Settings."
+          >
+            <DesktopJobSpy jobspy={desktopJobSpy.jobspy} enabled={desktopJobSpy.enabled} />
+          </Step>
+        )}
+
         {step === LAST && (
           <Ready
             role={role}
             country={profile.country}
             aiEnabled={aiEnabled}
             inBrowser={inBrowser}
+            jobspyOffered={Boolean(desktopJobSpy)}
             pending={pending}
             onSearch={() => finish(searchHref)}
             onHome={() => finish("/home")}
@@ -254,7 +273,7 @@ export function OnboardingFlow({ profile: initial, cvFileName: initialCv, aiEnab
               <ArrowLeft /> Back
             </Button>
             <div className="flex items-center gap-1.5">
-              {(step === 3 || step === 4 || step === 5) && (
+              {(step === 3 || step === 4 || step === 5 || step === BOARDS) && (
                 <Button variant="ghost" onClick={() => go(step + 1)} disabled={pending || importing}>
                   Skip
                 </Button>
@@ -280,16 +299,16 @@ export function OnboardingFlow({ profile: initial, cvFileName: initialCv, aiEnab
 
 /* Pieces ------------------------------------------------------------------- */
 
-function Progress({ step }: { step: number }) {
+function Progress({ step, names }: { step: number; names: string[] }) {
   return (
-    <div className="flex flex-col gap-2" aria-label={`Step ${step} of ${LAST}: ${STEP_NAMES[step - 1]}`}>
+    <div className="flex flex-col gap-2" aria-label={`Step ${step} of ${names.length}: ${names[step - 1]}`}>
       <div className="flex gap-1">
-        {STEP_NAMES.map((name, i) => (
+        {names.map((name, i) => (
           <span key={name} className={cn("h-1 flex-1 rounded-full transition-colors", i < step ? "bg-brand" : "bg-surface-3")} />
         ))}
       </div>
       <p className="text-xs text-muted">
-        Step {step} of {LAST} · {STEP_NAMES[step - 1]}
+        Step {step} of {names.length} · {names[step - 1]}
       </p>
     </div>
   );
@@ -476,6 +495,7 @@ function Ready({
   country,
   aiEnabled,
   inBrowser,
+  jobspyOffered,
   pending,
   onSearch,
   onHome,
@@ -484,13 +504,15 @@ function Ready({
   country: string;
   aiEnabled: boolean;
   inBrowser: boolean;
+  /** The desktop app offered JobSpy in its own step already. */
+  jobspyOffered: boolean;
   pending: boolean;
   onSearch: () => void;
   onHome: () => void;
 }) {
   const extras: { icon: LucideIcon; title: string; body: string; show: boolean }[] = [
     { icon: Sparkles, title: "AI provider", body: "Read your CV and explain every match.", show: !aiEnabled },
-    { icon: Workflow, title: "LinkedIn, Indeed and more", body: "Add JobSpy on your computer for more boards.", show: true },
+    { icon: Workflow, title: "LinkedIn, Indeed and more", body: "Add JobSpy on your computer for more boards.", show: !jobspyOffered },
     { icon: Briefcase, title: "JobStreet, Kalibrr via JSearch", body: "A free RapidAPI key adds Google for Jobs listings.", show: true },
     { icon: HardDriveDownload, title: "Backups", body: "Download a copy of your data now and then.", show: inBrowser },
   ];

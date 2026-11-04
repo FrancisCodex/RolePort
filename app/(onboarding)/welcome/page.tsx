@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { isAiConfigured } from "@/lib/ai/config";
+import { getMySettingsRow, isAiConfigured } from "@/lib/ai/config";
 import { getDb } from "@/lib/db";
+import { desktopJobSpy } from "@/lib/desktop/jobspy";
+import { jobSpyUrl } from "@/lib/env";
 import { isLite } from "@/lib/mode";
 import { getMyProfile } from "@/lib/profile/data";
 import { readOnboarding } from "@/lib/profile/queries";
@@ -26,7 +28,15 @@ export default function WelcomePage() {
 
 async function Welcome() {
   const user = await getCurrentUser();
-  const [{ profile, cvFileName }, aiEnabled, onboarding] = await Promise.all([getMyProfile(), isAiConfigured(), readOnboarding(await getDb(), user.id)]);
-  return <OnboardingFlow {...toOnboardingData(profile, cvFileName, aiEnabled, onboarding, false)} />;
+  const [{ profile, cvFileName }, aiEnabled, onboarding, settings] = await Promise.all([
+    getMyProfile(),
+    isAiConfigured(),
+    readOnboarding(await getDb(), user.id),
+    getMySettingsRow(),
+  ]);
+  // Desktop app: a step offering JobSpy (LinkedIn, Indeed and more), unless JOBSPY_URL points at another copy.
+  const jobspy = jobSpyUrl ? null : desktopJobSpy();
+  const desktop = jobspy ? { jobspy, enabled: Boolean(settings?.jobspyEnabled) } : null;
+  return <OnboardingFlow {...toOnboardingData(profile, cvFileName, aiEnabled, onboarding, false, desktop)} />;
 }
 

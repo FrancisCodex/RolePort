@@ -42,13 +42,33 @@ export function useStoredSetting(key: string): [string, (value: string) => void]
 
 export type SpeechEngine = "browser" | "whisper";
 
+/**
+ * In the desktop app (Electron), and any other Electron app, the browser's speech-to-text exists
+ * but has no service behind it: Chrome sends the audio to Google, which Electron can't use. Only
+ * Whisper works there.
+ */
+export function builtInSpeechUnavailable(): boolean {
+  return typeof navigator !== "undefined" && /\bElectron\//.test(navigator.userAgent);
+}
+
+const noSubscribe = () => () => {};
+
+/** builtInSpeechUnavailable() for components (false during server rendering). */
+export function useBuiltInSpeechUnavailable(): boolean {
+  return useSyncExternalStore(noSubscribe, builtInSpeechUnavailable, () => false);
+}
+
 const ENGINE_KEY = "roleport:speech-engine";
 const MODEL_KEY = "roleport:whisper-model";
 
-/** Which speech-to-text answers out loud use. Built-in browser speech unless the user chose Whisper. */
+/**
+ * Which speech-to-text answers out loud use. Built-in browser speech unless the user chose Whisper,
+ * and always Whisper in the desktop app, where built-in speech can't work.
+ */
 export function useSpeechEngine(): [SpeechEngine, (engine: SpeechEngine) => void] {
   const [value, set] = useStoredSetting(ENGINE_KEY);
-  return [value === "whisper" ? "whisper" : "browser", set];
+  const whisperOnly = useBuiltInSpeechUnavailable();
+  return [whisperOnly || value === "whisper" ? "whisper" : "browser", set];
 }
 
 /** The Whisper model to download and use. */

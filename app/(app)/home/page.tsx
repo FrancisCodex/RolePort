@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { isAiConfigured } from "@/lib/ai/config";
 import { getDb } from "@/lib/db";
@@ -10,7 +9,7 @@ import { readOnboarding } from "@/lib/profile/queries";
 import { getCurrentUser } from "@/lib/session";
 import { toHomeData } from "./home-data";
 import { HomeView } from "./home-view";
-import { LiteHome } from "./lite-home";
+import { LiteHome, ToWelcome } from "./lite-home";
 
 export const metadata: Metadata = { title: "Home" };
 
@@ -35,6 +34,6 @@ async function Dashboard() {
     readOnboarding(db, user.id),
   ]);
   // New users start on the welcome guide when it's turned on (NEXT_PUBLIC_ROLEPORT_ONBOARDING).
-  if (onboardingEnabled && !onboarding.done) redirect("/welcome");
+  if (onboardingEnabled && !onboarding.done) return <ToWelcome />;
   return <HomeView {...toHomeData(view, stats, aiEnabled, onboarding)} />;
 }

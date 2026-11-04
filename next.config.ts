@@ -8,7 +8,14 @@ const nextConfig: NextConfig = {
   // Not on Vercel (VERCEL=1): its post-build step expects .next, whatever the build's environment.
   distDir: isLite && !process.env.VERCEL ? ".next-lite" : ".next",
   // The desktop app (desktop/) runs a self-contained server folder instead of `next start`.
-  ...(process.env.ROLEPORT_DESKTOP_BUILD === "1" ? { output: "standalone" as const } : {}),
+  ...(process.env.ROLEPORT_DESKTOP_BUILD === "1"
+    ? {
+        output: "standalone" as const,
+        // The server's file trace takes in the whole project folder. Leave out what it never reads,
+        // above all desktop/ itself: its earlier builds and installers would end up inside the next one.
+        outputFileTracingExcludes: { "/*": ["desktop/**/*", "services/**/*", "test/**/*"] },
+      }
+    : {}),
   // PGlite ships WebAssembly + data files that must load from node_modules at runtime.
   serverExternalPackages: ["@electric-sql/pglite"],
   /* config options here */
