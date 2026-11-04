@@ -7,6 +7,7 @@ import * as cv from "@/app/(app)/applied/[id]/cv/actions";
 import * as jobs from "@/app/(app)/jobs/actions";
 import * as profile from "@/app/(app)/profile/actions";
 import * as settings from "@/app/(app)/settings/actions";
+import * as updates from "@/app/(app)/settings/update-actions";
 import { isLite } from "@/lib/mode";
 
 /*
@@ -68,6 +69,7 @@ export const saveJobSpyEnabled: typeof settings.saveJobSpyEnabled = isLite
 const desktopOnly = async () => ({ ok: false as const, error: "Only the desktop app can do this." });
 export const downloadDesktopJobSpy: typeof settings.downloadDesktopJobSpy = isLite ? desktopOnly : settings.downloadDesktopJobSpy;
 export const removeDesktopJobSpy: typeof settings.removeDesktopJobSpy = isLite ? desktopOnly : settings.removeDesktopJobSpy;
+export const appUpdate: typeof updates.appUpdate = isLite ? async () => ({ ok: true, data: null }) : updates.appUpdate;
 export const exportData: typeof settings.exportData = isLite ? async () => (await lite()).exportData() : settings.exportData;
 export const importData: typeof settings.importData = isLite ? async (...a) => (await lite()).importData(...a) : settings.importData;
 

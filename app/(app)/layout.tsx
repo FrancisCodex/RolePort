@@ -5,7 +5,9 @@ import { SidebarCollapseButton, SidebarExpandButton } from "@/components/app/sid
 import { OpenBrowserDb } from "@/components/app/open-browser-db";
 import { LiteUserChip, UserChip, UserChipSkeleton } from "@/components/app/user-chip";
 import { DocsLink, SettingsLink } from "@/components/app/settings-link";
+import { UpdateNotice } from "@/components/app/update-notice";
 import { Logo } from "@/components/brand/logo";
+import { isDesktop } from "@/lib/desktop/bridge";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { isLite } from "@/lib/mode";
 
@@ -53,6 +55,9 @@ export default function AppLayout({ children }: LayoutProps<"/">) {
           {children}
         </main>
       </div>
+
+      {/* Desktop app: a newer version, inside RolePort instead of a Windows dialog. */}
+      {isDesktop && <UpdateNotice />}
 
       <Suspense fallback={<TabBarFallback />}>
         <TabBar />

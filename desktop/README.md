@@ -48,14 +48,28 @@ always serves the newest release's installer because the file name never changes
 
 ## Updates
 
-The installed app updates itself (`updates.mjs`, electron-updater). The release also carries
-`latest.yml` (the newest version and the installer's SHA-512) and the installer's `.blockmap`. About
-15 seconds after starting, and every 6 hours, the app reads `latest.yml` from the latest GitHub release;
-if it's newer, it downloads the installer in the background (only the changed parts when it can),
-checks it against the SHA-512 and asks to restart. **Later** installs it when the app closes. Updates
-are off when running from the repo, on macOS (they need a signed app) and with `ROLEPORT_NO_UPDATES=1`.
-The log is `logs/update.log` in the data folder. Copies installed before updates existed (v0.1.0) need
-one manual download of a newer installer.
+The installed app updates itself, from inside RolePort (`updates.mjs` with electron-updater, reached
+from the server through `lib/desktop/updates.ts`). The release also carries `latest.yml` (the newest
+version and the installer's SHA-512) and the installer's `.blockmap`.
+
+- **Checking:** about 15 seconds after starting and every 6 hours (unless turned off in Settings → About
+  & updates), the app reads `latest.yml` from the latest GitHub release. **Check for updates** in
+  Settings checks any time.
+- **Telling the user:** a newer version shows as a notice inside RolePort (`components/app/update-notice.tsx`)
+  with **Update**, **Later** (again in a day) and **Skip this version** (until a newer one), and in
+  Settings with its release notes. There's no Windows dialog.
+- **Downloading:** only when the user clicks Update. Only the changed parts are downloaded when it can,
+  and the file is checked against the SHA-512.
+- **Installing:** **Restart to update** stops JobSpy and the server and waits for them to exit, then runs
+  the installer silently and opens RolePort again. A downloaded update also installs when RolePort
+  closes. The installer itself closes any leftover JobSpy first (`build/installer.nsh`), because a
+  file still in use in the install folder stops the update with "Failed to uninstall old application
+  files". If an update doesn't finish, the next launch says so in Settings.
+
+Updates are off when running from the repo, on macOS (they need a signed app) and with
+`ROLEPORT_NO_UPDATES=1`. The user's choices are in `update-settings.json` and the log in
+`logs/update.log`, both in the data folder. Copies installed before updates existed (v0.1.0) need one
+manual download of a newer installer.
 
 ## Where things are
 
