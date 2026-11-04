@@ -146,21 +146,15 @@ export default function LandingPage() {
           <div className="mt-8 flex animate-[rise_0.8s_var(--ease-snappy)_both] flex-wrap justify-center gap-2 [animation-delay:500ms]">
             {isLite ? (
               <>
-                <Link href="/home" className={buttonVariants({ size: "lg" })}>
+                <DownloadForWindows size="lg" />
+                <Link href="/home" className={buttonVariants({ size: "lg", variant: "secondary" })}>
                   Try it in your browser
                   <ArrowRight />
                 </Link>
-                <a href={DESKTOP_DOWNLOAD_URL} className={buttonVariants({ size: "lg", variant: "secondary" })}>
-                  <Download />
-                  Download for Windows
-                </a>
               </>
             ) : (
               <>
-                <a href={DESKTOP_DOWNLOAD_URL} className={buttonVariants({ size: "lg" })}>
-                  <Download />
-                  Download for Windows
-                </a>
+                <DownloadForWindows size="lg" />
                 {liteUrl && (
                   <a href={`${liteUrl}/home`} className={buttonVariants({ size: "lg", variant: "secondary" })}>
                     Try it in your browser
@@ -292,11 +286,8 @@ export default function LandingPage() {
               <p className="mt-1 text-[13px] text-muted text-pretty">
                 For Windows 10 and 11. Download it, open the file and follow the installer. Nothing else to set up.
               </p>
-              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
-                <a href={DESKTOP_DOWNLOAD_URL} className={buttonVariants()}>
-                  <Download />
-                  Download for Windows
-                </a>
+              <div className="mt-6 flex flex-wrap items-center gap-x-4 gap-y-2">
+                <DownloadForWindows />
                 <a href={RELEASES_URL} className="text-[13px] font-medium text-muted hover:text-fg">
                   All versions
                 </a>
@@ -361,5 +352,24 @@ export default function LandingPage() {
         </Reveal>
       </section>
     </>
+  );
+}
+
+/**
+ * The Download for Windows button with a "Recommended" badge on its top edge, like a pricing
+ * card's "Popular" label: the desktop app is the easiest way to use RolePort (nothing to set up,
+ * data not tied to one browser, LinkedIn and Indeed with one click).
+ */
+function DownloadForWindows({ size = "md" }: { size?: "md" | "lg" }) {
+  return (
+    <span className="relative inline-flex">
+      <a href={DESKTOP_DOWNLOAD_URL} className={buttonVariants({ size })}>
+        <Download />
+        Download for Windows
+      </a>
+      <span className="pointer-events-none absolute -top-2.5 left-1/2 -translate-x-1/2 rounded-full border border-brand/40 bg-brand-soft px-2 py-px text-[10px] leading-4 font-semibold tracking-wide whitespace-nowrap text-brand-ink uppercase shadow-sm">
+        Recommended
+      </span>
+    </span>
   );
 }

@@ -1,7 +1,7 @@
 ---
 title: Privacy and your data
 description: Where your data lives in each edition, what leaves your device, and how to back it up or delete it.
-updated: 2026-10-31
+updated: 2026-11-04
 ---
 
 RolePort has no accounts, no analytics and no ads. The [Privacy page](/privacy) says exactly what goes where. This page is the short version.
@@ -26,7 +26,7 @@ In Lite, your IP address is used in memory to limit searches per minute, and the
 
 ## Backups
 
-**Settings → Your data → Download backup** makes one file with your profile, CV text, pipeline, evaluations, interviews and followed companies. It works in both editions. API keys and Whisper models are never included, so enter your keys again after restoring.
+**Settings → Your data → Download backup** makes one file with your profile, CV text, pipeline, evaluations, interviews and followed companies. It works in every edition. API keys and Whisper models are never included, so enter your keys again after restoring.
 
 To restore, import the file in the same card and choose:
 
