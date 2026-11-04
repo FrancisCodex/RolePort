@@ -1,0 +1,30 @@
+# Exact versions for the desktop app's JobSpy program (build-binary.mjs), from a build that passed
+# its smoke test. Change them together and rebuild: an unpinned update can drop a DLL or data file.
+altgraph==0.17.5
+annotated-types==0.8.0
+beautifulsoup4==4.15.0
+certifi==2026.10.23
+cffi==2.1.1
+charset-normalizer==3.5.2
+curl_cffi==0.17.0
+idna==3.20
+markdownify==1.2.3
+numpy==2.5.4
+packaging==26.3
+pandas==3.1.0
+pefile==2024.8.26
+pycparser==3.12
+pydantic==2.14.2
+pydantic_core==2.50.2
+pyinstaller==6.22.3
+pyinstaller-hooks-contrib==2026.9
+python-dateutil==4.0.0
+pywin32-ctypes==0.2.3
+requests==2.34.2
+setuptools==84.2.1
+six==1.17.0
+soupsieve==4.0
+typing-inspection==0.4.4
+typing_extensions==4.16.0
+tzdata==2026.6
+urllib3==2.8.0
