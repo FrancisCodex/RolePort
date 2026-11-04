@@ -7,6 +7,7 @@ import { createWriteStream, existsSync, mkdirSync } from "node:fs";
 import { createServer } from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { startUpdates } from "./updates.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 // Another data folder, for trying the app without touching your own data (or a portable copy).
@@ -241,6 +242,7 @@ async function start() {
     await waitUntilUp(`${origin}/`);
     // Straight into the app (or the welcome guide on a first run), not the website's landing page.
     await win?.loadURL(`${origin}/home`);
+    startUpdates(() => win);
   } catch (error) {
     dialog.showErrorBox("RolePort can't start", `${error instanceof Error ? error.message : error} Details are in ${dataPaths().log}.`);
     app.quit();

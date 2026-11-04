@@ -33,10 +33,12 @@ signed yet, so Windows shows "Windows protected your PC" on first run: **More in
 ## Release it
 
 Push a version tag. `.github/workflows/desktop-release.yml` builds the Windows installer on GitHub,
-sets the app's version from the tag, and publishes it as the latest release:
+sets the app's version from the tag, and publishes it as the latest release (two commands, so they also
+work in Windows PowerShell):
 
 ```bash
-git tag v0.1.0 && git push origin v0.1.0
+git tag v0.1.1
+git push origin v0.1.1
 ```
 
 The landing page's **Download for Windows** button links to
@@ -44,14 +46,25 @@ The landing page's **Download for Windows** button links to
 always serves the newest release's installer because the file name never changes. Other releases
 (JobSpy's) are published with `--latest=false` so they don't take that place.
 
+## Updates
+
+The installed app updates itself (`updates.mjs`, electron-updater). The release also carries
+`latest.yml` (the newest version and the installer's SHA-512) and the installer's `.blockmap`. About
+15 seconds after starting, and every 6 hours, the app reads `latest.yml` from the latest GitHub release;
+if it's newer, it downloads the installer in the background (only the changed parts when it can),
+checks it against the SHA-512 and asks to restart. **Later** installs it when the app closes. Updates
+are off when running from the repo, on macOS (they need a signed app) and with `ROLEPORT_NO_UPDATES=1`.
+The log is `logs/update.log` in the data folder. Copies installed before updates existed (v0.1.0) need
+one manual download of a newer installer.
+
 ## Where things are
 
 | | Windows | macOS | Linux |
 | --- | --- | --- | --- |
 | Data (database, encryption key) | `%APPDATA%\RolePort\data` | `~/Library/Application Support/RolePort/data` | `~/.config/RolePort/data` |
-| Server log | `%APPDATA%\RolePort\logs\server.log` | `…/RolePort/logs/server.log` | `…/RolePort/logs/server.log` |
+| Logs (server, JobSpy, updates) | `%APPDATA%\RolePort\logs` | `…/RolePort/logs` | `…/RolePort/logs` |
 
-Uninstalling keeps your data. To try the app without touching it, point it at another folder:
+Uninstall from **Settings → Apps → Installed apps → RolePort**. Uninstalling keeps your data. To try the app without touching it, point it at another folder:
 `ROLEPORT_DESKTOP_DATA=/some/folder npm --prefix desktop start`.
 
 The app uses port 47100 (or the next free one up to 47105) so the address stays the same between

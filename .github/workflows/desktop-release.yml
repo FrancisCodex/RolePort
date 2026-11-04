@@ -1,7 +1,10 @@
 # Builds the desktop app's installer (desktop/) and publishes it as the latest GitHub release, where
 # the landing page's Download button points:
 #   https://github.com/FrancisCodex/RolePort/releases/latest/download/RolePort-Setup-x64.exe
-# Release a version by pushing a tag: git tag v0.1.0 && git push origin v0.1.0
+# latest.yml and the .blockmap go with it: installed copies read them to update themselves
+# (desktop/updates.mjs). Release a version by pushing a tag (two commands in Windows PowerShell):
+#   git tag v0.1.1
+#   git push origin v0.1.1
 # (or Actions → Desktop release → Run workflow with an existing tag).
 name: Desktop release
 
@@ -52,11 +55,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          file=desktop/dist/RolePort-Setup-x64.exe
-          test -f "$file"
+          files=(desktop/dist/RolePort-Setup-x64.exe desktop/dist/RolePort-Setup-x64.exe.blockmap desktop/dist/latest.yml)
+          for file in "${files[@]}"; do test -f "$file"; done
           if gh release view "$TAG" >/dev/null 2>&1; then
-            gh release upload "$TAG" "$file" --clobber
+            gh release upload "$TAG" "${files[@]}" --clobber
           else
-            gh release create "$TAG" "$file" --title "RolePort $TAG" --generate-notes --latest
+            gh release create "$TAG" "${files[@]}" --title "RolePort $TAG" --generate-notes --latest
           fi
           echo "Installer: https://github.com/${{ github.repository }}/releases/download/$TAG/RolePort-Setup-x64.exe" >> "$GITHUB_STEP_SUMMARY"

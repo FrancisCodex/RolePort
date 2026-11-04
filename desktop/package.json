@@ -25,6 +25,7 @@
     },
     "files": [
       "main.mjs",
+      "updates.mjs",
       "starting.html",
       "package.json"
     ],
@@ -49,6 +50,16 @@
       "target": "AppImage",
       "category": "Office",
       "artifactName": "RolePort-${arch}.${ext}"
-    }
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "FrancisCodex",
+        "repo": "RolePort"
+      }
+    ]
+  },
+  "dependencies": {
+    "electron-updater": "6.8.11"
   }
 }
