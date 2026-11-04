@@ -8,6 +8,8 @@ import { AiSettingsForm, type AiSettingsView } from "./ai-settings-form";
 import type { FollowedCompanyView } from "@/lib/companies/queries";
 import { BackupControls } from "./backup-controls";
 import { JobSourceForm, JobSpyToggle } from "./job-source-form";
+import type { DesktopJobSpy as DesktopJobSpyView } from "@/lib/desktop/jobspy";
+import { DesktopJobSpy } from "./desktop-jobspy";
 import { LocalJobSpy } from "./local-jobspy";
 import { McpForm, type McpSettingsView } from "./mcp-form";
 import type { FollowUpRules } from "@/lib/outreach/rules";
@@ -27,6 +29,8 @@ export type SettingsData = {
   jobSpy: { enabled: boolean; reachable: boolean } | null;
   /** Lite: JobSpy on the user's computer, called from the browser. */
   localJobSpy?: { enabled: boolean };
+  /** Desktop app: its own copy of JobSpy, downloaded when the user agrees. */
+  desktopJobSpy?: { jobspy: DesktopJobSpyView; enabled: boolean } | null;
   /** The user's own instructions for reading a CV, or null for the default. */
   profilePrompt: string | null;
   /** The user's own CV tailoring instructions, or null for the default. */
@@ -65,6 +69,7 @@ export function SettingsView({
   countries,
   jobSpy,
   localJobSpy,
+  desktopJobSpy,
   profilePrompt,
   cvPrompt,
   coverLetterPrompt,
@@ -123,6 +128,7 @@ export function SettingsView({
               <JobSourceForm rapidApiKeyHint={rapidApiKeyHint} />
               {jobSpy && <JobSpyToggle enabled={jobSpy.enabled} reachable={jobSpy.reachable} />}
               {localJobSpy && <LocalJobSpy enabled={localJobSpy.enabled} />}
+              {desktopJobSpy && <DesktopJobSpy jobspy={desktopJobSpy.jobspy} enabled={desktopJobSpy.enabled} />}
             </>
           ),
           contentClassName: "flex flex-col gap-4",

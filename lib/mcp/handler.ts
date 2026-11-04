@@ -2,6 +2,7 @@ import "server-only";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { aiConfigFor, rapidApiKeyFor } from "@/lib/ai/config";
 import { getDb } from "@/lib/db";
+import { jobSpyAddress } from "@/lib/desktop/jobspy";
 import { checkPosting, readJobLink } from "@/lib/jobs/paste/link";
 import { searchAllSources } from "@/lib/jobs/search";
 import { clientAddress, createRateLimit } from "@/lib/rate-limit";
@@ -34,7 +35,11 @@ export async function handleMcpRequest(request: Request): Promise<Response> {
     ai: async () => aiConfigFor(row),
     writer: row?.mcpWriter ?? "auto",
     usage: row?.mcpUsage ?? "balanced",
-    search: (params, companies) => searchAllSources(params, { rapidApiKey: rapidApiKeyFor(row), jobspyEnabled: Boolean(row?.jobspyEnabled), companies }),
+    search: async (params, companies) => {
+      const jobspyEnabled = Boolean(row?.jobspyEnabled);
+      const jobspyUrl = jobspyEnabled ? await jobSpyAddress() : null;
+      return searchAllSources(params, { rapidApiKey: rapidApiKeyFor(row), jobspyEnabled, jobspyUrl, companies });
+    },
     readLink: readJobLink,
     checkPosting,
   };

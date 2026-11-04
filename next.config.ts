@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
   // The lite edition (docs/LITE.md) builds into its own folder so both modes can run side by side.
   // Not on Vercel (VERCEL=1): its post-build step expects .next, whatever the build's environment.
   distDir: isLite && !process.env.VERCEL ? ".next-lite" : ".next",
+  // The desktop app (desktop/) runs a self-contained server folder instead of `next start`.
+  ...(process.env.ROLEPORT_DESKTOP_BUILD === "1" ? { output: "standalone" as const } : {}),
   // PGlite ships WebAssembly + data files that must load from node_modules at runtime.
   serverExternalPackages: ["@electric-sql/pglite"],
   /* config options here */

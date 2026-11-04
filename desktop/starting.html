@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'" />
+    <title>RolePort</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #fbfbfa;
+        --fg: #1a1a1c;
+        --muted: #6b6b70;
+        --track: #e6e6e3;
+        --brand: #5b5bd6;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #111113;
+          --fg: #ededee;
+          --muted: #8e8e93;
+          --track: #26262a;
+        }
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font: 14px/1.5 "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+      }
+      main {
+        height: 100%;
+        display: grid;
+        place-content: center;
+        gap: 14px;
+        text-align: center;
+      }
+      h1 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+      p {
+        margin: 0;
+        color: var(--muted);
+      }
+      .bar {
+        width: 180px;
+        height: 3px;
+        margin: 4px auto 0;
+        border-radius: 3px;
+        background: var(--track);
+        overflow: hidden;
+      }
+      .bar::after {
+        content: "";
+        display: block;
+        width: 40%;
+        height: 100%;
+        background: var(--brand);
+        border-radius: 3px;
+        animation: slide 1.2s ease-in-out infinite;
+      }
+      @keyframes slide {
+        from {
+          transform: translateX(-100%);
+        }
+        to {
+          transform: translateX(250%);
+        }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .bar::after {
+          animation: none;
+          width: 100%;
+          opacity: 0.5;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>RolePort</h1>
+      <p>Starting up…</p>
+      <div class="bar" role="progressbar" aria-label="Starting RolePort"></div>
+    </main>
+  </body>
+</html>

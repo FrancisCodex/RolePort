@@ -1,0 +1,75 @@
+# RolePort desktop
+
+RolePort as a normal program: an installer, a window, no hosting, Docker or Python. The app runs
+RolePort's own server inside it, on this computer only (`127.0.0.1`), and keeps your data in the
+system's app-data folder. Plan and status: `docs/ROADMAP-NEXT.md`, phase 5.
+
+## Run it from the repo
+
+Once, install Electron (it lives here so the web version's `npm install` doesn't download it):
+
+```bash
+npm --prefix desktop install
+```
+
+Then, from the repo root:
+
+```bash
+npm run desktop
+```
+
+This builds the server (`desktop/scripts/prepare-server.mjs`: a Next.js standalone build plus
+`public`, `.next/static` and `drizzle`, copied to `desktop/server`) and opens the app.
+
+## Make the installer
+
+```bash
+npm run desktop:dist
+```
+
+The installer lands in `desktop/dist` (`RolePort-Setup-x64.exe` on Windows). It isn't code
+signed yet, so Windows shows "Windows protected your PC" on first run: **More info → Run anyway**.
+
+## Release it
+
+Push a version tag. `.github/workflows/desktop-release.yml` builds the Windows installer on GitHub,
+sets the app's version from the tag, and publishes it as the latest release:
+
+```bash
+git tag v0.1.0 && git push origin v0.1.0
+```
+
+The landing page's **Download for Windows** button links to
+`https://github.com/FrancisCodex/RolePort/releases/latest/download/RolePort-Setup-x64.exe`, which
+always serves the newest release's installer because the file name never changes. Other releases
+(JobSpy's) are published with `--latest=false` so they don't take that place.
+
+## Where things are
+
+| | Windows | macOS | Linux |
+| --- | --- | --- | --- |
+| Data (database, encryption key) | `%APPDATA%\RolePort\data` | `~/Library/Application Support/RolePort/data` | `~/.config/RolePort/data` |
+| Server log | `%APPDATA%\RolePort\logs\server.log` | `…/RolePort/logs/server.log` | `…/RolePort/logs/server.log` |
+
+Uninstalling keeps your data. To try the app without touching it, point it at another folder:
+`ROLEPORT_DESKTOP_DATA=/some/folder npm --prefix desktop start`.
+
+The app uses port 47100 (or the next free one up to 47105) so the address stays the same between
+launches.
+
+## JobSpy (LinkedIn, Indeed and more)
+
+The desktop app downloads JobSpy as one program file only when the user turns the boards on in
+Settings, checks it against the SHA-256 in `lib/desktop/jobspy-release.ts`, and runs it itself on
+a private port (`desktop/main.mjs`), stopping it on quit. No Python on the user's computer.
+
+To publish a JobSpy build:
+
+1. On GitHub: **Actions → JobSpy binaries → Run workflow** (tag `jobspy-<python-jobspy version>`).
+   It builds Windows, macOS and Linux files, checks each starts, and attaches them to that release.
+2. Copy each file's size and SHA-256 from the run's summary into `lib/desktop/jobspy-release.ts`.
+
+To build one on your own computer (Python 3.10+): `node services/jobspy/build-binary.mjs`. To try a
+local build in the app, put its address, size and SHA-256 in a JSON file shaped like
+`JOBSPY_RELEASE` and start the app with `ROLEPORT_JOBSPY_RELEASE=/path/to/that.json` (a
+`http://127.0.0.1` address is allowed only then).

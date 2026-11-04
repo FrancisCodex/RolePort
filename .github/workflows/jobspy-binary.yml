@@ -1,0 +1,58 @@
+# Builds the JobSpy service as one program file per system (services/jobspy/build-binary.mjs) and
+# attaches the files and their SHA-256 to a GitHub release, for the desktop app to download when a
+# user turns the LinkedIn/Indeed boards on. Run it by hand (Actions → JobSpy binaries → Run workflow),
+# then copy each file's size and SHA-256 from the job summary into lib/desktop/jobspy-release.ts.
+name: JobSpy binaries
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to attach the files to (created if missing)
+        default: jobspy-1.4.0
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        # Windows x64, Apple silicon Macs, Linux x64. Intel Macs: add an Intel macOS runner here.
+        os: [windows-latest, macos-latest, ubuntu-22.04]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build
+        shell: bash
+        run: node services/jobspy/build-binary.mjs | tee build.log
+      - name: Smoke test
+        shell: bash
+        run: |
+          file=$(ls services/jobspy/dist/jobspy-server-* | grep -v '\.sha256$')
+          HOST=127.0.0.1 PORT=8799 "$file" &
+          for i in $(seq 1 60); do curl -sf http://127.0.0.1:8799/health && exit 0; sleep 1; done
+          echo "JobSpy didn't answer /health" && exit 1
+      - name: Attach to the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          # --latest=false: "latest" must stay the app's own release, where the landing page's Download button points.
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --latest=false --title "JobSpy for the desktop app ($TAG)" --notes "JobSpy (MIT, github.com/speedyapply/JobSpy) built as one program file for RolePort's desktop app. Downloaded by the app only when you turn on the LinkedIn/Indeed boards." || true
+          gh release upload "$TAG" services/jobspy/dist/jobspy-server-* --clobber
+      - name: Summary
+        shell: bash
+        run: |
+          echo '```json' >> "$GITHUB_STEP_SUMMARY"
+          sed -n '/^{/,/^}/p' build.log >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
