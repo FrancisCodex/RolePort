@@ -1,0 +1,62 @@
+# Builds the desktop app's installer (desktop/) and publishes it as the latest GitHub release, where
+# the landing page's Download button points:
+#   https://github.com/FrancisCodex/RolePort/releases/latest/download/RolePort-Setup-x64.exe
+# Release a version by pushing a tag: git tag v0.1.0 && git push origin v0.1.0
+# (or Actions → Desktop release → Run workflow with an existing tag).
+name: Desktop release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Version tag to build and publish, e.g. v0.1.0 (must already exist)
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            desktop/package-lock.json
+      - name: Install
+        shell: bash
+        run: |
+          npm ci
+          npm --prefix desktop ci
+      - name: Version from the tag
+        shell: bash
+        run: npm --prefix desktop version "${TAG#v}" --no-git-tag-version --allow-same-version
+      - name: Build the server
+        run: node desktop/scripts/prepare-server.mjs
+      - name: Build the installer
+        working-directory: desktop
+        run: npx electron-builder --win --publish never
+      - name: Publish
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          file=desktop/dist/RolePort-Setup-x64.exe
+          test -f "$file"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$file" --clobber
+          else
+            gh release create "$TAG" "$file" --title "RolePort $TAG" --generate-notes --latest
+          fi
+          echo "Installer: https://github.com/${{ github.repository }}/releases/download/$TAG/RolePort-Setup-x64.exe" >> "$GITHUB_STEP_SUMMARY"

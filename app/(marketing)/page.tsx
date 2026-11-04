@@ -1,4 +1,4 @@
-import { ArrowRight, BarChart3, Bot, FileText, Globe, Lock, Mail, MessageSquareText, Laptop, MessagesSquare, Mic, ScrollText, Search, Send, TrendingUp, UserRound } from "lucide-react";
+import { ArrowRight, BarChart3, Bot, Download, FileText, Globe, Lock, Mail, MessageSquareText, Laptop, MessagesSquare, Mic, ScrollText, Search, Send, TrendingUp, UserRound } from "lucide-react";
 import Link from "next/link";
 import type { CSSProperties, ReactNode } from "react";
 import { CommandHint } from "@/components/marketing/command-menu";
@@ -7,7 +7,7 @@ import { DotBackground } from "@/components/marketing/dot-background";
 import { Reveal } from "@/components/marketing/landing-motion";
 import { ProductDemo } from "@/components/marketing/product-demo";
 import { GitHubMark, SetupGuide } from "@/components/marketing/setup-guide";
-import { REPO_URL } from "@/lib/repo";
+import { DESKTOP_DOWNLOAD_URL, RELEASES_URL, REPO_URL } from "@/lib/repo";
 import { buttonVariants } from "@/components/ui/button";
 import { isLite, liteUrl } from "@/lib/mode";
 import { cn } from "@/lib/utils";
@@ -75,8 +75,7 @@ const moreFeatures = [
   {
     icon: Laptop,
     title: "Desktop app",
-    body: "Planned: one installer for Windows, macOS and Linux with JobSpy built in, so there's no Docker or Python to set up.",
-    soon: true,
+    body: "Download, double-click, done. No Docker, Python or hosting, and LinkedIn and Indeed are one click away. Windows now; macOS and Linux next.",
   },
   {
     icon: Lock,
@@ -151,15 +150,16 @@ export default function LandingPage() {
                   Try it in your browser
                   <ArrowRight />
                 </Link>
-                <a href="#get-started" className={buttonVariants({ size: "lg", variant: "secondary" })}>
-                  Install on your computer
+                <a href={DESKTOP_DOWNLOAD_URL} className={buttonVariants({ size: "lg", variant: "secondary" })}>
+                  <Download />
+                  Download for Windows
                 </a>
               </>
             ) : (
               <>
-                <a href="#get-started" className={buttonVariants({ size: "lg" })}>
-                  Get started
-                  <ArrowRight />
+                <a href={DESKTOP_DOWNLOAD_URL} className={buttonVariants({ size: "lg" })}>
+                  <Download />
+                  Download for Windows
                 </a>
                 {liteUrl && (
                   <a href={`${liteUrl}/home`} className={buttonVariants({ size: "lg", variant: "secondary" })}>
@@ -173,7 +173,14 @@ export default function LandingPage() {
               </>
             )}
           </div>
-          <CommandHint className="mt-5 animate-[rise_0.8s_var(--ease-snappy)_both] [animation-delay:600ms]" />
+          <p className="mt-4 animate-[rise_0.8s_var(--ease-snappy)_both] text-xs text-subtle [animation-delay:550ms]">
+            Free desktop app for Windows 10 and 11. macOS and Linux:{" "}
+            <a href="#get-started" className="underline decoration-border-strong underline-offset-2 hover:text-fg">
+              run it yourself
+            </a>{" "}
+            for now.
+          </p>
+          <CommandHint className="mt-3 animate-[rise_0.8s_var(--ease-snappy)_both] [animation-delay:600ms]" />
         </section>
 
         <div className="relative mx-auto mt-14 max-w-5xl px-4 pb-16 sm:px-6 md:mt-16 md:pb-24">
@@ -276,10 +283,33 @@ export default function LandingPage() {
             </h2>
             <p className="mt-4 text-muted text-pretty sm:text-base">
               {isLite
-                ? "The installed version keeps your data in a database on your computer, so it's not tied to one browser. Move over any time with a backup from Settings. It takes a few commands and about five minutes."
-                : "Every feature works on your own install, with no sign-in. It takes a few commands and about five minutes."}
+                ? "The installed version keeps your data in a database on your computer, so it's not tied to one browser. Move over any time with a backup from Settings."
+                : "Every feature works on your own install, with no sign-in."}
             </p>
-            <ol className="mt-8 flex flex-col gap-3">
+
+            <div className="mt-8 rounded-xl border border-border bg-surface p-5">
+              <p className="font-medium">The easy way: the desktop app</p>
+              <p className="mt-1 text-[13px] text-muted text-pretty">
+                For Windows 10 and 11. Download it, open the file and follow the installer. Nothing else to set up.
+              </p>
+              <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2">
+                <a href={DESKTOP_DOWNLOAD_URL} className={buttonVariants()}>
+                  <Download />
+                  Download for Windows
+                </a>
+                <a href={RELEASES_URL} className="text-[13px] font-medium text-muted hover:text-fg">
+                  All versions
+                </a>
+              </div>
+              <p className="mt-4 text-xs leading-relaxed text-subtle text-pretty">
+                The app isn&apos;t signed with a paid certificate yet, so the first time you open it Windows may say &ldquo;Windows protected your
+                PC&rdquo;. Click <span className="font-medium text-muted">More info</span>, then{" "}
+                <span className="font-medium text-muted">Run anyway</span>. RolePort is open source: anyone can check what it does.
+              </p>
+            </div>
+
+            <p className="mt-8 text-[13px] font-medium">On macOS, Linux or a server: run it yourself in about five minutes</p>
+            <ol className="mt-4 flex flex-col gap-3">
               {afterInstall.map((step, i) => (
                 <li key={step} className="flex gap-3">
                   <span className="grid size-6 shrink-0 place-items-center rounded-md border border-border font-mono text-xs text-muted">
@@ -313,7 +343,7 @@ export default function LandingPage() {
             <div data-dots-clear>
               <h2 className="text-3xl font-semibold tracking-[-0.03em] text-balance sm:text-5xl">Your next job, found your way</h2>
               <p className="mx-auto mt-4 max-w-md text-muted">
-                Free, open source and private. Start in your browser in seconds, or install it in five minutes.
+                Free, open source and private. Start in your browser in seconds, or download the app for Windows.
               </p>
             </div>
             <div className="mt-8 flex flex-wrap justify-center gap-2">

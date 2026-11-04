@@ -27,8 +27,22 @@ This builds the server (`desktop/scripts/prepare-server.mjs`: a Next.js standalo
 npm run desktop:dist
 ```
 
-The installer lands in `desktop/dist` (`RolePort Setup <version>.exe` on Windows). It isn't code
+The installer lands in `desktop/dist` (`RolePort-Setup-x64.exe` on Windows). It isn't code
 signed yet, so Windows shows "Windows protected your PC" on first run: **More info → Run anyway**.
+
+## Release it
+
+Push a version tag. `.github/workflows/desktop-release.yml` builds the Windows installer on GitHub,
+sets the app's version from the tag, and publishes it as the latest release:
+
+```bash
+git tag v0.1.0 && git push origin v0.1.0
+```
+
+The landing page's **Download for Windows** button links to
+`https://github.com/FrancisCodex/RolePort/releases/latest/download/RolePort-Setup-x64.exe`, which
+always serves the newest release's installer because the file name never changes. Other releases
+(JobSpy's) are published with `--latest=false` so they don't take that place.
 
 ## Where things are
 

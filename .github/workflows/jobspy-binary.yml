@@ -47,7 +47,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
         run: |
-          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --title "JobSpy for the desktop app ($TAG)" --notes "JobSpy (MIT, github.com/speedyapply/JobSpy) built as one program file for RolePort's desktop app. Downloaded by the app only when you turn on the LinkedIn/Indeed boards." || true
+          # --latest=false: "latest" must stay the app's own release, where the landing page's Download button points.
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG" --latest=false --title "JobSpy for the desktop app ($TAG)" --notes "JobSpy (MIT, github.com/speedyapply/JobSpy) built as one program file for RolePort's desktop app. Downloaded by the app only when you turn on the LinkedIn/Indeed boards." || true
           gh release upload "$TAG" services/jobspy/dist/jobspy-server-* --clobber
       - name: Summary
         shell: bash

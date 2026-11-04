@@ -31,7 +31,8 @@
     "afterPack": "./scripts/after-pack.mjs",
     "icon": "../public/icons/icon-512.png",
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "artifactName": "RolePort-Setup-${arch}.${ext}"
     },
     "nsis": {
       "oneClick": false,
@@ -41,11 +42,13 @@
     },
     "mac": {
       "target": "dmg",
-      "category": "public.app-category.productivity"
+      "category": "public.app-category.productivity",
+      "artifactName": "RolePort-${arch}.${ext}"
     },
     "linux": {
       "target": "AppImage",
-      "category": "Office"
+      "category": "Office",
+      "artifactName": "RolePort-${arch}.${ext}"
     }
   }
 }
