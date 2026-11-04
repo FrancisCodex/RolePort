@@ -2,6 +2,7 @@
 // computer only, and shows it in a window. The server is the Next.js standalone build that
 // scripts/prepare-server.mjs puts in ./server (in the installed app: resources/server).
 import { app, BrowserWindow, dialog, shell, utilityProcess } from "electron";
+import { spawn, spawnSync } from "node:child_process";
 import { createWriteStream, existsSync, mkdirSync } from "node:fs";
 import { createServer } from "node:net";
 import path from "node:path";
@@ -97,10 +98,13 @@ function startServer(port) {
       PORT: String(port),
       PGLITE_DIR: pglite,
       ROLEPORT_DESKTOP: "1",
+      // Where downloads such as JobSpy go (lib/desktop/jobspy.ts).
+      ROLEPORT_APP_DATA: app.getPath("userData"),
     },
   });
   server.stdout?.pipe(logFile);
   server.stderr?.pipe(logFile);
+  server.on("message", (message) => handleServerMessage(message));
   server.on("exit", (code) => {
     server = null;
     if (!quitting) {
@@ -108,6 +112,76 @@ function startServer(port) {
       app.quit();
     }
   });
+}
+
+/* JobSpy (lib/desktop/jobspy.ts) ------------------------------------------- */
+
+/** @type {{ child: import("node:child_process").ChildProcess, url: string } | null} */
+let jobspy = null;
+
+/** Stops JobSpy and anything it started (a one-file build runs as two processes). */
+function stopJobSpy() {
+  const child = jobspy?.child;
+  jobspy = null;
+  if (!child?.pid || child.exitCode !== null) return;
+  if (process.platform === "win32") spawnSync("taskkill", ["/PID", String(child.pid), "/T", "/F"], { windowsHide: true });
+  else child.kill();
+}
+
+/** Starts the downloaded JobSpy on a private port and waits until it answers. */
+async function startJobSpy(file) {
+  // Only ever a file RolePort downloaded into its own folder.
+  const folder = path.join(app.getPath("userData"), "jobspy") + path.sep;
+  const resolved = path.resolve(file);
+  if (!resolved.startsWith(folder) || !existsSync(resolved)) throw new Error("JobSpy isn't downloaded.");
+  if (jobspy) {
+    const alive = await fetch(`${jobspy.url}/health`, { signal: AbortSignal.timeout(3_000) }).then((r) => r.ok).catch(() => false);
+    if (alive) return jobspy.url;
+    stopJobSpy();
+  }
+  const port = await new Promise((resolve) => {
+    const probe = createServer().listen(0, "127.0.0.1", () => {
+      const { port } = /** @type {import("node:net").AddressInfo} */ (probe.address());
+      probe.close(() => resolve(port));
+    });
+  });
+  const log = createWriteStream(path.join(app.getPath("userData"), "logs", "jobspy.log"), { flags: "a" });
+  const child = spawn(resolved, [], {
+    env: { ...process.env, HOST: "127.0.0.1", PORT: String(port) },
+    stdio: ["ignore", "pipe", "pipe"],
+    windowsHide: true,
+  });
+  child.stdout.pipe(log);
+  child.stderr.pipe(log);
+  const url = `http://127.0.0.1:${port}`;
+  jobspy = { child, url };
+  child.on("exit", () => {
+    if (jobspy?.child === child) jobspy = null;
+  });
+  // A one-file build unpacks itself first, and antivirus may scan it on the first run.
+  const deadline = Date.now() + 120_000;
+  while (Date.now() < deadline) {
+    if (jobspy?.child !== child) throw new Error("JobSpy stopped while starting. Details are in logs/jobspy.log.");
+    const up = await fetch(`${url}/health`, { signal: AbortSignal.timeout(3_000) }).then((r) => r.ok).catch(() => false);
+    if (up) return url;
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  stopJobSpy();
+  throw new Error("JobSpy took too long to start.");
+}
+
+/** Requests from RolePort's server (lib/desktop/bridge.ts); each gets one reply with the same id. */
+async function handleServerMessage(message) {
+  const { id, type } = message ?? {};
+  if (typeof id !== "number") return;
+  const reply = (body) => server?.postMessage({ id, ...body });
+  try {
+    if (type === "jobspy:start") reply({ ok: true, data: { url: await startJobSpy(String(message.file)) } });
+    else if (type === "jobspy:stop") reply({ ok: true, data: stopJobSpy() ?? null });
+    else reply({ ok: false, error: `Unknown request: ${type}` });
+  } catch (error) {
+    reply({ ok: false, error: error instanceof Error ? error.message : String(error) });
+  }
 }
 
 function createWindow() {
@@ -187,5 +261,6 @@ app.on("window-all-closed", () => {
 
 app.on("before-quit", () => {
   quitting = true;
+  stopJobSpy();
   server?.kill();
 });

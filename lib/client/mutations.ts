@@ -64,6 +64,10 @@ export const saveRapidApiKey: typeof settings.saveRapidApiKey = isLite ? async (
 export const saveJobSpyEnabled: typeof settings.saveJobSpyEnabled = isLite
   ? async (...a) => (await lite()).saveJobSpyEnabled(...a)
   : settings.saveJobSpyEnabled;
+// The desktop app's own JobSpy; never shown in the lite edition.
+const desktopOnly = async () => ({ ok: false as const, error: "Only the desktop app can do this." });
+export const downloadDesktopJobSpy: typeof settings.downloadDesktopJobSpy = isLite ? desktopOnly : settings.downloadDesktopJobSpy;
+export const removeDesktopJobSpy: typeof settings.removeDesktopJobSpy = isLite ? desktopOnly : settings.removeDesktopJobSpy;
 export const exportData: typeof settings.exportData = isLite ? async () => (await lite()).exportData() : settings.exportData;
 export const importData: typeof settings.importData = isLite ? async (...a) => (await lite()).importData(...a) : settings.importData;
 

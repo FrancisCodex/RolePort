@@ -62,6 +62,8 @@ export type SourceStatus = {
 export type SourceContext = {
   rapidApiKey: string | null;
   jobspyEnabled: boolean;
+  /** Where the server reaches JobSpy (JOBSPY_URL, or the desktop app's own copy), when it's on. */
+  jobspyUrl?: string | null;
   /** Read by the company job-board sources (lib/jobs/sources/companies). */
   companies: CompanyRef[];
 };

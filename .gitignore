@@ -53,3 +53,8 @@ next-env.d.ts
 /desktop/node_modules/
 /desktop/server/
 /desktop/dist/
+
+# JobSpy as one program file (services/jobspy/build-binary.mjs)
+/services/jobspy/.venv-build/
+/services/jobspy/build/
+/services/jobspy/dist/

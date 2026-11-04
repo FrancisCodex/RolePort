@@ -20,8 +20,8 @@ Each step ships on its own branch and works in self-hosted and Lite, unless it s
 | MCP server | ✅ Done, and the agent can do the AI writing (merged in #24; still to try: Claude Desktop itself, a real agent model) | `feat/mcp-server` |
 | MCP: Interview Coach tools and ready-made prompts | ✅ Built | `feat/mcp-coach-and-prompts` |
 | Sign in with ChatGPT: a ChatGPT plan as RolePort's AI | 🧪 Built on its branch, waiting for a ChatGPT account to try it (not merged) | `feat/chatgpt-sign-in` |
-| 5A. Desktop app: install and run RolePort with no setup | 🚧 In progress | `feat/desktop-app` |
-| 5B. Desktop app: LinkedIn, Indeed and more without Python or Docker | After 5A | `feat/desktop-app` |
+| 5A. Desktop app: install and run RolePort with no setup | 🧪 Built, installer still to try on a clean PC | `feat/desktop-app` |
+| 5B. Desktop app: LinkedIn, Indeed and more without Python or Docker | 🧪 Built, waiting on the JobSpy release build | `feat/desktop-app` |
 | 5C. Desktop app: job scout, apply assistant | After 5B | — |
 
 **Next up: the desktop app (5A, 5B)**, so people who aren't technical can install RolePort like any other program, with no hosting, Docker or Python. Sign in with ChatGPT waits on its branch until someone with a ChatGPT plan can try it. Everything marked ✅ Done is finished.
@@ -330,7 +330,7 @@ Sources: [Using your ChatGPT plan in other apps](https://help.openai.com/en/arti
 
 Most job seekers can't host a web app, run Docker or install Python. The desktop app is RolePort as a normal program: download the installer, double-click, use it. Everything stays on the user's computer, as with self-hosting. Branch: `feat/desktop-app`.
 
-### 5A. Install and run with no setup 🚧
+### 5A. Install and run with no setup 🧪
 
 - **Electron**, because RolePort is a Next.js server with an embedded database and Electron already ships Node. (Tauri would still need Node bundled beside it, plus Rust.)
 - **The server inside the app:** `next build` with `output: "standalone"` (only when `ROLEPORT_DESKTOP_BUILD=1`, so `next start`, Docker and Vercel are unchanged) makes a self-contained server folder (~93 MB) plus `public`, `.next/static` and `drizzle`. The app runs it in an Electron utility process on `127.0.0.1` only, at a fixed port (`47100`, the next free one if that's taken, so the browser storage that settings like voice use survives restarts).
@@ -341,12 +341,16 @@ Most job seekers can't host a web app, run Docker or install Python. The desktop
 
 **Done when:** on a Windows PC with nothing else installed, the installer puts RolePort in the Start menu, it opens in its own window, the profile, jobs and applications survive restarts and updates, and AI works with an API key or Ollama.
 
-### 5B. LinkedIn, Indeed and more without Python or Docker
+**Built (2026-11-04):** `desktop/main.mjs`, `desktop/scripts/prepare-server.mjs` (the server folder), `desktop/scripts/after-pack.mjs` (copies it into the installed app: electron-builder's `extraResources` always drops `node_modules`), `desktop/README.md`. The Windows installer is ~165 MB. Checked with the unpacked build and a separate data folder (`ROLEPORT_DESKTOP_DATA`): new users get the welcome guide, data survives a restart, closing the window stops the server. **Still to do:** run the installer itself on a clean PC, show the data folder in Settings, the release workflow for macOS and Linux installers, a tray icon later for 5C.
 
-- **JobSpy as one program file:** a GitHub Actions job builds `services/jobspy/server.py` with PyInstaller into `jobspy-server` for Windows, macOS and Linux and attaches it to each release with its SHA-256.
-- **Downloaded only when asked:** JobSpy stays opt-in (LinkedIn's and Indeed's terms forbid scraping). Turning the boards on in the desktop app's Settings shows the file, its size, where it comes from and where it will be stored, and downloads it only after the user agrees. The app checks the SHA-256, runs it on a private `127.0.0.1` port, tells RolePort's server where it is (`JOBSPY_URL`), and stops it on quit. **Remove** deletes it.
+### 5B. LinkedIn, Indeed and more without Python or Docker 🧪
 
-**Done when:** on a PC with no Python, turning on the boards downloads JobSpy after a clear prompt, and a LinkedIn search returns jobs.
+- **JobSpy as one program file:** `services/jobspy/build-binary.mjs` builds `server.py` with PyInstaller 6.22.3 into `jobspy-server-<platform>` (38 MB on Windows) and prints its size and SHA-256. `.github/workflows/jobspy-binary.yml` (run by hand) does it on Windows, macOS (Apple silicon) and Linux, checks each answers `/health`, and attaches them to the `jobspy-1.4.0` release.
+- **Pinned in the app:** each system's address, size and SHA-256 live in `lib/desktop/jobspy-release.ts`, so a file changed after release is refused. A system with no entry says JobSpy isn't available for it yet. `ROLEPORT_JOBSPY_RELEASE` (a JSON file) swaps in a local test build.
+- **Downloaded only when asked:** JobSpy stays opt-in (LinkedIn's and Indeed's terms forbid scraping). In the desktop app, Settings → Job sources shows what it is, its size, where it comes from and where it will be saved, with the terms warning, and downloads only on **I understand, download and turn on**. RolePort's server downloads it (Node's `https`, redirects followed, size capped, SHA-256 checked before it's kept) into the app-data folder's `jobspy/<version>`. **Turn off/on** and **Remove JobSpy** (deletes the file) follow.
+- **Run by the app, not the server** (`lib/desktop/bridge.ts` ↔ `desktop/main.mjs` over the utility process's `parentPort`): the server asks the app to start it; the app only runs a file inside its own `jobspy` folder, on a random `127.0.0.1` port, logs to `logs/jobspy.log`, and stops the whole process tree on Remove and on quit, so JobSpy never outlives the app. The server passes the address to the JobSpy sources per search (`SourceContext.jobspyUrl`); `JOBSPY_URL` still wins for self-hosted installs.
+
+**Done when:** on a PC with no Python, turning on the boards downloads JobSpy after a clear prompt, and a LinkedIn search returns jobs. *(Checked on Windows with a local build served as the "release": consent panel, download, SHA-256 check, start, a search that returned LinkedIn 18 and Indeed 20 jobs, Remove, and closing the window stopping JobSpy. Still to do: run the workflow, fill in `jobspy-release.ts` from its summary, and try a Mac and Linux.)*
 
 ### 5C. Job scout and apply assistant
 

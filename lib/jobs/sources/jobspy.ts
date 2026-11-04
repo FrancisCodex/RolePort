@@ -1,12 +1,11 @@
 import { cacheLife } from "next/cache";
-import { jobSpyUrl } from "@/lib/env";
 import { countryOrDefault } from "@/lib/geo/countries";
 import type { JobSource } from "../types";
 import { SOURCE_CREDITS } from "./credits";
 import { JOBSPY_BOARDS, JOBSPY_TIMEOUT_MS, jobSpyQuery, normalizeJobSpyJob, readJobSpyResponse, type JobSpyJob } from "./jobspy-boards";
 
 /*
- * Self-hosted: the JobSpy boards, called from the server through the sidecar (services/jobspy).
+ * Self-hosted and desktop: the JobSpy boards, called from the server through the sidecar (services/jobspy).
  * Opt-in, self-host only, and cached for hours to keep request volume at personal-search levels.
  * The boards themselves are described in ./jobspy-boards.ts, shared with the lite edition.
  */
@@ -26,11 +25,11 @@ export const jobSpySources: JobSource[] = JOBSPY_BOARDS.map(({ board, label, cov
   coverage: "Depends on the board: see the JobSpy section",
   needs: "Self-hosted only: run the JobSpy service and turn it on in Settings",
   attribution: SOURCE_CREDITS[board],
-  enabled: (ctx) => Boolean(jobSpyUrl) && ctx.jobspyEnabled,
+  enabled: (ctx) => Boolean(ctx.jobspyUrl) && ctx.jobspyEnabled,
   disabledNote: "Turn on JobSpy in Settings (self-hosted only) to search this board",
   covers,
-  async search(params) {
-    const jobs = await fetchJobSpy(jobSpyUrl!, jobSpyQuery(board, params));
+  async search(params, ctx) {
+    const jobs = await fetchJobSpy(ctx.jobspyUrl!, jobSpyQuery(board, params));
     return jobs.map((job) => normalizeJobSpyJob(board, job, countryOrDefault(params.country).currency));
   },
 }));

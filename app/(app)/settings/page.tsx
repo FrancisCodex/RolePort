@@ -6,6 +6,7 @@ import { BackToGuide } from "@/components/app/back-to-guide";
 import { PageHeader } from "@/components/app/page-header";
 import { getAiConfig, getMySettingsRow } from "@/lib/ai/config";
 import { getMyFollowedCompanies } from "@/lib/companies/data";
+import { desktopJobSpy } from "@/lib/desktop/jobspy";
 import { jobSpyUrl } from "@/lib/env";
 import { isLite } from "@/lib/mode";
 import { rulesOf } from "@/lib/outreach/rules";
@@ -63,6 +64,7 @@ async function mcpAddress(): Promise<string> {
 
 async function SettingsContent() {
   const showJobSpy = Boolean(jobSpyUrl);
+  const desktop = desktopJobSpy();
   const [row, active, reachable, companies, { profile }, mcpUrl] = await Promise.all([
     getMySettingsRow(),
     getAiConfig(),
@@ -79,6 +81,7 @@ async function SettingsContent() {
       companies={companies}
       countries={[profile.country, ...profile.targetCountries]}
       jobSpy={showJobSpy ? { enabled: Boolean(row?.jobspyEnabled), reachable } : null}
+      desktopJobSpy={desktop && !showJobSpy ? { jobspy: desktop, enabled: Boolean(row?.jobspyEnabled) } : null}
       profilePrompt={row?.profilePrompt ?? null}
       cvPrompt={row?.cvPrompt ?? null}
       coverLetterPrompt={row?.coverLetterPrompt ?? null}

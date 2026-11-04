@@ -42,3 +42,20 @@ Uninstalling keeps your data. To try the app without touching it, point it at an
 
 The app uses port 47100 (or the next free one up to 47105) so the address stays the same between
 launches.
+
+## JobSpy (LinkedIn, Indeed and more)
+
+The desktop app downloads JobSpy as one program file only when the user turns the boards on in
+Settings, checks it against the SHA-256 in `lib/desktop/jobspy-release.ts`, and runs it itself on
+a private port (`desktop/main.mjs`), stopping it on quit. No Python on the user's computer.
+
+To publish a JobSpy build:
+
+1. On GitHub: **Actions → JobSpy binaries → Run workflow** (tag `jobspy-<python-jobspy version>`).
+   It builds Windows, macOS and Linux files, checks each starts, and attaches them to that release.
+2. Copy each file's size and SHA-256 from the run's summary into `lib/desktop/jobspy-release.ts`.
+
+To build one on your own computer (Python 3.10+): `node services/jobspy/build-binary.mjs`. To try a
+local build in the app, put its address, size and SHA-256 in a JSON file shaped like
+`JOBSPY_RELEASE` and start the app with `ROLEPORT_JOBSPY_RELEASE=/path/to/that.json` (a
+`http://127.0.0.1` address is allowed only then).

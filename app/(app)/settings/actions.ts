@@ -13,6 +13,7 @@ import { deleteFollowedCompany, insertFollowedCompany, insertStarterCompanies, T
 import { resolveCompany } from "@/lib/companies/resolve";
 import { starterKeysSchema } from "@/lib/companies/starters";
 import { getDb } from "@/lib/db";
+import { desktopJobSpy, downloadJobSpy, jobSpyAddress, removeJobSpy } from "@/lib/desktop/jobspy";
 import { jobSpyUrl } from "@/lib/env";
 import { agentPromptsOn, hashMcpToken, newMcpToken, type McpAccess } from "@/lib/mcp/access";
 import type { Result } from "@/lib/result";
@@ -141,12 +142,39 @@ export async function saveJobSpyEnabled(raw: { enabled: boolean }): Promise<Resu
   const user = await getCurrentUser();
   const input = z.object({ enabled: z.boolean() }).safeParse(raw);
   if (!input.success) return { ok: false, error: "Invalid setting." };
-  // The JobSpy boards need the sidecar running next to this install.
-  if (input.data.enabled && !jobSpyUrl) {
+  // The JobSpy boards need the sidecar running next to this install, or the desktop app's own copy.
+  if (input.data.enabled && !jobSpyUrl && !desktopJobSpy()?.downloaded) {
     return { ok: false, error: "Start the JobSpy service and set JOBSPY_URL first." };
   }
   await writeSettings(await getDb(), user.id, { jobspyEnabled: input.data.enabled });
   refresh();
+  return { ok: true, data: undefined };
+}
+
+/** Desktop app: downloads JobSpy (after the user agreed in Settings), checks that it starts, and turns the boards on. */
+export async function downloadDesktopJobSpy(): Promise<Result> {
+  const user = await getCurrentUser();
+  try {
+    await downloadJobSpy();
+    if (!(await jobSpyAddress())) return { ok: false, error: "JobSpy was downloaded but didn't start. Try again, or remove it and download it again." };
+    await writeSettings(await getDb(), user.id, { jobspyEnabled: true });
+    refresh();
+    return { ok: true, data: undefined };
+  } catch (error) {
+    return { ok: false, error: errorMessage(error) };
+  }
+}
+
+/** Desktop app: stops JobSpy, deletes the file and turns the boards off. */
+export async function removeDesktopJobSpy(): Promise<Result> {
+  const user = await getCurrentUser();
+  await writeSettings(await getDb(), user.id, { jobspyEnabled: false });
+  refresh();
+  try {
+    await removeJobSpy();
+  } catch {
+    return { ok: false, error: "JobSpy is off, but its file couldn't be deleted yet. Try Remove again in a moment." };
+  }
   return { ok: true, data: undefined };
 }
 

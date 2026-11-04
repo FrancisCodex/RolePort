@@ -2,6 +2,7 @@ import "server-only";
 import { getJobSpyEnabled, getRapidApiKey } from "@/lib/ai/config";
 import { companyRefs, readFollowedCompanies } from "@/lib/companies/queries";
 import { getDb } from "@/lib/db";
+import { jobSpyAddress } from "@/lib/desktop/jobspy";
 import { getMyProfile } from "@/lib/profile/data";
 import { getCurrentUser } from "@/lib/session";
 import { countApplications, readApplication, readApplications, type ApplicationDetail, type PipelineItem } from "./applications";
@@ -20,7 +21,8 @@ export async function searchJobs(
   const user = await getCurrentUser();
   const db = await getDb();
   const [rapidApiKey, jobspyEnabled, followed] = await Promise.all([getRapidApiKey(), getJobSpyEnabled(), readFollowedCompanies(db, user.id)]);
-  return listResults(user.id, await searchAllSources(params, { rapidApiKey, jobspyEnabled, companies: companyRefs(followed) }), sort);
+  const jobspyUrl = jobspyEnabled ? await jobSpyAddress() : null;
+  return listResults(user.id, await searchAllSources(params, { rapidApiKey, jobspyEnabled, jobspyUrl, companies: companyRefs(followed) }), sort);
 }
 
 /** Jobs at the companies the user follows (or at one of them, by id), for the "companies you follow" view. */
