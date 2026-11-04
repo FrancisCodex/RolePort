@@ -21,7 +21,7 @@ Each step ships on its own branch and works in self-hosted and Lite, unless it s
 | MCP: Interview Coach tools and ready-made prompts | ✅ Built | `feat/mcp-coach-and-prompts` |
 | Sign in with ChatGPT: a ChatGPT plan as RolePort's AI | 🧪 Built on its branch, waiting for a ChatGPT account to try it (not merged) | `feat/chatgpt-sign-in` |
 | 5A. Desktop app: install and run RolePort with no setup | 🧪 Built, installer still to try on a clean PC | `feat/desktop-app` |
-| 5B. Desktop app: LinkedIn, Indeed and more without Python or Docker | 🧪 Built, waiting on the JobSpy release build | `feat/desktop-app` |
+| 5B. Desktop app: LinkedIn, Indeed and more without Python or Docker | 🧪 Built, JobSpy released (jobspy-1.4.0); ships in v0.1.1 | `feat/desktop-app` |
 | 5C. Desktop app: job scout, apply assistant | After 5B | — |
 
 **Next up: the desktop app (5A, 5B)**, so people who aren't technical can install RolePort like any other program, with no hosting, Docker or Python. Sign in with ChatGPT waits on its branch until someone with a ChatGPT plan can try it. Everything marked ✅ Done is finished.
