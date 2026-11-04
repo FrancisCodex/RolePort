@@ -7,7 +7,16 @@ import { createWriteStream, existsSync, mkdirSync } from "node:fs";
 import { createServer } from "node:net";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { startUpdates } from "./updates.mjs";
+import {
+  checkForUpdate,
+  downloadUpdate,
+  installUpdate,
+  remindLater,
+  setAutoCheck,
+  skipVersion,
+  startUpdates,
+  updateState,
+} from "./updates.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 // Another data folder, for trying the app without touching your own data (or a portable copy).
@@ -148,6 +157,8 @@ async function startJobSpy(file) {
   });
   const log = createWriteStream(path.join(app.getPath("userData"), "logs", "jobspy.log"), { flags: "a" });
   const child = spawn(resolved, [], {
+    // Its own folder, never the install folder it would otherwise inherit from the shortcut.
+    cwd: path.dirname(resolved),
     env: { ...process.env, HOST: "127.0.0.1", PORT: String(port) },
     stdio: ["ignore", "pipe", "pipe"],
     windowsHide: true,
@@ -179,6 +190,18 @@ async function handleServerMessage(message) {
   try {
     if (type === "jobspy:start") reply({ ok: true, data: { url: await startJobSpy(String(message.file)) } });
     else if (type === "jobspy:stop") reply({ ok: true, data: stopJobSpy() ?? null });
+    else if (type === "update:state") reply({ ok: true, data: updateState() });
+    else if (type === "update:check") reply({ ok: true, data: await checkForUpdate() });
+    else if (type === "update:download") reply({ ok: true, data: downloadUpdate() });
+    else if (type === "update:later") reply({ ok: true, data: remindLater() });
+    else if (type === "update:skip") reply({ ok: true, data: skipVersion() });
+    else if (type === "update:auto-check") reply({ ok: true, data: setAutoCheck(Boolean(message.on)) });
+    else if (type === "update:install") {
+      if (updateState().status !== "ready") throw new Error("There's no downloaded update to install yet.");
+      // Answer first: installing stops the server that's waiting for this reply.
+      reply({ ok: true, data: null });
+      setTimeout(() => void installUpdate(shutDownForUpdate).catch((error) => dialog.showErrorBox("RolePort couldn't update", String(error))), 300);
+    }
     else reply({ ok: false, error: `Unknown request: ${type}` });
   } catch (error) {
     reply({ ok: false, error: error instanceof Error ? error.message : String(error) });
@@ -242,7 +265,7 @@ async function start() {
     await waitUntilUp(`${origin}/`);
     // Straight into the app (or the welcome guide on a first run), not the website's landing page.
     await win?.loadURL(`${origin}/home`);
-    startUpdates(() => win);
+    startUpdates();
   } catch (error) {
     dialog.showErrorBox("RolePort can't start", `${error instanceof Error ? error.message : error} Details are in ${dataPaths().log}.`);
     app.quit();
@@ -260,6 +283,32 @@ app.on("activate", () => {
 app.on("window-all-closed", () => {
   if (process.platform !== "darwin") app.quit();
 });
+
+/** Waits for the server process to exit (or gives up after a few seconds). */
+function stopServer(timeoutMs = 8_000) {
+  const running = server;
+  if (!running) return Promise.resolve();
+  return new Promise((resolve) => {
+    const timer = setTimeout(resolve, timeoutMs);
+    running.once("exit", () => {
+      clearTimeout(timer);
+      resolve();
+    });
+    running.kill();
+  });
+}
+
+/**
+ * Before the installer runs: stop JobSpy and the server and wait until they've exited, so no file
+ * in the install folder is still open when the old version is removed.
+ */
+async function shutDownForUpdate() {
+  quitting = true;
+  stopJobSpy();
+  await stopServer();
+  // Let Windows release the files the processes had open.
+  await new Promise((r) => setTimeout(r, 500));
+}
 
 app.on("before-quit", () => {
   quitting = true;
