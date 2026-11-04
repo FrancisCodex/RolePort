@@ -16,7 +16,7 @@ Download **RolePort-Setup-x64.exe** from the RolePort website (**Download for Wi
 
 - **LinkedIn, Indeed and more:** the setup guide offers JobSpy, a free 39 MB download that adds LinkedIn, Indeed, Google Jobs, Glassdoor and regional boards to your searches. Skip it and add it later in **Settings → Job sources**.
 - **Answering out loud:** mock interviews read questions in your computer's own voices. To answer by speaking, download Whisper in the guide or **Settings → Voice**; it turns your speech into text on your computer, offline. Without it, you type your answers.
-- **Updates:** RolePort checks for new versions on its own and downloads them in the background. When one is ready it asks you to restart. Choose **Later** and it installs the next time you close RolePort. You never need to download it again.
+- **Updates:** when a new version is out, RolePort shows a notice inside the app. Click **Update** to download it, then **Restart to update**. **Later** reminds you again in a day, and **Skip this version** waits for the next one. **Settings → About & updates** shows your version, checks for updates any time and lists what changed. You never need to download the installer again.
 - **Uninstall:** Windows **Settings → Apps → Installed apps → RolePort → Uninstall**. Your jobs, CVs and settings stay in `%APPDATA%\RolePort`, so reinstalling picks up where you left off. To remove them too, delete that folder after uninstalling.
 
 ### Self-hosted with Docker

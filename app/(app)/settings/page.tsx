@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { getAiConfig, getMySettingsRow } from "@/lib/ai/config";
 import { getMyFollowedCompanies } from "@/lib/companies/data";
 import { desktopJobSpy } from "@/lib/desktop/jobspy";
+import { askForUpdate } from "@/lib/desktop/updates";
 import { jobSpyUrl } from "@/lib/env";
 import { isLite } from "@/lib/mode";
 import { rulesOf } from "@/lib/outreach/rules";
@@ -65,13 +66,15 @@ async function mcpAddress(): Promise<string> {
 async function SettingsContent() {
   const showJobSpy = Boolean(jobSpyUrl);
   const desktop = desktopJobSpy();
-  const [row, active, reachable, companies, { profile }, mcpUrl] = await Promise.all([
+  const [row, active, reachable, companies, { profile }, mcpUrl, appUpdate] = await Promise.all([
     getMySettingsRow(),
     getAiConfig(),
     showJobSpy ? jobSpyReachable() : false,
     getMyFollowedCompanies(),
     getMyProfile(),
     mcpAddress(),
+    // Desktop app only (null elsewhere); a slow or missing answer just leaves the section out.
+    askForUpdate("state").catch(() => null),
   ]);
 
   return (
@@ -82,6 +85,7 @@ async function SettingsContent() {
       countries={[profile.country, ...profile.targetCountries]}
       jobSpy={showJobSpy ? { enabled: Boolean(row?.jobspyEnabled), reachable } : null}
       desktopJobSpy={desktop && !showJobSpy ? { jobspy: desktop, enabled: Boolean(row?.jobspyEnabled) } : null}
+      appUpdate={appUpdate}
       profilePrompt={row?.profilePrompt ?? null}
       cvPrompt={row?.cvPrompt ?? null}
       coverLetterPrompt={row?.coverLetterPrompt ?? null}

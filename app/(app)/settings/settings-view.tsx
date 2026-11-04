@@ -6,6 +6,8 @@ import { CompanyManager } from "@/components/companies/company-manager";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AiSettingsForm, type AiSettingsView } from "./ai-settings-form";
 import type { FollowedCompanyView } from "@/lib/companies/queries";
+import { AboutUpdates } from "./about-updates";
+import type { AppUpdate } from "@/lib/desktop/updates";
 import { BackupControls } from "./backup-controls";
 import { JobSourceForm, JobSpyToggle } from "./job-source-form";
 import type { DesktopJobSpy as DesktopJobSpyView } from "@/lib/desktop/jobspy";
@@ -49,6 +51,8 @@ export type SettingsData = {
   /** Where the user's data and keys are kept, for the "Your data" card. */
   dataNote: string;
   keyNote: string;
+  /** Desktop app: its version and updates. */
+  appUpdate?: AppUpdate | null;
 };
 
 /**
@@ -80,6 +84,7 @@ export function SettingsView({
   mcp,
   dataNote,
   keyNote,
+  appUpdate,
 }: SettingsData) {
   const groups: Group[] = [
     {
@@ -276,9 +281,23 @@ export function SettingsView({
         },
       ],
     },
+    {
+      title: "App",
+      sections: [
+        Boolean(appUpdate) && {
+          id: "about",
+          title: "About & updates",
+          nav: "About & updates",
+          description: "Which version of RolePort you have, and newer versions with what changed in them. Updating keeps your data.",
+          content: appUpdate && <AboutUpdates initial={appUpdate} />,
+        },
+      ],
+    },
   ];
 
-  const shown = groups.map((g) => ({ title: g.title, sections: g.sections.filter((s): s is Section => Boolean(s)) }));
+  const shown = groups
+    .map((g) => ({ title: g.title, sections: g.sections.filter((s): s is Section => Boolean(s)) }))
+    .filter((g) => g.sections.length > 0);
   const nav: SettingsNavGroup[] = shown.map((g) => ({ title: g.title, items: g.sections.map((s) => ({ id: s.id, label: s.nav ?? s.title })) }));
 
   return (
