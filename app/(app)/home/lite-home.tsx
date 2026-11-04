@@ -17,7 +17,12 @@ export function LiteHome() {
   );
 }
 
-function ToWelcome() {
+/**
+ * Sends a new user to the welcome guide from the browser. Not redirect() on the server: Home
+ * streams, so a redirect there arrives mid-page, and on a full page load (the desktop app's first
+ * screen) that froze the page.
+ */
+export function ToWelcome() {
   const router = useRouter();
   useEffect(() => router.replace("/welcome"), [router]);
   return skeleton;
