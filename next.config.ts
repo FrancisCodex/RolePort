@@ -23,6 +23,11 @@ const nextConfig: NextConfig = {
     // CV uploads go through a server action.
     serverActions: { bodySizeLimit: "6mb" },
     agentFeedback: true,
+    // The desktop app's server runs from its install folder. Next.js would save page caches there
+    // (.next/server/route-cache) with paths near Windows' 260-character limit, and an update has to
+    // move every file in that folder, which then fails ("Failed to uninstall old application files: 2").
+    // Keep that cache in memory instead.
+    ...(process.env.ROLEPORT_DESKTOP_BUILD === "1" ? { isrFlushToDisk: false } : {}),
   },
   cacheComponents: true,
   partialPrefetching: true,

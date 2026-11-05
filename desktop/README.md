@@ -62,9 +62,12 @@ version and the installer's SHA-512) and the installer's `.blockmap`.
   and the file is checked against the SHA-512.
 - **Installing:** **Restart to update** stops JobSpy and the server and waits for them to exit, then runs
   the installer silently and opens RolePort again. A downloaded update also installs when RolePort
-  closes. The installer itself closes any leftover JobSpy first (`build/installer.nsh`), because a
-  file still in use in the install folder stops the update with "Failed to uninstall old application
-  files". If an update doesn't finish, the next launch says so in Settings.
+  closes. An update first moves every file of the old version out of the install folder; one file that
+  can't be moved stops it with "Failed to uninstall old application files". So the installer
+  (`build/installer.nsh`) first closes any leftover JobSpy and deletes the page cache that versions up
+  to 0.1.4 saved there (its paths were too long for Windows once moved). The server now keeps that
+  cache in memory (`isrFlushToDisk: false` in `next.config.ts`) so the install folder never changes
+  while the app runs. If an update doesn't finish, the next launch says so in Settings.
 
 Updates are off when running from the repo, on macOS (they need a signed app) and with
 `ROLEPORT_NO_UPDATES=1`. The user's choices are in `update-settings.json` and the log in
