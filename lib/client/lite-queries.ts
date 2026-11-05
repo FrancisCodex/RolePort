@@ -26,7 +26,9 @@ import { readApplication, readApplications } from "@/lib/jobs/applications";
 import { readDashboard } from "@/lib/jobs/dashboard";
 import {
   countEvaluatedJobs,
+  countSavedJobs,
   readEvaluatedJobs,
+  readSavedJobs,
   readFitMatches,
   readJob,
   readJobsByIds,
@@ -65,14 +67,23 @@ export async function loadProfile(): Promise<ProfileView & { aiEnabled: boolean;
 }
 
 /** Jobs: the profile (for the search defaults) and the companies the user follows. */
-export async function loadJobSearch(): Promise<ProfileView & { companies: FollowedCompanyView[]; evaluatedCount: number }> {
+export async function loadJobSearch(): Promise<ProfileView & { companies: FollowedCompanyView[]; evaluatedCount: number; savedCount: number }> {
   const db = await getBrowserDb();
-  const [view, companies, evaluatedCount] = await Promise.all([
+  const [view, companies, evaluatedCount, savedCount] = await Promise.all([
     readProfile(db, await me(db)),
     readFollowedCompanies(db, LOCAL_USER.id),
     countEvaluatedJobs(db, LOCAL_USER.id),
+    countSavedJobs(db, LOCAL_USER.id),
   ]);
-  return { ...view, companies: companies.map(followedCompanyView), evaluatedCount };
+  return { ...view, companies: companies.map(followedCompanyView), evaluatedCount, savedCount };
+}
+
+/** Saved jobs not applied to yet, from the browser database (so they open offline too). */
+export async function loadSavedJobs(): Promise<{ jobs: JobListItem[]; aiEnabled: boolean }> {
+  const db = await getBrowserDb();
+  const { profile } = await readProfile(db, await me(db));
+  const [jobs, ai] = await Promise.all([readSavedJobs(db, LOCAL_USER.id, profile), aiEnabled(db)]);
+  return { jobs, aiEnabled: ai };
 }
 
 /** "Jobs you've evaluated", from the browser database. */

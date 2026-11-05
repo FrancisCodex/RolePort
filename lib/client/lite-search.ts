@@ -8,6 +8,7 @@ import { isFresh } from "@/lib/jobs/freshness";
 import { storeJobs, type KeyedJob } from "@/lib/jobs/queries";
 import type { JobSearchParams, SourceStatus } from "@/lib/jobs/types";
 import { readSettings } from "@/lib/settings/queries";
+import { JOBSPY_BOARDS } from "@/lib/jobs/sources/jobspy-boards";
 import { jobSpyOffStatuses, jobSpyUrl, searchJobSpy } from "./lite-jobspy";
 import { readKey } from "./lite-keys";
 
@@ -19,11 +20,19 @@ import { readKey } from "./lite-keys";
 
 export type LiteSearchResult = { ids: string[]; statuses: SourceStatus[] };
 
+/** The hosted results while the JobSpy boards on the user's computer are still searching. */
+export type LiteQuickResult = LiteSearchResult & { pending: string[] };
+
 // The same search within a few minutes reuses its results (moving between pages, going back).
 const REUSE_MS = 5 * 60_000;
-const recent = new Map<string, { at: number; result: Promise<LiteSearchResult> }>();
+// `quick` too, so a second caller (going back, or React mounting twice) still sees the early results.
+const recent = new Map<string, { at: number; result: Promise<LiteSearchResult>; quick?: Promise<LiteQuickResult | null> }>();
 
-export async function liteSearch(params: JobSearchParams): Promise<LiteSearchResult> {
+/**
+ * `onQuick` gets the hosted results as soon as they're in, when the JobSpy boards on the user's
+ * computer (LinkedIn can take half a minute) are still searching; the promise has everything.
+ */
+export async function liteSearch(params: JobSearchParams, onQuick?: (quick: LiteQuickResult) => void): Promise<LiteSearchResult> {
   const db = await getBrowserDb();
   const settings = await readSettings(db, LOCAL_USER.id);
   // The user's own JSearch key, if any, goes along for this one request and isn't kept by the server.
@@ -33,10 +42,21 @@ export async function liteSearch(params: JobSearchParams): Promise<LiteSearchRes
 
   const key = JSON.stringify([params, Boolean(rapidApiKey), jobspy, companies]);
   const hit = recent.get(key);
-  if (hit && Date.now() - hit.at < REUSE_MS) return hit.result;
+  if (hit && Date.now() - hit.at < REUSE_MS) {
+    if (onQuick) void hit.quick?.then((quick) => quick && onQuick(quick));
+    return hit.result;
+  }
 
-  const result = run(db, params, rapidApiKey, jobspy, companies);
-  recent.set(key, { at: Date.now(), result });
+  let showQuick: (quick: LiteQuickResult | null) => void = () => {};
+  const quick = new Promise<LiteQuickResult | null>((resolve) => (showQuick = resolve));
+  if (onQuick) void quick.then((q) => q && onQuick(q));
+  const result = run(db, params, rapidApiKey, jobspy, companies, showQuick);
+  // Whatever happens, there are no early results left to wait for once the search is done.
+  void result.then(
+    () => showQuick(null),
+    () => showQuick(null),
+  );
+  recent.set(key, { at: Date.now(), result, quick });
   result.catch(() => recent.delete(key)); // a failed search runs again next time
   return result;
 }
@@ -62,11 +82,20 @@ async function run(
   rapidApiKey: string | null,
   jobspy: string | null,
   companies: CompanyRef[],
+  onQuick: (quick: LiteQuickResult) => void,
 ): Promise<LiteSearchResult> {
-  const [hosted, local] = await Promise.all([
-    searchHosted(params, rapidApiKey, companies),
-    jobspy ? searchJobSpy(jobspy, params) : { jobs: [], statuses: jobSpyOffStatuses(params) },
-  ]);
+  let localDone = !jobspy;
+  const localSearch = jobspy
+    ? searchJobSpy(jobspy, params).finally(() => (localDone = true))
+    : Promise.resolve({ jobs: [] as KeyedJob[], statuses: jobSpyOffStatuses(params) });
+  const hosted = await searchHosted(params, rapidApiKey, companies);
+  // Show the hosted results now, while the boards on the user's computer finish.
+  if (!localDone) {
+    const rows = await storeJobs(db, hosted.jobs);
+    const pending = JOBSPY_BOARDS.filter((b) => b.covers(params)).map((b) => b.label);
+    onQuick({ ids: rows.map((r) => r.id), statuses: hosted.statuses, pending });
+  }
+  const local = await localSearch;
 
   // Same precedence as the server (lib/jobs/search.ts): company feeds and JSearch, then the JobSpy boards, then the rest.
   const first = (s: { source?: string; id?: string }) => {

@@ -24,6 +24,20 @@ type JobBrowserState = {
 
 const JobBrowserContext = createContext<JobBrowserState | null>(null);
 
+/**
+ * Remembers the open job and page across a results swap: while slower job boards are still
+ * searching, the list shows the first results, then is replaced by the full list. Wrapped around
+ * both, this keeps the user on the job they were reading.
+ */
+type Memory = { recall: () => string | null; remember: (id: string | null) => void };
+const SelectionMemory = createContext<Memory | null>(null);
+
+export function KeepSelection({ children }: { children: ReactNode }) {
+  const kept = useRef<string | null>(null);
+  const [memory] = useState<Memory>(() => ({ recall: () => kept.current, remember: (id) => (kept.current = id) }));
+  return <SelectionMemory value={memory}>{children}</SelectionMemory>;
+}
+
 /** The split view's state, or null outside it (a job card then just links to the job page). */
 export function useJobBrowser() {
   return use(JobBrowserContext);
@@ -41,9 +55,14 @@ export function JobBrowser({
   /** One result card per job, in the same order as `jobs`. */
   cards: ReactNode[];
 }) {
-  const [selectedId, setSelectedId] = useState<string | null>(jobs[0]?.id ?? null);
+  const memory = use(SelectionMemory);
+  // Back on the job that was open before the list was replaced, on its new page.
+  const [selectedId, setSelectedId] = useState<string | null>(() => {
+    const kept = memory?.recall();
+    return kept && jobs.some((j) => j.id === kept) ? kept : (jobs[0]?.id ?? null);
+  });
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(() => Math.max(0, Math.floor(jobs.findIndex((j) => j.id === selectedId) / PAGE_SIZE)));
   const listTop = useRef<HTMLDivElement>(null);
 
   const pages = Math.max(1, Math.ceil(jobs.length / PAGE_SIZE));
@@ -52,16 +71,22 @@ export function JobBrowser({
   const start = current * PAGE_SIZE;
   const pageJobs = jobs.slice(start, start + PAGE_SIZE);
 
-  const select = useCallback((id: string) => {
-    setSelectedId(id);
-    setDrawerOpen(true);
-  }, []);
+  const select = useCallback(
+    (id: string) => {
+      setSelectedId(id);
+      memory?.remember(id);
+      setDrawerOpen(true);
+    },
+    [memory],
+  );
   const close = useCallback(() => setDrawerOpen(false), []);
 
   function goTo(next: number) {
     setPage(next);
     // The panel follows to the new page, so it never shows a job that isn't listed.
-    setSelectedId(jobs[next * PAGE_SIZE]?.id ?? null);
+    const first = jobs[next * PAGE_SIZE]?.id ?? null;
+    setSelectedId(first);
+    memory?.remember(first);
     listTop.current?.scrollIntoView({ block: "start", behavior: "smooth" });
   }
 

@@ -71,6 +71,14 @@ export function parseJobSearch(sp: UrlParams, profile: { desiredRoles: string[];
   };
 }
 
+/** Where a search looks, in words for the loading screen: "Cebu City", "Canada", "remote roles". */
+export function searchPlace(params: JobSearchParams): string {
+  const country = findCountry(params.country)?.name ?? params.country;
+  if (params.locationId === "remote") return `remote roles open to ${country}`;
+  const area = params.locationId ? PH_LOCATIONS.find((l) => l.id === params.locationId)?.label : params.city;
+  return area ? `${area}, ${country}` : country;
+}
+
 /** JobSearchParams arriving from a browser (the lite search route): the same limits as parseJobSearch. */
 export const jobSearchParamsSchema = z
   .object({
@@ -131,6 +139,11 @@ export const FIT_FILTER_OPTIONS: { value: FitFilter; label: string }[] = [
 
 /** The "Jobs you've evaluated" view: `?view=evaluated`, with optional words, fit and sort. */
 export type ParsedEvaluated = { query: string; fit: FitFilter; sort: "score" | "recent" };
+
+/** /jobs?view=saved: the jobs the user saved. */
+export function isSavedView(sp: UrlParams): boolean {
+  return one(sp.view) === "saved";
+}
 
 export function isEvaluatedView(sp: UrlParams): boolean {
   return one(sp.view) === "evaluated";

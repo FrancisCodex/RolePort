@@ -73,3 +73,55 @@ export async function searchAllSources(
 
   return { jobs, statuses };
 }
+
+/** How long the first results wait for slower sources before showing what has arrived. */
+export const QUICK_RESULTS_MS = 5_000;
+
+export type PartialSearch = { jobs: KeyedJob[]; statuses: SourceStatus[]; /** Sources still searching. */ pending: string[] };
+
+/**
+ * The same search as searchAllSources, in two steps: `quick` has what the sources found within
+ * QUICK_RESULTS_MS (with the ones still searching in `pending`), and `full` has everything once
+ * every source has answered. A slow board (LinkedIn through JobSpy can take half a minute) no
+ * longer holds up the rest. When every source answers in time, `pending` is empty and `full`
+ * is the same search.
+ */
+export function searchAllSourcesProgressively(
+  params: JobSearchParams,
+  ctx: SourceContext,
+  sources: JobSource[] = JOB_SOURCES,
+  quickMs = QUICK_RESULTS_MS,
+): { quick: Promise<PartialSearch>; full: Promise<{ jobs: KeyedJob[]; statuses: SourceStatus[] }> } {
+  const active = sources.filter((s) => s.enabled(ctx) && s.covers(params));
+  const off: SourceStatus[] = sources
+    .filter((source) => !source.enabled(ctx) && source.listWhenOff !== false && source.covers(params))
+    .map((source) => ({ id: source.id, label: source.label, count: 0, note: source.disabledNote }));
+
+  const done: (PromiseSettledResult<NormalizedJob[]> | undefined)[] = active.map(() => undefined);
+  const running = active.map((s, i) =>
+    s.search(params, ctx).then(
+      (value) => (done[i] = { status: "fulfilled", value }),
+      (reason: unknown) => (done[i] = { status: "rejected", reason }),
+    ),
+  );
+  const all = Promise.all(running);
+
+  const full = all.then(() => {
+    const { jobs, statuses } = collect(active, done as PromiseSettledResult<NormalizedJob[]>[], params.postedWithinDays);
+    return { jobs, statuses: [...statuses, ...off] };
+  });
+
+  const quick = Promise.race([all, new Promise((r) => setTimeout(r, quickMs))]).then(() => {
+    const finished = active.flatMap((source, i) => (done[i] ? [{ source, result: done[i] }] : []));
+    const { jobs, statuses } = collect(
+      finished.map((f) => f.source),
+      finished.map((f) => f.result),
+      params.postedWithinDays,
+    );
+    const pending = active.filter((_, i) => !done[i]).map((s) => s.label);
+    return { jobs, statuses: [...statuses, ...off], pending };
+  });
+
+  return { quick, full };
+}
+
