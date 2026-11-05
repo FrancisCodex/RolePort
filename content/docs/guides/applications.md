@@ -1,7 +1,7 @@
 ---
 title: Applications
 description: Each job you apply to gets its own page, with the saved posting, your application kit, its history and your notes.
-updated: 2026-10-31
+updated: 2026-11-05
 ---
 
 ## What Apply does
@@ -40,7 +40,7 @@ Each application has a status, a history of every change and your own notes. Add
 
 ## The Applied list
 
-**Applied** has three views: **Applied** for live applications, **Saved** for bookmarked jobs, and **Closed** for applications you marked rejected, withdrawn, declined or without a response. A job whose employer has taken it down shows **Posting closed**.
+**Applied** has two views: **Applied** for live applications, and **Closed** for applications you marked rejected, withdrawn, declined or without a response. A job whose employer has taken it down shows **Posting closed**. Jobs you saved but haven't applied to are on the Jobs page, under [Saved jobs](/docs/guides/jobs#saved-jobs).
 
 ## Practise for it
 

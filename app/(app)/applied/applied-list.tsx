@@ -14,7 +14,6 @@ import type { AppliedItem } from "./view-data";
 
 const VIEWS = [
   { id: "applied", label: "Applied", statuses: ["applied", "screening", "interview", "offer", "hired"] },
-  { id: "saved", label: "Saved", statuses: ["saved"] },
   { id: "closed", label: "Closed", statuses: ["rejected", "withdrawn", "offer_declined", "ghosted"] },
 ] as const satisfies { id: string; label: string; statuses: ApplicationStatus[] }[];
 
@@ -25,17 +24,19 @@ const EMPTY: Record<View, { title: string; body: string }> = {
     title: "No applications yet",
     body: "Press Apply on a job and it lands here, ready for a tailored CV and answers before you finish on the company site.",
   },
-  saved: { title: "Nothing saved", body: "Bookmark jobs from your search to come back to them here." },
   closed: { title: "Nothing closed", body: "Applications you mark rejected, withdrawn or without a response move here." },
 };
 
 const inView = (view: View, status: ApplicationStatus) =>
   (VIEWS.find((v) => v.id === view)!.statuses as readonly ApplicationStatus[]).includes(status);
 
-/** Every job the user applied to or saved, split by where it stands. */
+/**
+ * Every job the user applied to, split by where it stands. Saved jobs they haven't applied to yet
+ * are on the Jobs page (Saved jobs), not here.
+ */
 export function AppliedList({ items }: { items: AppliedItem[] }) {
   const counts = Object.fromEntries(VIEWS.map((v) => [v.id, items.filter((i) => inView(v.id, i.status)).length])) as Record<View, number>;
-  // Open on the first view with something in it, so a user with only saved jobs isn't greeted by an empty list.
+  // Open on the first view with something in it, so a user with only closed applications isn't greeted by an empty list.
   const [view, setView] = useState<View>(() => VIEWS.find((v) => counts[v.id] > 0)?.id ?? "applied");
   const shown = items.filter((i) => inView(view, i.status));
 
@@ -110,7 +111,7 @@ function AppliedRow({ item }: { item: AppliedItem }) {
         )}
         <StatusBadge status={item.status} />
         <span className="text-[11px] text-subtle tabular-nums sm:w-24 sm:text-right sm:text-xs">
-          {item.appliedOn ? item.appliedOn : item.updated && `Saved ${item.updated.toLowerCase()}`}
+          {item.appliedOn ? item.appliedOn : item.updated && `Updated ${item.updated.toLowerCase()}`}
         </span>
       </div>
       {item.url ? (

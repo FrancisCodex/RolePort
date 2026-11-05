@@ -1,14 +1,16 @@
 ---
 title: Jobs and search
 description: Search every source at once, in your country or abroad, and see the jobs that fit you first.
-updated: 2026-10-31
+updated: 2026-11-05
 ---
 
 ## Search
 
 On **Jobs**, enter a job title, skill or company, then pick a country. Your profile's first role and country are filled in, and your other roles and countries are one click away.
 
-Every search asks each [job source](/docs/job-sources) that covers it. If one source fails, the others still return results, and the failed one is marked unavailable.
+Every search asks each [job source](/docs/job-sources) that covers it, all at once. If one source fails, the others still return results, and the failed one is marked unavailable.
+
+Some sources are slower than others: LinkedIn through JobSpy can take half a minute. So results show as soon as the quick sources answer, usually within a few seconds, with **Still searching…** and the slower ones named above the list. When they're in, their jobs join the list and the job you have open stays open. Searching the same thing again within a few hours is much faster, because results are kept for a while.
 
 ## Filters
 
@@ -34,13 +36,19 @@ RolePort leaves out jobs that would waste your time:
 
 A job shows its summary, requirements, salary if stated, your quick match, and the full description. Every job links back to its original posting and credits its source. From here you can:
 
-- **Save** it for later. It appears in your [pipeline](/docs/guides/pipeline).
+- **Save** it for later. It appears under [Saved jobs](#saved-jobs) and in your [pipeline](/docs/guides/pipeline).
 - **Evaluate fit** with AI. See [Match scores and AI evaluations](/docs/guides/match-scores).
 - **Apply**, which opens its [application page](/docs/guides/applications).
 
 ## Analyze several jobs
 
 Pick jobs from the results, or take the top 10, and RolePort evaluates them one at a time and ranks them. A local model takes about 30 to 60 seconds per job.
+
+## Saved jobs
+
+Jobs you save and haven't applied to yet are on **Jobs**: open **N saved jobs** under the search form, or go to `/jobs?view=saved`. They show in the same list-and-details view as search results, so each opens as the full job, with **Apply**, **Evaluate fit** and the original posting.
+
+A saved job is kept with your data, so you can read it again even offline (in the desktop app and self-hosted; RolePort Lite needs its website to open). When you **Apply**, it leaves Saved jobs and moves to [Applied jobs](/docs/guides/applications). Press the bookmark again to remove it.
 
 ## Jobs you've evaluated
 

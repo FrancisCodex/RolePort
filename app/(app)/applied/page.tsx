@@ -17,7 +17,7 @@ export default function AppliedPage() {
         title="Applied jobs"
         description={
           <>
-            Jobs you applied to or saved. Open one to see the posting, track its progress and prepare your application.{" "}
+            Jobs you applied to. Open one to see the posting, track its progress and prepare your application. Jobs you saved for later are under Jobs → Saved jobs.{" "}
             <LearnMore doc="guides/applications" />
           </>
         }

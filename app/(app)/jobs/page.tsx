@@ -4,13 +4,23 @@ import { LearnMore } from "@/components/app/learn-more";
 import { PageHeader } from "@/components/app/page-header";
 import { isAiConfigured } from "@/lib/ai/config";
 import { getMyFollowedCompanies } from "@/lib/companies/data";
-import { browseMyCompanyJobs, countMyEvaluatedJobs, getMyEvaluatedJobs, searchJobs } from "@/lib/jobs/data";
+import { SearchingJobs } from "@/components/jobs/searching";
+import {
+  browseMyCompanyJobs,
+  countMyEvaluatedJobs,
+  countMySavedJobs,
+  getMyEvaluatedJobs,
+  getMySavedJobs,
+  startJobSearch,
+} from "@/lib/jobs/data";
 import {
   isCompanyBrowse,
   isEvaluatedView,
+  isSavedView,
   parseCompanyBrowse,
   parseEvaluated,
   parseJobSearch,
+  searchPlace,
   type JobSort,
   type ParsedCompanyBrowse,
   type ParsedEvaluated,
@@ -21,7 +31,9 @@ import { getMyProfile } from "@/lib/profile/data";
 import { CompanyJobsView } from "./company-jobs-view";
 import { EvaluatedJobsView, EvaluatedResults } from "./evaluated-view";
 import { LiteJobs } from "./lite-jobs";
+import { ProgressiveResults } from "./progressive-results";
 import { ResultsSkeleton, ResultsView } from "./results-view";
+import { SavedJobsView, SavedResults } from "./saved-view";
 import { JobSearchView } from "./search-view";
 
 export const metadata: Metadata = { title: "Jobs" };
@@ -49,6 +61,18 @@ async function JobSearch({ searchParams }: { searchParams: PageProps<"/jobs">["s
   const [{ profile }, companies, sp] = await Promise.all([getMyProfile(), getMyFollowedCompanies(), searchParams]);
   // Following or unfollowing a company changes the results, so it's part of the keys below.
   const companyIds = companies.map((c) => c.id);
+
+  if (isSavedView(sp)) {
+    return (
+      <SavedJobsView
+        results={
+          <Suspense fallback={<ResultsSkeleton />}>
+            <SavedJobs />
+          </Suspense>
+        }
+      />
+    );
+  }
 
   if (isEvaluatedView(sp)) {
     const filter = parseEvaluated(sp);
@@ -87,8 +111,12 @@ async function JobSearch({ searchParams }: { searchParams: PageProps<"/jobs">["s
       search={search}
       companies={companies}
       evaluatedCount={await countMyEvaluatedJobs()}
+      savedCount={await countMySavedJobs()}
       results={
-        <Suspense key={JSON.stringify({ params: search.params, sort: search.sort, companies: companyIds })} fallback={<ResultsSkeleton />}>
+        <Suspense
+          key={JSON.stringify({ params: search.params, sort: search.sort, companies: companyIds })}
+          fallback={<SearchingJobs query={search.query} place={searchPlace(search.params)} />}
+        >
           <Results params={search.params} sort={search.sort} />
         </Suspense>
       }
@@ -96,9 +124,22 @@ async function JobSearch({ searchParams }: { searchParams: PageProps<"/jobs">["s
   );
 }
 
+/**
+ * The results as they come in: what the quick job boards found, with a note while slower ones
+ * (LinkedIn through JobSpy can take half a minute) are still searching, then the full list in
+ * their place. The full list streams to the browser as a promise, so the quick results are
+ * interactive from the start.
+ */
 async function Results({ params, sort }: { params: JobSearchParams; sort: JobSort }) {
-  const [results, aiEnabled] = await Promise.all([searchJobs(params, sort), isAiConfigured()]);
-  return <ResultsView {...results} aiEnabled={aiEnabled} />;
+  const [search, aiEnabled] = await Promise.all([startJobSearch(params, sort), isAiConfigured()]);
+  const quick = await search.quick;
+  if (quick.pending.length === 0) return <ResultsView {...quick} aiEnabled={aiEnabled} />;
+  return <ProgressiveResults quick={quick} full={search.full()} aiEnabled={aiEnabled} />;
+}
+
+async function SavedJobs() {
+  const [jobs, aiEnabled] = await Promise.all([getMySavedJobs(), isAiConfigured()]);
+  return <SavedResults jobs={jobs} aiEnabled={aiEnabled} />;
 }
 
 async function EvaluatedJobs({ filter }: { filter: ParsedEvaluated }) {

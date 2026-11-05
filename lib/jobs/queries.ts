@@ -1,4 +1,4 @@
-import { and, eq, inArray, lt, notExists, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, lt, notExists, sql } from "drizzle-orm";
 import type { FitEvaluation } from "@/lib/ai/evaluate-job";
 import * as schema from "@/lib/db/schema";
 import type { AnyDb } from "@/lib/db/types";
@@ -270,6 +270,37 @@ export async function readEvaluatedJobs(
     sort === "recent" ? (a, b) => b.fit!.scoredAt.getTime() - a.fit!.scoredAt.getTime() : (a, b) => matchSortScore(b) - matchSortScore(a),
   );
   return { jobs, total: rows.length };
+}
+
+/**
+ * The jobs the user saved and hasn't applied to yet, last saved first: the Jobs page's Saved
+ * view. Read from the stored postings, so they open without a connection.
+ */
+export async function readSavedJobs(db: AnyDb, userId: string, profile: ProfileInput): Promise<JobListItem[]> {
+  const rows = await db
+    .select({ job: schema.job })
+    .from(schema.application)
+    .innerJoin(schema.job, eq(schema.application.jobId, schema.job.id))
+    .where(and(eq(schema.application.userId, userId), eq(schema.application.status, "saved")))
+    .orderBy(desc(schema.application.updatedAt));
+  const [tracked, fits] = await Promise.all([
+    readTrackedJobs(db, userId),
+    readFitMatches(
+      db,
+      userId,
+      rows.map((r) => r.job.id),
+    ),
+  ]);
+  return rows.map((r) => toListItem(r.job, profile, tracked, fits));
+}
+
+/** How many saved jobs are waiting, for the link to them. */
+export async function countSavedJobs(db: AnyDb, userId: string): Promise<number> {
+  const [row] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(schema.application)
+    .where(and(eq(schema.application.userId, userId), eq(schema.application.status, "saved")));
+  return row?.n ?? 0;
 }
 
 /** How many jobs the user has had evaluated, for the link to them. */

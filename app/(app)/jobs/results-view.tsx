@@ -4,6 +4,7 @@ import { EmptyState } from "@/components/app/empty-state";
 import { AnalyzePanel, AnalyzeProvider } from "@/components/jobs/analyze-jobs";
 import { JobBrowser } from "@/components/jobs/job-browser";
 import { JobCard } from "@/components/jobs/job-card";
+import { StillSearching } from "@/components/jobs/searching";
 import { MAX_PER_RUN } from "@/lib/jobs/fit";
 import type { JobListItem } from "@/lib/jobs/queries";
 import { sourceCredit } from "@/lib/jobs/sources/credits";
@@ -24,10 +25,17 @@ function groupCompanySources(statuses: SourceStatus[]): SourceStatus[] {
   return [merged, ...statuses.filter((s) => !isCompanySource(s.id))];
 }
 
-export type ResultsData = { jobs: JobListItem[]; statuses: SourceStatus[]; hasSkills: boolean; aiEnabled: boolean };
+export type ResultsData = {
+  jobs: JobListItem[];
+  statuses: SourceStatus[];
+  hasSkills: boolean;
+  aiEnabled: boolean;
+  /** Job boards still searching: these results are the quick ones, and the full list replaces them. */
+  pending?: string[];
+};
 
 /** One search's results: source chips, the analyze panel and the split job browser. Shared by both editions. */
-export function ResultsView({ jobs, statuses, hasSkills, aiEnabled }: ResultsData) {
+export function ResultsView({ jobs, statuses, hasSkills, aiEnabled, pending = [] }: ResultsData) {
   const sources = Object.fromEntries(
     [...new Set(jobs.map((j) => j.source))].flatMap((id) => {
       const credit = sourceCredit(id);
@@ -43,6 +51,7 @@ export function ResultsView({ jobs, statuses, hasSkills, aiEnabled }: ResultsDat
   return (
     <AnalyzeProvider>
       <div className="flex flex-col gap-3">
+        {pending.length > 0 && <StillSearching sources={pending} />}
         <div className="flex flex-wrap items-center gap-2 text-xs">
           <span className="font-medium text-fg">
             {jobs.length} job{jobs.length === 1 ? "" : "s"}
@@ -82,7 +91,7 @@ export function ResultsView({ jobs, statuses, hasSkills, aiEnabled }: ResultsDat
           </p>
         )}
 
-        {jobs.length === 0 ? (
+        {jobs.length === 0 && pending.length > 0 ? null : jobs.length === 0 ? (
           <EmptyState icon={SearchX} title="No jobs found" body="Try a broader title, another location, or a longer date range." />
         ) : (
           // Split view: a page of results, and the selected job beside them (a drawer on small screens).

@@ -6,8 +6,8 @@ import { jobSpyAddress } from "@/lib/desktop/jobspy";
 import { getMyProfile } from "@/lib/profile/data";
 import { getCurrentUser } from "@/lib/session";
 import { countApplications, readApplication, readApplications, type ApplicationDetail, type PipelineItem } from "./applications";
-import { countEvaluatedJobs, readEvaluatedJobs, readFitMatches, readJob, readTrackedJobs, sortJobs, storeJobs, toListItem, type JobListItem, type KeyedJob } from "./queries";
-import { browseCompanyJobs, searchAllSources } from "./search";
+import { countEvaluatedJobs, countSavedJobs, readEvaluatedJobs, readSavedJobs, readFitMatches, readJob, readTrackedJobs, sortJobs, storeJobs, toListItem, type JobListItem, type KeyedJob } from "./queries";
+import { browseCompanyJobs, searchAllSources, searchAllSourcesProgressively } from "./search";
 import { companyJobFilters, type ParsedCompanyBrowse, type ParsedEvaluated } from "./search-params";
 import type { JobSearchParams, SourceStatus } from "./types";
 
@@ -23,6 +23,30 @@ export async function searchJobs(
   const [rapidApiKey, jobspyEnabled, followed] = await Promise.all([getRapidApiKey(), getJobSpyEnabled(), readFollowedCompanies(db, user.id)]);
   const jobspyUrl = jobspyEnabled ? await jobSpyAddress() : null;
   return listResults(user.id, await searchAllSources(params, { rapidApiKey, jobspyEnabled, jobspyUrl, companies: companyRefs(followed) }), sort);
+}
+
+export type JobResults = { jobs: JobListItem[]; statuses: SourceStatus[]; hasSkills: boolean };
+
+/**
+ * searchJobs in two steps, for the jobs page: `quick` is what the sources found within a few
+ * seconds (with the ones still searching in `pending`), `full()` everything once all of them have
+ * answered. Only call `full()` when `pending` isn't empty.
+ */
+export async function startJobSearch(
+  params: JobSearchParams,
+  sort: "match" | "date",
+): Promise<{ quick: Promise<JobResults & { pending: string[] }>; full: () => Promise<JobResults> }> {
+  const user = await getCurrentUser();
+  const db = await getDb();
+  const [rapidApiKey, jobspyEnabled, followed] = await Promise.all([getRapidApiKey(), getJobSpyEnabled(), readFollowedCompanies(db, user.id)]);
+  const jobspyUrl = jobspyEnabled ? await jobSpyAddress() : null;
+  const search = searchAllSourcesProgressively(params, { rapidApiKey, jobspyEnabled, jobspyUrl, companies: companyRefs(followed) });
+  // Nothing may be waiting on it when every source answered in time.
+  search.full.catch(() => {});
+  return {
+    quick: search.quick.then(async (found) => ({ ...(await listResults(user.id, found, sort)), pending: found.pending })),
+    full: () => search.full.then((found) => listResults(user.id, found, sort)),
+  };
 }
 
 /** Jobs at the companies the user follows (or at one of them, by id), for the "companies you follow" view. */
@@ -83,6 +107,18 @@ export async function getMyEvaluatedJobs(filter: ParsedEvaluated): Promise<{ job
   const user = await getCurrentUser();
   const { profile } = await getMyProfile();
   return readEvaluatedJobs(await getDb(), user.id, profile, filter);
+}
+
+/** Saved jobs not applied to yet, for the Jobs page's Saved view. */
+export async function getMySavedJobs(): Promise<JobListItem[]> {
+  const user = await getCurrentUser();
+  const { profile } = await getMyProfile();
+  return readSavedJobs(await getDb(), user.id, profile);
+}
+
+export async function countMySavedJobs(): Promise<number> {
+  const user = await getCurrentUser();
+  return countSavedJobs(await getDb(), user.id);
 }
 
 export async function countMyEvaluatedJobs(): Promise<number> {

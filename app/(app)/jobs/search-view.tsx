@@ -1,4 +1,4 @@
-import { ArrowRight, Search, Sparkles } from "lucide-react";
+import { ArrowRight, Bookmark, Search, Sparkles } from "lucide-react";
 import Form from "next/form";
 import Link from "next/link";
 import type { ReactNode } from "react";
@@ -35,6 +35,7 @@ export function JobSearchView({
   search: { params, sort, query, city },
   companies,
   evaluatedCount,
+  savedCount,
   results,
 }: {
   profile: Pick<ProfileInput, "country" | "targetCountries" | "desiredRoles">;
@@ -42,6 +43,8 @@ export function JobSearchView({
   companies: FollowedCompanyView[];
   /** How many jobs have an AI evaluation, for the link to them. */
   evaluatedCount: number;
+  /** How many saved jobs are waiting, for the link to them. */
+  savedCount: number;
   results: ReactNode;
 }) {
   const country = params.country;
@@ -137,20 +140,21 @@ export function JobSearchView({
         <PasteJob />
       </div>
 
-      {evaluatedCount > 0 && (
-        <Link
-          href="/jobs?view=evaluated"
-          className="-mt-2 flex items-center gap-2.5 rounded-lg border border-border bg-surface px-3 py-2 text-[13px] text-muted transition-colors hover:border-border-strong hover:text-fg"
-        >
-          <Sparkles className="size-3.5 shrink-0 text-brand-ink" />
-          <span>
-            <span className="font-medium text-fg">
-              {evaluatedCount} job{evaluatedCount === 1 ? "" : "s"} you&apos;ve evaluated
-            </span>
-            , kept to come back to
-          </span>
-          <ArrowRight className="ml-auto size-3.5 shrink-0" />
-        </Link>
+      {(savedCount > 0 || evaluatedCount > 0) && (
+        <div className="-mt-2 grid gap-2 lg:grid-cols-2">
+          {savedCount > 0 && (
+            <ShortcutLink href="/jobs?view=saved" icon={Bookmark} count={savedCount} label={(n) => `${n} saved job${n === 1 ? "" : "s"}`} rest="to come back to" />
+          )}
+          {evaluatedCount > 0 && (
+            <ShortcutLink
+              href="/jobs?view=evaluated"
+              icon={Sparkles}
+              count={evaluatedCount}
+              label={(n) => `${n} job${n === 1 ? "" : "s"} you've evaluated`}
+              rest="kept to come back to"
+            />
+          )}
+        </div>
       )}
 
       {query ? (
@@ -168,5 +172,32 @@ export function JobSearchView({
         />
       )}
     </div>
+  );
+}
+
+function ShortcutLink({
+  href,
+  icon: Icon,
+  count,
+  label,
+  rest,
+}: {
+  href: string;
+  icon: typeof Bookmark;
+  count: number;
+  label: (n: number) => string;
+  rest: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-2.5 rounded-lg border border-border bg-surface px-3 py-2 text-[13px] text-muted transition-colors hover:border-border-strong hover:text-fg"
+    >
+      <Icon className="size-3.5 shrink-0 text-brand-ink" />
+      <span>
+        <span className="font-medium text-fg">{label(count)}</span>, {rest}
+      </span>
+      <ArrowRight className="ml-auto size-3.5 shrink-0" />
+    </Link>
   );
 }
